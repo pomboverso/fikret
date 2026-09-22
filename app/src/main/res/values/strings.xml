@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Fikret</string>
+    <string name="app_desc">A bird-rescue adventure</string>
+    <string name="app_version">%1$s v%2$d</string>
+    <string name="app_claims_ads_desc">No Ads</string>
+    <string name="app_claims_background_tasks_desc">No Background Tasks</string>
+    <string name="app_claims_offline_desc">Works Offline</string>
+    <string name="app_claims_trackers_desc">No Trackers</string>
+
+    <string name="license_gpl3" translatable="false">GPL 3.0</string>
+</resources>

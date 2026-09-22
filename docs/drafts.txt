@@ -1,0 +1,67 @@
+------ concept
+The game is inspired in Castle of the Winds 1993 and a little bit in metroid, the idea is that it's gonna be a goose that can use different spells to beat enemies (similar to the one from castle of the winds) and the goose its gonna be looking for the missing birds which each one will give him a special ability
+
+It will be similar to metroid where in order to get to certain areas you need special birds that will give you the ability to navigate those paths.
+
+Because is a goose in pixel art, the amount of things that you can add to the animal are very limited which is why we have other birds following that represent the special abilities.
+
+------ equipment
+- ties :: health++
+- hats :: storage++
+- feathers :: def++ : golden feathers, diamond, emeralds, ruby
+- peaks? :: attack++
+- boots? :: speed++
+
+------ items
+- potions
+- birds
+- hats
+- ties / scarfs
+- boots
+- peaks
+- stones
+
+------ friends
+- blue duck 1 :: dive underwater
+- blue duck 2 :: healing
+- purple pigeon 1 :: shoot bullets :: dmg 1 enemy
+- purple pigeon 2 :: shoot fire balls :: dmg 2 enemies nearby
+- purple pigeon 3 :: shoot electricity :: dmg 3 enemies
+- orange-red phoenix 1 :: navigate on lava
+- orange-red phoneix 2 :: navigate on acid
+- orange-red phoenix 3 :: breath on deadly fog
+- brown owl 1 :: see on the dark
+- brown owl 2 :: see hidden doors
+- brown owl 3 :: see objects curses and divinities
+- grey kiwi 1 :: walk over spikes/rocks
+- dark-grey/black raven 1 :: random teleport within the map
+- dark-grey/black raven 2 :: teleport to main stage
+- dark-grey/black raven 3 :: ability to fly and go to space
+
+> lets keep the number of birds to 6 or 7 and after that create stones items that will evolve the little birds
+
+> everytime you get a new bird a banner with a ribbon will appear with the name of the bird and the new ability
+
+> each bird needs a name from the same dictionary
+
+> the store is a chicken that sell and buy things
+
+> we need a priest that help us to removed curses items. the idea is that it only allow us to break the lock but the item will only go away after the character reach the next level
+
+> the first level is a clear area outsde with a lake that you'll eventually will go and dive. but before diving you need to go to the woods to find the duck
+
+> after you get the duck you'll go to the lake and dive, after diving you are gonna be in a underwater level
+
+> the map creation should be an array that defined all the tiles for example
+
+[
+  [1,1,1,1],
+  [1,1,1,1],
+  [1,1,1,1],
+]
+
+this means that the whole map is grass bottom left corner, the decimals indicate the corner placement using the numpad from a keyboard where 5 is the middle, 1 is one corner and 9 the other extreme corner, the decimal represent the type of tile, grass, water, lava, ground, snow, etc and the centenal represent the item that you have there 111 could be a rock in a grass enviroment in a bottom left corner, i left the items at the end because i blelieve that we are gonna have infinite items but no infinite tiles (I could be wrong and maybe the thousands should be the items to have more space for future tiles and game modalities)
+
+7 8 9
+4 5 6
+1 2 3
