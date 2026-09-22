@@ -107,6 +107,10 @@
 <!--            android:exported="false" />-->
 
         <activity
+            android:name=".activities.GameActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".activities.Main"
             android:excludeFromRecents="true"
             android:exported="true"
