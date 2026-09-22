@@ -6,7 +6,7 @@ package com.rama.fikret.game;
  * 3 = down/front - confirmed by looking at the actual goose art).
  */
 public enum Direction {
-    LEFT(0), UP(1), RIGHT(2), DOWN(3);
+    LEFT(0), UP(3), RIGHT(2), DOWN(1);
 
     public final int column;
 

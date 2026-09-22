@@ -10,12 +10,23 @@ import com.rama.fikret.R;
  * The player-controlled goose. Moves freely in continuous world-space pixels
  * while a direction is held (see {@link GameView} for where the direction
  * comes from: screen regions or the keyboard/numpad).
+ *
+ * Animation rows in gm_goose (per direction column):
+ *   row 0 - resting pose, legs tucked in - used ONLY while swimming or
+ *           sleeping, never during normal walking/idle.
+ *   row 1 - standing still (used whenever the goose has no movement input).
+ *   row 2, row 3 - the two walk-cycle poses, alternated while moving.
  */
 public class Goose {
     private static final int ATLAS_COLUMNS = 4;
-    private static final int ATLAS_ROWS = 4; // 4 walk-cycle frames per direction
+    private static final int ATLAS_ROWS = 4;
     private static final float PIXELS_PER_SECOND = GameMap.TILE_SIZE * 3f;
-    private static final long FRAME_DURATION_MS = 120;
+    private static final long WALK_FRAME_DURATION_MS = 120;
+
+    private static final int FRAME_REST = 0;   // swimming / sleeping only
+    private static final int FRAME_IDLE = 1;   // standing still
+    private static final int FRAME_WALK_A = 2;
+    private static final int FRAME_WALK_B = 3;
 
     private final SpriteSheet spriteSheet;
 
@@ -23,9 +34,10 @@ public class Goose {
     private float x, y;
 
     private Direction facing = Direction.DOWN;
-    private int animFrame = 0;
-    private long animTimer = 0;
     private boolean moving = false;
+    private boolean resting = false; // true while swimming or sleeping
+    private boolean walkToggle = false;
+    private long walkAnimTimer = 0;
 
     public Goose(Resources res, float startX, float startY) {
         this.spriteSheet = new SpriteSheet(res, R.drawable.gm_goose, ATLAS_COLUMNS, ATLAS_ROWS);
@@ -40,7 +52,7 @@ public class Goose {
      * (0, 0) means "no input", i.e. stand still.
      */
     public void update(long deltaMs, float dx, float dy, GameMap map) {
-        moving = dx != 0f || dy != 0f;
+        moving = (dx != 0f || dy != 0f) && !resting;
 
         if (moving) {
             float length = (float) Math.sqrt(dx * dx + dy * dy);
@@ -62,13 +74,23 @@ public class Goose {
             float maxY = Math.max(0, map.getHeightPx() - GameMap.TILE_SIZE);
             x = clamp(x, 0, maxX);
             y = clamp(y, 0, maxY);
-        }
 
-        animTimer += deltaMs;
-        if (animTimer >= FRAME_DURATION_MS) {
-            animTimer = 0;
-            animFrame = moving ? (animFrame + 1) % ATLAS_ROWS : 0;
+            walkAnimTimer += deltaMs;
+            if (walkAnimTimer >= WALK_FRAME_DURATION_MS) {
+                walkAnimTimer = 0;
+                walkToggle = !walkToggle;
+            }
+        } else {
+            walkAnimTimer = 0;
         }
+    }
+
+    /** Call when the goose enters/leaves water or falls asleep - while true,
+     *  it holds the legs-tucked-in resting pose and ignores movement input.
+     *  Not driven by anything yet (no water tiles/sleep trigger exist),
+     *  wire this up once those features land. */
+    public void setResting(boolean resting) {
+        this.resting = resting;
     }
 
     private static float clamp(float value, float min, float max) {
@@ -76,7 +98,8 @@ public class Goose {
     }
 
     public void draw(Canvas canvas, Rect dst) {
-        Rect src = spriteSheet.frameRect(facing.column, animFrame);
+        int frame = resting ? FRAME_REST : (moving ? (walkToggle ? FRAME_WALK_A : FRAME_WALK_B) : FRAME_IDLE);
+        Rect src = spriteSheet.frameRect(facing.column, frame);
         canvas.drawBitmap(spriteSheet.getBitmap(), src, dst, null);
     }
 
@@ -92,3 +115,4 @@ public class Goose {
         return moving;
     }
 }
+
