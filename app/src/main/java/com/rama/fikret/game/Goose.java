@@ -7,73 +7,85 @@ import android.graphics.Rect;
 import com.rama.fikret.R;
 
 /**
- * The player-controlled goose. Moves freely in continuous world-space pixels
- * while a direction is held (see {@link GameView} for where the direction
- * comes from: screen regions or the keyboard/numpad).
+ * The player-controlled goose. Moves one whole tile at a time: pressing a
+ * direction steps it to the next tile over, snapped to the grid, with a
+ * short smooth glide between the two tiles rather than an instant jump.
+ * Holding a direction keeps stepping, tile after tile.
  *
  * Animation rows in gm_goose (per direction column):
  *   row 0 - resting pose, legs tucked in - used ONLY while swimming or
  *           sleeping, never during normal walking/idle.
  *   row 1 - standing still (used whenever the goose has no movement input).
- *   row 2, row 3 - the two walk-cycle poses, alternated while moving.
+ *   row 2, row 3 - the two walk-cycle poses, alternated while stepping.
  */
 public class Goose {
     private static final int ATLAS_COLUMNS = 4;
     private static final int ATLAS_ROWS = 4;
-    private static final float PIXELS_PER_SECOND = GameMap.TILE_SIZE * 3f;
-    private static final long WALK_FRAME_DURATION_MS = 120;
+    private static final long STEP_DURATION_MS = 160; // time to glide across one tile
+    private static final long WALK_FRAME_DURATION_MS = 80;
 
-    private static final int FRAME_REST = 0;   // swimming / sleeping only
-    private static final int FRAME_IDLE = 1;   // standing still
+    private static final int FRAME_REST = 0;
+    private static final int FRAME_IDLE = 1;
     private static final int FRAME_WALK_A = 2;
     private static final int FRAME_WALK_B = 3;
 
     private final SpriteSheet spriteSheet;
 
-    // World-space top-left pixel position.
-    private float x, y;
+    // Grid position the goose is stepping FROM and TO. Equal when standing still.
+    private int fromRow, fromCol;
+    private int row, col;
+    private float stepProgress = 1f; // 0 = at fromRow/fromCol, 1 = at row/col
 
     private Direction facing = Direction.DOWN;
     private boolean moving = false;
-    private boolean resting = false; // true while swimming or sleeping
+    private boolean resting = false;
     private boolean walkToggle = false;
     private long walkAnimTimer = 0;
 
-    public Goose(Resources res, float startX, float startY) {
+    public Goose(Resources res, int startRow, int startCol) {
         this.spriteSheet = new SpriteSheet(res, R.drawable.gm_goose, ATLAS_COLUMNS, ATLAS_ROWS);
-        this.x = startX;
-        this.y = startY;
+        this.row = this.fromRow = startRow;
+        this.col = this.fromCol = startCol;
     }
 
     /**
-     * Advances the goose by one frame. dx/dy describe the held direction,
-     * each in [-1, 1] - only their direction matters, this normalizes the
-     * vector itself so diagonal movement isn't faster than cardinal movement.
-     * (0, 0) means "no input", i.e. stand still.
+     * Advances the goose by one frame. dx/dy is the currently held
+     * direction already resolved down to a single cardinal step by the
+     * caller: exactly one of them is -1, 0, or 1, never both nonzero at
+     * once (see GameView, which collapses 8-directional input to 4 before
+     * calling this).
      */
-    public void update(long deltaMs, float dx, float dy, GameMap map) {
-        moving = (dx != 0f || dy != 0f) && !resting;
+    public void update(long deltaMs, int dx, int dy, GameMap map) {
+        if (!moving) {
+            if (resting) {
+                return;
+            }
+            if (dx != 0 || dy != 0) {
+                facing = dx > 0 ? Direction.RIGHT : dx < 0 ? Direction.LEFT
+                        : dy > 0 ? Direction.DOWN : Direction.UP;
+
+                int targetRow = row + dy;
+                int targetCol = col + dx;
+                if (map.isInBounds(targetRow, targetCol)) {
+                    fromRow = row;
+                    fromCol = col;
+                    row = targetRow;
+                    col = targetCol;
+                    stepProgress = 0f;
+                    moving = true;
+                }
+                // else: bumped the edge of the map - just faces that way
+                // without moving. A passability check (water, obstacles...)
+                // belongs right here too, once those tiles exist.
+            }
+        }
 
         if (moving) {
-            float length = (float) Math.sqrt(dx * dx + dy * dy);
-            float normalizedX = dx / length;
-            float normalizedY = dy / length;
-
-            // Sprite only has 4 facings - horizontal wins on a diagonal.
-            if (Math.abs(dx) > 0.0001f) {
-                facing = dx > 0 ? Direction.RIGHT : Direction.LEFT;
-            } else {
-                facing = dy > 0 ? Direction.DOWN : Direction.UP;
+            stepProgress += deltaMs / (float) STEP_DURATION_MS;
+            if (stepProgress >= 1f) {
+                stepProgress = 1f;
+                moving = false;
             }
-
-            float distance = PIXELS_PER_SECOND * (deltaMs / 1000f);
-            x += normalizedX * distance;
-            y += normalizedY * distance;
-
-            float maxX = Math.max(0, map.getWidthPx() - GameMap.TILE_SIZE);
-            float maxY = Math.max(0, map.getHeightPx() - GameMap.TILE_SIZE);
-            x = clamp(x, 0, maxX);
-            y = clamp(y, 0, maxY);
 
             walkAnimTimer += deltaMs;
             if (walkAnimTimer >= WALK_FRAME_DURATION_MS) {
@@ -93,26 +105,34 @@ public class Goose {
         this.resting = resting;
     }
 
-    private static float clamp(float value, float min, float max) {
-        return Math.max(min, Math.min(value, max));
-    }
-
     public void draw(Canvas canvas, Rect dst) {
         int frame = resting ? FRAME_REST : (moving ? (walkToggle ? FRAME_WALK_A : FRAME_WALK_B) : FRAME_IDLE);
         Rect src = spriteSheet.frameRect(facing.column, frame);
         canvas.drawBitmap(spriteSheet.getBitmap(), src, dst, null);
     }
 
+    /** World-space pixel position, interpolated between tiles mid-step. */
     public float getX() {
-        return x;
+        return lerp(fromCol, col) * GameMap.TILE_SIZE;
     }
 
     public float getY() {
-        return y;
+        return lerp(fromRow, row) * GameMap.TILE_SIZE;
+    }
+
+    private float lerp(int from, int to) {
+        return from + (to - from) * stepProgress;
+    }
+
+    public int getRow() {
+        return row;
+    }
+
+    public int getCol() {
+        return col;
     }
 
     public boolean isMoving() {
         return moving;
     }
 }
-

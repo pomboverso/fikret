@@ -4,7 +4,9 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Rect;
+import android.os.Build;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -13,83 +15,87 @@ import android.view.SurfaceView;
 import java.util.EnumMap;
 
 /**
- * The game surface: owns the map, the goose, the camera, and all input.
- * <p>
- * Movement is an 8-direction hold, fed from two sources that both write into
- * the same dx/dy state:
- * - Screen touch, split into a 3x3 grid of regions (same numpad layout used
- * everywhere else in this project: top-right region = up-right, center
- * region = stand still, etc).
- * - Keyboard: arrow keys / WASD (combine for diagonals), or the numeric
- * keypad 1-9 directly (5 = stop) for the same numpad-shaped input on a
- * physical/emulator keyboard.
- * <p>
+ * The game surface: owns the map, the goose, the camera/zoom, and all input.
+ *
+ * Movement steps the goose one tile at a time. Primary control is tapping
+ * (or holding) one of the 4 tiles directly next to the goose - up/down/left/
+ * right - which are drawn highlighted with a placeholder arrow each frame
+ * (swap drawDirectionArrow() for real arrow art whenever you have it).
+ * Keyboard (arrows/WASD) and the numpad (1-9, 5 = stop) still work too,
+ * mainly handy for testing on an emulator without touch.
+ *
+ * Pinch-to-zoom is wired up (ScaleGestureDetector, isolated in
+ * PinchZoomDetector so it never loads on devices below API 8).
+ *
  * This is deliberately a starting point: one map, one character, a camera
- * that follows the goose and clamps to the map edges. Swap out
- * {@link #buildTestMap()} for your own map data, and this is the place to
- * add more layers (items, other characters, UI) as you build them out.
+ * that follows the goose and clamps to the map edges. Stages live in
+ * {@link Maps} - add one there and pass its id to this view's constructor
+ * (or via GameActivity.EXTRA_STAGE) to switch maps. This is also the place
+ * to add more layers (items, other characters, UI) as you build them out.
  */
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
     private GameThread thread;
     private GameMap map;
     private Goose goose;
+    private Stage stage;
     private final EnumMap<TileType, SpriteSheet> tileSheets = new EnumMap<TileType, SpriteSheet>(TileType.class);
     private final Paint backgroundPaint = new Paint();
-    private final Paint regionGridPaint = new Paint();
-    private final Paint regionHighlightPaint = new Paint();
+    private final Paint arrowTileFillPaint = new Paint();
+    private final Paint arrowTileFillPressedPaint = new Paint();
+    private final Paint arrowGlyphPaint = new Paint();
     private final Rect reusableSrc = new Rect();
     private final Rect reusableDst = new Rect();
+    private final Path reusablePath = new Path();
 
     private int cameraX, cameraY;
 
-    // --- Input state -------------------------------------------------
+    // --- Zoom ----------------------------------------------------------
+    private static final float MIN_ZOOM = 1f;
+    private static final float MAX_ZOOM = 4f;
+    private float zoom = 2f; // default a bit zoomed in - 64px tiles read as small otherwise
+    private PinchZoomDetector pinchZoomDetector; // null below API 8
+
+    // --- Input state -----------------------------------------------------
     // Keyboard: arrow keys / WASD, combined additively for diagonals.
     private boolean keyLeft, keyRight, keyUp, keyDown;
-    // Keyboard: numpad 1-9 sets the vector directly (5 = stop), matches
-    // the touch regions below key-for-key.
+    // Keyboard: numpad 1-9 sets the vector directly (5 = stop).
     private int activeNumpadKeyCode = 0;
     private float numpadDx, numpadDy;
-    // Touch: which of the 3x3 screen regions is currently pressed, -1 if none.
-    private int touchCol = -1, touchRow = -1;
+    // Touch: which on-screen direction tile is currently pressed (0 if none).
+    private int touchDx, touchDy;
 
     public GameView(Context context) {
+        this(context, Maps.MEADOW);
+    }
+
+    public GameView(Context context, int stageId) {
         super(context);
         getHolder().addCallback(this);
         setFocusable(true);
         setFocusableInTouchMode(true);
 
         backgroundPaint.setColor(Color.BLACK);
-        regionGridPaint.setColor(Color.WHITE);
-        regionGridPaint.setAlpha(40);
-        regionGridPaint.setStrokeWidth(2);
-        regionHighlightPaint.setColor(Color.WHITE);
-        regionHighlightPaint.setAlpha(35);
+        arrowTileFillPaint.setColor(Color.WHITE);
+        arrowTileFillPaint.setAlpha(50);
+        arrowTileFillPressedPaint.setColor(Color.WHITE);
+        arrowTileFillPressedPaint.setAlpha(110);
+        arrowGlyphPaint.setColor(Color.WHITE);
+        arrowGlyphPaint.setAlpha(200);
+        arrowGlyphPaint.setAntiAlias(true);
 
-        map = new GameMap(buildTestMap());
+        if (Build.VERSION.SDK_INT >= 8) {
+            pinchZoomDetector = new PinchZoomDetector(context, new PinchZoomDetector.Listener() {
+                @Override
+                public void onZoom(float scaleFactor, float focusX, float focusY) {
+                    setZoom(zoom * scaleFactor);
+                }
+            });
+        }
+
+        stage = Maps.get(stageId);
+        map = new GameMap(stage.tiles);
         loadTileSheets();
-    }
-
-    /**
-     * Small placeholder map: a grass rectangle using the border tiles
-     * around the edge and the plain center tile (5) in the middle. Swap
-     * this out for real map data whenever you're ready.
-     */
-    private int[][] buildTestMap() {
-        return new int[][]{
-                {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
-                {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
-                {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
-                {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
-                {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
-                {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
-                {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
-                {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
-                {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
-                {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
-                {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
-
-        };
     }
 
     private void loadTileSheets() {
@@ -98,11 +104,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
+    private void setZoom(float newZoom) {
+        zoom = Math.max(MIN_ZOOM, Math.min(newZoom, MAX_ZOOM));
+    }
+
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
-        float startX = 2 * GameMap.TILE_SIZE;
-        float startY = 2 * GameMap.TILE_SIZE;
-        goose = new Goose(getResources(), startX, startY);
+        goose = new Goose(getResources(), stage.spawnRow, stage.spawnCol);
         thread = new GameThread(holder, this);
         thread.setRunning(true);
         thread.start();
@@ -129,38 +137,74 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
-    // --- Touch input: 3x3 screen regions, numpad-style -----------------
+    // --- Touch input: tap/hold the tile next to the goose ---------------
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if (pinchZoomDetector != null) {
+            pinchZoomDetector.onTouchEvent(event);
+        }
+
+        // A second finger means this is a pinch, not a directional tap -
+        // don't also interpret it as a move request.
+        if (event.getPointerCount() > 1) {
+            touchDx = 0;
+            touchDy = 0;
+            return true;
+        }
+
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
             case MotionEvent.ACTION_MOVE:
-                updateTouchRegion(event.getX(), event.getY());
+                updatePressedArrow(event.getX(), event.getY());
                 return true;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
-                touchCol = -1;
-                touchRow = -1;
+                touchDx = 0;
+                touchDy = 0;
                 return true;
             default:
                 return super.onTouchEvent(event);
         }
     }
 
-    private void updateTouchRegion(float x, float y) {
-        int width = getWidth();
-        int height = getHeight();
-        if (width == 0 || height == 0) {
+    /** Converts a screen touch point to world pixels and checks it against
+     *  the 4 tiles next to the goose, setting touchDx/touchDy if it landed
+     *  on one of them. */
+    private void updatePressedArrow(float screenX, float screenY) {
+        if (goose == null) {
             return;
         }
-        touchCol = clampRegion((int) (x / (width / 3f)));
-        touchRow = clampRegion((int) (y / (height / 3f)));
+        float worldX = screenX / zoom + cameraX;
+        float worldY = screenY / zoom + cameraY;
+
+        touchDx = 0;
+        touchDy = 0;
+        for (int i = 0; i < DIRECTIONS.length; i++) {
+            int dx = DIRECTIONS[i][0];
+            int dy = DIRECTIONS[i][1];
+            int neighborRow = goose.getRow() + dy;
+            int neighborCol = goose.getCol() + dx;
+            if (!map.isInBounds(neighborRow, neighborCol)) {
+                continue;
+            }
+            float left = neighborCol * GameMap.TILE_SIZE;
+            float top = neighborRow * GameMap.TILE_SIZE;
+            if (worldX >= left && worldX < left + GameMap.TILE_SIZE
+                    && worldY >= top && worldY < top + GameMap.TILE_SIZE) {
+                touchDx = dx;
+                touchDy = dy;
+                return;
+            }
+        }
     }
 
-    private static int clampRegion(int region) {
-        return Math.max(0, Math.min(region, 2));
-    }
+    private static final int[][] DIRECTIONS = {
+            {0, -1}, // up
+            {0, 1},  // down
+            {-1, 0}, // left
+            {1, 0},  // right
+    };
 
     // --- Keyboard input: arrows/WASD + numpad 1-9 -----------------------
 
@@ -225,37 +269,40 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
-    /**
-     * Combines every input source into one held direction, each axis
-     * clamped to [-1, 1] (Goose normalizes the resulting vector).
-     */
-    private float inputDx() {
-        float dx = (keyRight ? 1 : 0) - (keyLeft ? 1 : 0) + numpadDx;
-        if (touchCol >= 0) {
-            dx += touchCol - 1;
-        }
-        return Math.max(-1f, Math.min(1f, dx));
+    /** Combines every input source into raw axis values (keyboard/numpad
+     *  can be diagonal), then collapses that down to a single cardinal
+     *  direction - grid movement only ever steps in one axis at a time.
+     *  Vertical wins when both axes are pressed. Touch is already cardinal
+     *  only, since it comes from a single neighbor tile. */
+    private int resolvedDx() {
+        return resolvedDy() != 0 ? 0 : sign(rawDx());
     }
 
-    private float inputDy() {
-        float dy = (keyDown ? 1 : 0) - (keyUp ? 1 : 0) + numpadDy;
-        if (touchRow >= 0) {
-            dy += touchRow - 1;
-        }
-        return Math.max(-1f, Math.min(1f, dy));
+    private int resolvedDy() {
+        return sign(rawDy());
+    }
+
+    private float rawDx() {
+        return (keyRight ? 1 : 0) - (keyLeft ? 1 : 0) + numpadDx + touchDx;
+    }
+
+    private float rawDy() {
+        return (keyDown ? 1 : 0) - (keyUp ? 1 : 0) + numpadDy + touchDy;
+    }
+
+    private static int sign(float v) {
+        return v > 0 ? 1 : (v < 0 ? -1 : 0);
     }
 
     // --- Update / render -------------------------------------------------
 
-    /**
-     * Called from GameThread, off the UI thread - keep this cheap and
-     * avoid touching Views directly.
-     */
+    /** Called from GameThread, off the UI thread - keep this cheap and
+     *  avoid touching Views directly. */
     public void update(long deltaMs) {
         if (goose == null) {
             return;
         }
-        goose.update(deltaMs, inputDx(), inputDy(), map);
+        goose.update(deltaMs, resolvedDx(), resolvedDy(), map);
         updateCamera();
     }
 
@@ -265,12 +312,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (viewW == 0 || viewH == 0) {
             return;
         }
+        float visibleW = viewW / zoom;
+        float visibleH = viewH / zoom;
 
-        cameraX = (int) (goose.getX() + GameMap.TILE_SIZE / 2f - viewW / 2f);
-        cameraY = (int) (goose.getY() + GameMap.TILE_SIZE / 2f - viewH / 2f);
+        cameraX = (int) (goose.getX() + GameMap.TILE_SIZE / 2f - visibleW / 2f);
+        cameraY = (int) (goose.getY() + GameMap.TILE_SIZE / 2f - visibleH / 2f);
 
-        int maxCamX = Math.max(0, map.getWidthPx() - viewW);
-        int maxCamY = Math.max(0, map.getHeightPx() - viewH);
+        int maxCamX = Math.max(0, (int) (map.getWidthPx() - visibleW));
+        int maxCamY = Math.max(0, (int) (map.getHeightPx() - visibleH));
         cameraX = clamp(cameraX, 0, maxCamX);
         cameraY = clamp(cameraY, 0, maxCamY);
     }
@@ -285,17 +334,26 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             return;
         }
 
+        canvas.save();
+        canvas.scale(zoom, zoom);
+        // Everything from here on draws in "world" pixels (pre-zoom) -
+        // canvas.scale above already applies the zoom multiplication.
+
         int tileSize = GameMap.TILE_SIZE;
+        float visibleW = canvas.getWidth() / zoom; // canvas dims are still physical px pre-scale-application to our math
+        float visibleH = canvas.getHeight() / zoom;
         int firstCol = Math.max(0, cameraX / tileSize);
         int firstRow = Math.max(0, cameraY / tileSize);
-        int lastCol = Math.min(map.getCols() - 1, (cameraX + canvas.getWidth()) / tileSize + 1);
-        int lastRow = Math.min(map.getRows() - 1, (cameraY + canvas.getHeight()) / tileSize + 1);
+        int lastCol = Math.min(map.getCols() - 1, (int) ((cameraX + visibleW) / tileSize) + 1);
+        int lastRow = Math.min(map.getRows() - 1, (int) ((cameraY + visibleH) / tileSize) + 1);
 
         for (int r = firstRow; r <= lastRow; r++) {
             for (int c = firstCol; c <= lastCol; c++) {
                 drawTile(canvas, r, c, tileSize);
             }
         }
+
+        drawDirectionTiles(canvas, tileSize);
 
         if (goose != null) {
             int screenX = (int) (goose.getX() - cameraX);
@@ -304,7 +362,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             goose.draw(canvas, reusableDst);
         }
 
-        drawTouchRegions(canvas);
+        canvas.restore();
     }
 
     private void drawTile(Canvas canvas, int row, int col, int tileSize) {
@@ -328,25 +386,60 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         // sprite centered on the same reusableDst rect.
     }
 
-    /**
-     * Faint 3x3 grid + a highlight over whichever region is currently
-     * pressed, so the touch controls are visible without needing button
-     * art yet. Safe to delete once you have real on-screen controls.
-     */
-    private void drawTouchRegions(Canvas canvas) {
-        int width = canvas.getWidth();
-        int height = canvas.getHeight();
-        float colWidth = width / 3f;
-        float rowHeight = height / 3f;
-
-        if (touchCol >= 0 && touchRow >= 0) {
-            canvas.drawRect(touchCol * colWidth, touchRow * rowHeight,
-                    (touchCol + 1) * colWidth, (touchRow + 1) * rowHeight, regionHighlightPaint);
+    /** Highlights the (up to) 4 tiles next to the goose and draws a
+     *  placeholder directional glyph on each - tap/hold one to move that
+     *  way. Swap the glyph drawing for real arrow art whenever you have it
+     *  (see the comment inside the loop for exactly where). */
+    private void drawDirectionTiles(Canvas canvas, int tileSize) {
+        if (goose == null) {
+            return;
         }
+        for (int i = 0; i < DIRECTIONS.length; i++) {
+            int dx = DIRECTIONS[i][0];
+            int dy = DIRECTIONS[i][1];
+            int neighborRow = goose.getRow() + dy;
+            int neighborCol = goose.getCol() + dx;
+            if (!map.isInBounds(neighborRow, neighborCol)) {
+                continue;
+            }
 
-        canvas.drawLine(colWidth, 0, colWidth, height, regionGridPaint);
-        canvas.drawLine(2 * colWidth, 0, 2 * colWidth, height, regionGridPaint);
-        canvas.drawLine(0, rowHeight, width, rowHeight, regionGridPaint);
-        canvas.drawLine(0, 2 * rowHeight, width, 2 * rowHeight, regionGridPaint);
+            int left = neighborCol * tileSize - cameraX;
+            int top = neighborRow * tileSize - cameraY;
+            reusableDst.set(left, top, left + tileSize, top + tileSize);
+
+            boolean pressed = touchDx == dx && touchDy == dy;
+            canvas.drawRect(reusableDst, pressed ? arrowTileFillPressedPaint : arrowTileFillPaint);
+
+            // --- Placeholder glyph - replace with real arrow art later ---
+            // e.g.: canvas.drawBitmap(arrowBitmapFor(dx, dy), null, reusableDst, null);
+            drawArrowGlyph(canvas, reusableDst, dx, dy);
+        }
+    }
+
+    private void drawArrowGlyph(Canvas canvas, Rect tile, int dx, int dy) {
+        float pad = tile.width() * 0.28f;
+        float cx = (tile.left + tile.right) / 2f;
+        float cy = (tile.top + tile.bottom) / 2f;
+
+        reusablePath.reset();
+        if (dy < 0) { // up
+            reusablePath.moveTo(cx, tile.top + pad);
+            reusablePath.lineTo(tile.left + pad, tile.bottom - pad);
+            reusablePath.lineTo(tile.right - pad, tile.bottom - pad);
+        } else if (dy > 0) { // down
+            reusablePath.moveTo(cx, tile.bottom - pad);
+            reusablePath.lineTo(tile.left + pad, tile.top + pad);
+            reusablePath.lineTo(tile.right - pad, tile.top + pad);
+        } else if (dx < 0) { // left
+            reusablePath.moveTo(tile.left + pad, cy);
+            reusablePath.lineTo(tile.right - pad, tile.top + pad);
+            reusablePath.lineTo(tile.right - pad, tile.bottom - pad);
+        } else { // right
+            reusablePath.moveTo(tile.right - pad, cy);
+            reusablePath.lineTo(tile.left + pad, tile.top + pad);
+            reusablePath.lineTo(tile.left + pad, tile.bottom - pad);
+        }
+        reusablePath.close();
+        canvas.drawPath(reusablePath, arrowGlyphPaint);
     }
 }
