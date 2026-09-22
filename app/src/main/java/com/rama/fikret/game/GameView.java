@@ -14,16 +14,16 @@ import java.util.EnumMap;
 
 /**
  * The game surface: owns the map, the goose, the camera, and all input.
- *
+ * <p>
  * Movement is an 8-direction hold, fed from two sources that both write into
  * the same dx/dy state:
- *  - Screen touch, split into a 3x3 grid of regions (same numpad layout used
- *    everywhere else in this project: top-right region = up-right, center
- *    region = stand still, etc).
- *  - Keyboard: arrow keys / WASD (combine for diagonals), or the numeric
- *    keypad 1-9 directly (5 = stop) for the same numpad-shaped input on a
- *    physical/emulator keyboard.
- *
+ * - Screen touch, split into a 3x3 grid of regions (same numpad layout used
+ * everywhere else in this project: top-right region = up-right, center
+ * region = stand still, etc).
+ * - Keyboard: arrow keys / WASD (combine for diagonals), or the numeric
+ * keypad 1-9 directly (5 = stop) for the same numpad-shaped input on a
+ * physical/emulator keyboard.
+ * <p>
  * This is deliberately a starting point: one map, one character, a camera
  * that follows the goose and clamps to the map edges. Swap out
  * {@link #buildTestMap()} for your own map data, and this is the place to
@@ -70,16 +70,25 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         loadTileSheets();
     }
 
-    /** Small placeholder map: a grass rectangle using the border tiles
-     *  around the edge and the plain center tile (5) in the middle. Swap
-     *  this out for real map data whenever you're ready. */
+    /**
+     * Small placeholder map: a grass rectangle using the border tiles
+     * around the edge and the plain center tile (5) in the middle. Swap
+     * this out for real map data whenever you're ready.
+     */
     private int[][] buildTestMap() {
         return new int[][]{
-                {7, 8, 8, 8, 8, 9},
-                {4, 5, 5, 5, 5, 6},
-                {4, 5, 5, 5, 5, 6},
-                {4, 5, 5, 5, 5, 6},
-                {1, 2, 2, 2, 2, 3},
+                {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
+                {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
+                {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
+                {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
+                {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
+                {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
+                {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
+                {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
+                {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
+                {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
+                {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
+
         };
     }
 
@@ -216,8 +225,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
-    /** Combines every input source into one held direction, each axis
-     *  clamped to [-1, 1] (Goose normalizes the resulting vector). */
+    /**
+     * Combines every input source into one held direction, each axis
+     * clamped to [-1, 1] (Goose normalizes the resulting vector).
+     */
     private float inputDx() {
         float dx = (keyRight ? 1 : 0) - (keyLeft ? 1 : 0) + numpadDx;
         if (touchCol >= 0) {
@@ -236,8 +247,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
     // --- Update / render -------------------------------------------------
 
-    /** Called from GameThread, off the UI thread - keep this cheap and
-     *  avoid touching Views directly. */
+    /**
+     * Called from GameThread, off the UI thread - keep this cheap and
+     * avoid touching Views directly.
+     */
     public void update(long deltaMs) {
         if (goose == null) {
             return;
@@ -315,9 +328,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         // sprite centered on the same reusableDst rect.
     }
 
-    /** Faint 3x3 grid + a highlight over whichever region is currently
-     *  pressed, so the touch controls are visible without needing button
-     *  art yet. Safe to delete once you have real on-screen controls. */
+    /**
+     * Faint 3x3 grid + a highlight over whichever region is currently
+     * pressed, so the touch controls are visible without needing button
+     * art yet. Safe to delete once you have real on-screen controls.
+     */
     private void drawTouchRegions(Canvas canvas) {
         int width = canvas.getWidth();
         int height = canvas.getHeight();
