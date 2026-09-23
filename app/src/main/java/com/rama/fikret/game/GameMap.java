@@ -44,6 +44,17 @@ public class GameMap {
         return row >= 0 && row < rows && col >= 0 && col < cols;
     }
 
+    /** False if out of bounds, or if the cell's item blocks movement
+     *  (e.g. a stone). Used by Goose (and could be reused by any other
+     *  mover) instead of isInBounds() alone when deciding whether a step
+     *  is allowed. */
+    public boolean isPassable(int row, int col) {
+        if (!isInBounds(row, col)) {
+            return false;
+        }
+        return !cells[row][col].item.blocksMovement;
+    }
+
     public int getRows() {
         return rows;
     }

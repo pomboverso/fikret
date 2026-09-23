@@ -55,7 +55,7 @@ public class Goose {
 
                 int targetRow = row + dy;
                 int targetCol = col + dx;
-                if (map.isInBounds(targetRow, targetCol)) {
+                if (map.isInBounds(targetRow, targetCol) && map.isPassable(targetRow, targetCol)) {
                     fromRow = row;
                     fromCol = col;
                     row = targetRow;

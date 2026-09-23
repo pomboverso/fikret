@@ -1,6 +1,8 @@
 package com.rama.fikret.game;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -15,31 +17,41 @@ import android.view.SurfaceView;
 import java.util.EnumMap;
 
 /**
- * The game surface: owns the map, the goose, the camera/zoom, and all input.
+ * The game surface: owns the map, the goose, the bird, the camera/zoom,
+ * and all input.
  *
  * Movement steps the goose one tile at a time. Primary control is tapping
  * (or holding) one of the 4 tiles directly next to the goose - up/down/left/
  * right - which are drawn highlighted with a placeholder arrow each frame
- * (swap drawDirectionArrow() for real arrow art whenever you have it).
+ * (swap drawArrowGlyph() for real arrow art whenever you have it). A tile
+ * with a blocking item (e.g. a stone) never gets an arrow and Goose itself
+ * refuses to step onto one either way (see GameMap.isPassable()).
  * Keyboard (arrows/WASD) and the numpad (1-9, 5 = stop) still work too,
  * mainly handy for testing on an emulator without touch.
+ *
+ * The bird: if the map has an ItemType.BIRD cell, findBirdSpawn() finds it
+ * once at load time and a Bird entity is spawned there in surfaceCreated().
+ * It stands still until the goose steps onto its tile, then follows one
+ * tile behind for the rest of the stage (see updateBird()/Bird).
  *
  * Pinch-to-zoom is wired up (ScaleGestureDetector, isolated in
  * PinchZoomDetector so it never loads on devices below API 8).
  *
- * This is deliberately a starting point: one map, one character, a camera
- * that follows the goose and clamps to the map edges. Stages live in
- * {@link Maps} - add one there and pass its id to this view's constructor
- * (or via GameActivity.EXTRA_STAGE) to switch maps. This is also the place
- * to add more layers (items, other characters, UI) as you build them out.
+ * This is deliberately a starting point. Stages live in {@link Maps} - add
+ * one there and pass its id to this view's constructor (or via
+ * GameActivity.EXTRA_STAGE) to switch maps.
  */
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
     private GameThread thread;
     private GameMap map;
     private Goose goose;
+    private Bird bird;
     private Stage stage;
+    private int birdSpawnRow = -1, birdSpawnCol = -1;
+    private int lastGooseRow, lastGooseCol;
     private final EnumMap<TileType, SpriteSheet> tileSheets = new EnumMap<TileType, SpriteSheet>(TileType.class);
+    private final EnumMap<ItemType, Bitmap> itemBitmaps = new EnumMap<ItemType, Bitmap>(ItemType.class);
     private final Paint backgroundPaint = new Paint();
     private final Paint arrowTileFillPaint = new Paint();
     private final Paint arrowTileFillPressedPaint = new Paint();
@@ -96,11 +108,47 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         stage = Maps.get(stageId);
         map = new GameMap(stage.tiles);
         loadTileSheets();
+        loadItemBitmaps();
+        findBirdSpawn();
     }
 
     private void loadTileSheets() {
         for (TileType type : TileType.values()) {
-            tileSheets.put(type, new SpriteSheet(getResources(), type.atlasRes, type.atlasColumns, type.atlasRows));
+            if (type == TileType.NONE) {
+                continue;
+            }
+            tileSheets.put(type, new SpriteSheet(getResources(), type.atlasRes, TileType.ATLAS_COLUMNS, TileType.ATLAS_ROWS));
+        }
+    }
+
+    /** Stone/hole/hole-up are plain static images (no direction, no
+     *  animation) - decoded straight to a Bitmap rather than through
+     *  SpriteSheet. BIRD is excluded on purpose: it's a moving entity, not
+     *  something drawn from map data every frame (see findBirdSpawn()). */
+    private void loadItemBitmaps() {
+        BitmapFactory.Options opts = new BitmapFactory.Options();
+        opts.inScaled = false;
+        for (ItemType type : ItemType.values()) {
+            if (type == ItemType.NONE || type == ItemType.BIRD || type.drawableRes == 0) {
+                continue;
+            }
+            Bitmap bitmap = BitmapFactory.decodeResource(getResources(), type.drawableRes, opts);
+            itemBitmaps.put(type, bitmap);
+        }
+    }
+
+    /** Scans the map once for the (first) BIRD item cell - that's where
+     *  surfaceCreated() spawns the actual Bird entity. Supports one bird
+     *  per stage for now; extend this to a list if a stage ever needs more. */
+    private void findBirdSpawn() {
+        for (int r = 0; r < map.getRows(); r++) {
+            for (int c = 0; c < map.getCols(); c++) {
+                if (map.getCell(r, c).item == ItemType.BIRD) {
+                    birdSpawnRow = r;
+                    birdSpawnCol = c;
+                    return;
+                }
+            }
         }
     }
 
@@ -111,6 +159,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         goose = new Goose(getResources(), stage.spawnRow, stage.spawnCol);
+        lastGooseRow = goose.getRow();
+        lastGooseCol = goose.getCol();
+        if (birdSpawnRow >= 0) {
+            bird = new Bird(getResources(), birdSpawnRow, birdSpawnCol);
+        }
         thread = new GameThread(holder, this);
         thread.setRunning(true);
         thread.start();
@@ -185,7 +238,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             int dy = DIRECTIONS[i][1];
             int neighborRow = goose.getRow() + dy;
             int neighborCol = goose.getCol() + dx;
-            if (!map.isInBounds(neighborRow, neighborCol)) {
+            if (!map.isPassable(neighborRow, neighborCol)) {
                 continue;
             }
             float left = neighborCol * GameMap.TILE_SIZE;
@@ -303,7 +356,27 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             return;
         }
         goose.update(deltaMs, resolvedDx(), resolvedDy(), map);
+        updateBird(deltaMs);
         updateCamera();
+    }
+
+    private void updateBird(long deltaMs) {
+        if (bird == null) {
+            return;
+        }
+        // The goose only ever changes tile when it actually took a step
+        // (blocked/out-of-bounds attempts leave it in place) - so this is
+        // exactly "the goose just moved one tile".
+        if (goose.getRow() != lastGooseRow || goose.getCol() != lastGooseCol) {
+            bird.moveTowards(lastGooseRow, lastGooseCol);
+            lastGooseRow = goose.getRow();
+            lastGooseCol = goose.getCol();
+        }
+        bird.update(deltaMs);
+
+        if (!bird.isFollowing() && bird.getRow() == goose.getRow() && bird.getCol() == goose.getCol()) {
+            bird.startFollowing();
+        }
     }
 
     private void updateCamera() {
@@ -355,6 +428,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         drawDirectionTiles(canvas, tileSize);
 
+        if (bird != null) {
+            int bx = (int) (bird.getX() - cameraX);
+            int by = (int) (bird.getY() - cameraY);
+            reusableDst.set(bx, by, bx + tileSize, by + tileSize);
+            bird.draw(canvas, reusableDst);
+        }
+
         if (goose != null) {
             int screenX = (int) (goose.getX() - cameraX);
             int screenY = (int) (goose.getY() - cameraY);
@@ -370,20 +450,39 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (cell == null) {
             return;
         }
-        SpriteSheet sheet = tileSheets.get(cell.tileType);
+
+        if (cell.hasBackground()) {
+            drawTileLayer(canvas, cell.backgroundTile, cell.backgroundPosition, row, col, tileSize);
+        }
+        drawTileLayer(canvas, cell.tile, cell.position, row, col, tileSize);
+
+        // BIRD is drawn as its own moving entity (see render()/Bird), never
+        // as a static per-cell image, even on the tile it spawned on.
+        if (cell.hasItem() && cell.item != ItemType.BIRD) {
+            Bitmap itemBitmap = itemBitmaps.get(cell.item);
+            if (itemBitmap != null) {
+                int screenX = col * tileSize - cameraX;
+                int screenY = row * tileSize - cameraY;
+                reusableDst.set(screenX, screenY, screenX + tileSize, screenY + tileSize);
+                canvas.drawBitmap(itemBitmap, null, reusableDst, null);
+            }
+        }
+    }
+
+    private void drawTileLayer(Canvas canvas, TileType type, int position, int row, int col, int tileSize) {
+        if (type == TileType.NONE) {
+            return;
+        }
+        SpriteSheet sheet = tileSheets.get(type);
         if (sheet == null) {
             return;
         }
 
-        reusableSrc.set(sheet.frameRect(TilePosition.col(cell.position), TilePosition.row(cell.position)));
+        reusableSrc.set(sheet.frameRect(TilePosition.col(position), TilePosition.row(position)));
         int screenX = col * tileSize - cameraX;
         int screenY = row * tileSize - cameraY;
         reusableDst.set(screenX, screenY, screenX + tileSize, screenY + tileSize);
         canvas.drawBitmap(sheet.getBitmap(), reusableSrc, reusableDst, null);
-
-        // Items (cell.itemId) get drawn here as their own layer once there's
-        // item art - e.g. look up an ItemType by cell.itemId and draw its
-        // sprite centered on the same reusableDst rect.
     }
 
     /** Highlights the (up to) 4 tiles next to the goose and draws a
@@ -399,7 +498,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             int dy = DIRECTIONS[i][1];
             int neighborRow = goose.getRow() + dy;
             int neighborCol = goose.getCol() + dx;
-            if (!map.isInBounds(neighborRow, neighborCol)) {
+            if (!map.isPassable(neighborRow, neighborCol)) {
                 continue;
             }
 

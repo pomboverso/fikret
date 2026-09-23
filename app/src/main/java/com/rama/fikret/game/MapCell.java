@@ -1,41 +1,71 @@
 package com.rama.fikret.game;
 
 /**
- * Decodes one raw value from the map creation array into its three parts.
+ * Decodes one raw value from the map creation array. Format is 8 digits,
+ * read left to right as EEDDCBBA (values with fewer digits are padded with
+ * leading zeros first, so plain old short codes still work):
  *
- * Format: {@code [item digits][tile type digit][position digit]}
- * <ul>
- *   <li><b>position</b> (ones digit, 1-9): which of the 9 tiles in the
- *   atlas to draw, addressed like a numpad (see {@link TileType}).
- *   5 = plain center tile.</li>
- *   <li><b>tileType</b> (tens digit, 0-9): which biome, see {@link TileType}.
- *   If the whole value is a single digit (&lt; 10) there's no tens digit, so
- *   it defaults to the first registered tile type (grass). That's what
- *   makes a quick test map like {@code [[1,1,1],[1,1,1]]} render as
- *   all-grass with the "1" read purely as a position.</li>
- *   <li><b>itemId</b> (hundreds digit and up, {@code value / 100}): an
- *   item/decoration sitting on top of the tile, 0 = none. Deliberately left
- *   as "everything above the tens digit" instead of a fixed single digit,
- *   so the item id space can grow past 9 (into the thousands, etc.) later
- *   without changing this format.</li>
- * </ul>
+ * <pre>
+ * E (2 digits) - item, see ItemType. 00 = none.
+ * D (2 digits) - background tile, see TileType. 00 = no background layer.
+ * C (1 digit)  - background tile's numpad position (1-9, see TilePosition).
+ * B (2 digits) - (foreground) tile, see TileType.
+ * A (1 digit)  - tile's numpad position (1-9, see TilePosition).
+ * </pre>
  *
- * Example: {@code 111} -&gt; position 1 (bottom-left), type 1 (grass),
- * item 1 (e.g. a rock).
+ * The background layer is drawn first, the tile drawn on top of it, then
+ * the item on top of both - so a corner/edge piece of the foreground tile
+ * (e.g. a water shoreline) can let the background show through wherever
+ * its art doesn't fully cover the cell.
+ *
+ * Example: {@code 00015029} -&gt; no item, grass background (middle),
+ * water tile (top-right corner).
+ * Example: {@code 01000015} -&gt; a stone sitting on plain grass.
  */
 public class MapCell {
+    public final ItemType item;
+    public final TileType backgroundTile;
+    public final int backgroundPosition;
+    public final TileType tile;
     public final int position;
-    public final TileType tileType;
-    public final int itemId;
 
     public MapCell(int rawValue) {
-        this.position = rawValue % 10;
-        int typeDigit = (rawValue / 10) % 10;
-        this.tileType = TileType.fromId(typeDigit);
-        this.itemId = rawValue / 100;
+        String digits = padTo8(rawValue);
+        int e = Integer.parseInt(digits.substring(0, 2));
+        int d = Integer.parseInt(digits.substring(2, 4));
+        int c = Integer.parseInt(digits.substring(4, 5));
+        int b = Integer.parseInt(digits.substring(5, 7));
+        int a = Integer.parseInt(digits.substring(7, 8));
+
+        this.item = ItemType.fromId(e);
+        this.backgroundTile = TileType.fromId(d);
+        this.backgroundPosition = sanitizePosition(c);
+        this.tile = TileType.fromId(b);
+        this.position = sanitizePosition(a);
+    }
+
+    /** Numpad positions only mean something in 1-9; treat 0 (or anything
+     *  stray) as the plain center tile rather than letting a bad digit
+     *  produce a wrapped-around/negative atlas lookup. */
+    private static int sanitizePosition(int p) {
+        return (p < 1 || p > 9) ? 5 : p;
+    }
+
+    private static String padTo8(int value) {
+        String s = Integer.toString(Math.max(value, 0));
+        StringBuilder sb = new StringBuilder();
+        for (int i = s.length(); i < 8; i++) {
+            sb.append('0');
+        }
+        sb.append(s);
+        return sb.toString();
+    }
+
+    public boolean hasBackground() {
+        return backgroundTile != TileType.NONE;
     }
 
     public boolean hasItem() {
-        return itemId > 0;
+        return item != ItemType.NONE;
     }
 }
