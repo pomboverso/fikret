@@ -1,6 +1,9 @@
 package com.rama.fikret.game;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Random;
 
 public final class Maps {
     private Maps() {
@@ -16,6 +19,77 @@ public final class Maps {
             default:
                 throw new IllegalArgumentException("Unknown stage id: " + stageId);
         }
+    }
+
+    private static int randomizedItems(
+            int[][] tiles,
+            int item,
+            int maxCount,
+            int minDistance,
+            int startY,
+            int endY,
+            int startX,
+            int endX,
+            int... allowedTiles
+    ) {
+        ArrayList<int[]> candidates = new ArrayList<>();
+        ArrayList<int[]> placedPositions = new ArrayList<>();
+
+        for (int y = startY; y < endY; y++) {
+            for (int x = startX; x < endX; x++) {
+
+                boolean allowed = false;
+
+                for (int tile : allowedTiles) {
+                    if (tiles[y][x] == tile) {
+                        allowed = true;
+                        break;
+                    }
+                }
+
+                if (allowed) {
+                    candidates.add(new int[]{y, x});
+                }
+            }
+        }
+
+        // Randomize candidates
+        Collections.shuffle(candidates);
+
+        // Place items
+        for (int[] pos : candidates) {
+
+            int y = pos[0];
+            int x = pos[1];
+
+            boolean tooClose = false;
+
+            if (minDistance > 0) {
+                for (int[] placed : placedPositions) {
+
+                    int distance = Math.max(
+                            Math.abs(y - placed[0]),
+                            Math.abs(x - placed[1])
+                    );
+
+                    if (distance < minDistance) {
+                        tooClose = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!tooClose) {
+                tiles[y][x] += item;
+                placedPositions.add(new int[]{y, x});
+            }
+
+            if (placedPositions.size() >= maxCount) {
+                break;
+            }
+        }
+
+        return placedPositions.size();
     }
 
     private static Stage meadow() {
@@ -193,31 +267,30 @@ public final class Maps {
         tiles[29][28] = 15;
         tiles[29][29] = 15;
 
-        // Stones
-        tiles[1][3] += stone;
-        tiles[4][9] += stone;
-        tiles[6][21] += stone;
-        tiles[8][7] += stone;
-        tiles[9][26] += stone;
-        tiles[12][1] += stone;
-        tiles[14][9] += stone;
-        tiles[15][24] += stone;
-        tiles[17][7] += stone;
-        tiles[19][18] += stone;
-        tiles[21][2] += stone;
-        tiles[22][16] += stone;
-        tiles[25][5] += stone;
-        tiles[27][16] += stone;
-
         tiles[27][28] += hole_down;
 
-        tiles[26][27] += tree;
-        tiles[26][28] += tree;
-        tiles[26][29] += tree;
-        tiles[28][27] += tree;
-        tiles[28][28] += tree;
-        tiles[28][29] += tree;
-        tiles[27][29] += tree;
+        int treeMax = 50;
+        int stoneMax = 10;
+
+        randomizedItems(
+                tiles,
+                tree,
+                treeMax,
+                2,
+                2, 28,
+                2, 28,
+                35, 15
+        );
+
+        randomizedItems(
+                tiles,
+                stone,
+                stoneMax,
+                1,
+                2, 28,
+                2, 28,
+                35, 15
+        );
 
         return new Stage(tiles, 2, 2);
     }
