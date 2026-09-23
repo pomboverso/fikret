@@ -6,19 +6,76 @@ import java.util.Collections;
 import java.util.Random;
 
 public final class Maps {
+    static int stone = 1000000;
+    static int hole_down = 2000000;
+    static int hole_up = 3000000;
+    static int bird = 4000000;
+    static int plant = 5000000;
+    static int beach_plant = 6000000;
+
+    static int grass = 10;
+    static int deep_grass = 50;
+
     private Maps() {
     }
 
-    public static final int MEADOW = 0;
+    public static final int BEACH = 0;
+    public static final int FOREST = 1;
     // public static final int NEXT_STAGE = 1;
 
     public static Stage get(int stageId) {
         switch (stageId) {
-            case MEADOW:
-                return meadow();
+            case BEACH:
+                return beach();
+            case FOREST:
+                return forest();
             default:
                 throw new IllegalArgumentException("Unknown stage id: " + stageId);
         }
+    }
+
+    private static int drawItemLine(
+            int[][] tiles,
+            int item,
+            int startY,
+            int startX,
+            int endY,
+            int endX,
+            int... allowedTiles
+    ) {
+        int dy = Integer.compare(endY, startY);
+        int dx = Integer.compare(endX, startX);
+
+        int y = startY;
+        int x = startX;
+        int count = 0;
+
+        while (true) {
+            boolean allowed = false;
+
+            for (int tile : allowedTiles) {
+                if (tiles[y][x] == tile) {
+                    allowed = true;
+                    break;
+                }
+            }
+
+            if (!allowed) {
+                break;
+            }
+
+            tiles[y][x] += item;
+            count++;
+
+            if (y == endY && x == endX) {
+                break;
+            }
+
+            y += dy;
+            x += dx;
+        }
+
+        return count;
     }
 
     private static int randomizedItems(
@@ -92,13 +149,7 @@ public final class Maps {
         return placedPositions.size();
     }
 
-    private static Stage meadow() {
-        int stone = 1000000;
-        int hole_down = 2000000;
-        int hole_up = 3000000;
-        int bird = 4000000;
-        int tree = 5000000;
-
+    private static Stage beach() {
         int[][] tiles = new int[30][30];
         for (int y = 0; y < 30; y++) {
             Arrays.fill(tiles[y], 35);
@@ -269,28 +320,89 @@ public final class Maps {
 
         tiles[27][28] += hole_down;
 
-        int treeMax = 50;
-        int stoneMax = 10;
+//        int birdMax = 20;
+
+//        randomizedItems(
+//                tiles,
+//                bird,
+//                birdMax,
+//                2,
+//                2, 28,
+//                2, 28,
+//                35021, 35022, 35023, 35024, 25, 35026, 35027, 35028, 35029
+//        );
 
         randomizedItems(
                 tiles,
-                tree,
-                treeMax,
+                plant,
+                40,
                 2,
                 2, 28,
                 2, 28,
-                35, 15
+                15, 35
+        );
+
+        randomizedItems(
+                tiles,
+                beach_plant,
+                10,
+                2,
+                2, 28,
+                2, 28,
+                35
         );
 
         randomizedItems(
                 tiles,
                 stone,
-                stoneMax,
+                10,
                 1,
                 2, 28,
                 2, 28,
-                35, 15
+                35
         );
+
+        return new Stage(tiles, 2, 2);
+    }
+
+    private static Stage forest() {
+        int[][] tiles = new int[30][30];
+        for (int y = 0; y < 30; y++) {
+            Arrays.fill(tiles[y], 55);
+        }
+
+        randomizedItems(
+                tiles,
+                -deep_grass + grass,
+                350,
+                1,
+                2, 28,
+                2, 28,
+                55
+        );
+
+        drawItemLine(tiles, stone, 5, 5, 5, 24, 55, 15);
+
+        randomizedItems(
+                tiles,
+                plant,
+                40,
+                2,
+                2, 28,
+                2, 28,
+                55, 15
+        );
+
+//        randomizedItems(
+//                tiles,
+//                stone,
+//                10,
+//                1,
+//                2, 28,
+//                2, 28,
+//                55, 15
+//        );
+
 
         return new Stage(tiles, 2, 2);
     }

@@ -8,7 +8,9 @@ public enum ItemType {
     HOLE_DOWN(2, R.drawable.hole, false),
     HOLE_UP(3, R.drawable.hole_up, false),
     BIRD(4, 0, false),
-    TREE(5, R.drawable.tree, false);
+    PLANT(5, R.drawable.plant, false),
+    BEACH_PLANT(6, R.drawable.beach_plant, false),
+    TREE(7, R.drawable.tree, false);
 
     public final int id;
     public final int drawableRes;
