@@ -165,8 +165,50 @@ public final class Maps {
         tiles[27][12] = 35022;
         tiles[27][13] = 35023;
 
-        // Stones
+        // Grass
+        tiles[24][26] = 25017;
+        tiles[24][27] = 25019;
+        tiles[24][29] = 25017;
+        tiles[25][25] = 25017;
+        tiles[25][26] = 15;
+        tiles[25][27] = 15;
+        tiles[25][28] = 25018;
+        tiles[25][29] = 15;
+        tiles[26][25] = 25011;
+        tiles[26][26] = 15;
+        tiles[26][27] = 15;
+        tiles[26][28] = 15;
+        tiles[26][29] = 25015;
+        tiles[27][26] = 25014;
+        tiles[27][27] = 15;
+        tiles[27][28] = 15;
+        tiles[27][29] = 15;
+        tiles[28][26] = 25014;
+        tiles[28][27] = 15;
+        tiles[28][28] = 15;
+        tiles[28][29] = 15;
+        tiles[29][26] = 25014;
+        tiles[29][27] = 15;
+        tiles[29][28] = 15;
+        tiles[29][29] = 15;
 
+        // Stones
+        tiles[1][3] += stone;
+        tiles[4][9] += stone;
+        tiles[6][21] += stone;
+        tiles[8][7] += stone;
+        tiles[9][26] += stone;
+        tiles[12][1] += stone;
+        tiles[14][9] += stone;
+        tiles[15][24] += stone;
+        tiles[17][7] += stone;
+        tiles[19][18] += stone;
+        tiles[21][2] += stone;
+        tiles[22][16] += stone;
+        tiles[25][5] += stone;
+        tiles[27][16] += stone;
+
+        tiles[27][28] += hole_down;
 
         return new Stage(tiles, 2, 2);
     }
