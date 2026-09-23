@@ -10,7 +10,7 @@ public enum ItemType {
     BIRD(4, 0, false),
     PLANT(5, R.drawable.plant, false),
     BEACH_PLANT(6, R.drawable.beach_plant, false),
-    TREE(7, R.drawable.tree, false);
+    TREE(7, R.drawable.tree, true);
 
     public final int id;
     public final int drawableRes;

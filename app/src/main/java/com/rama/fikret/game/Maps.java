@@ -12,6 +12,7 @@ public final class Maps {
     static int bird = 4000000;
     static int plant = 5000000;
     static int beach_plant = 6000000;
+    static int tree = 7000000;
 
     static int grass = 10;
     static int deep_grass = 50;
@@ -381,7 +382,16 @@ public final class Maps {
                 55
         );
 
-        drawItemLine(tiles, stone, 5, 5, 5, 24, 55, 15);
+        drawItemLine(tiles, tree, 0, 5, 15, 5, 55, 15);
+        drawItemLine(tiles, tree, 17, 5, 25, 5, 55, 15);
+        drawItemLine(tiles, tree, 26, 0, 26, 2, 55, 15);
+        drawItemLine(tiles, tree, 26, 4, 26, 10, 55, 15);
+        drawItemLine(tiles, tree, 29, 11, 28, 11, 55, 15);
+        drawItemLine(tiles, tree, 26, 11, 0, 11, 55, 15);
+        drawItemLine(tiles, tree, 29, 20, 5, 20, 55, 15);
+        drawItemLine(tiles, tree, 3, 20, 0, 20, 55, 15);
+
+        tiles[26][25] += bird;
 
         randomizedItems(
                 tiles,
@@ -402,7 +412,6 @@ public final class Maps {
 //                2, 28,
 //                55, 15
 //        );
-
 
         return new Stage(tiles, 2, 2);
     }
