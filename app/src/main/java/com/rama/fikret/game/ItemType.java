@@ -7,7 +7,8 @@ public enum ItemType {
     STONE(1, R.drawable.stone, true),
     HOLE_DOWN(2, R.drawable.hole, false),
     HOLE_UP(3, R.drawable.hole_up, false),
-    BIRD(4, 0, false);
+    BIRD(4, 0, false),
+    TREE(5, R.drawable.tree, false);
 
     public final int id;
     public final int drawableRes;

@@ -23,6 +23,7 @@ public final class Maps {
         int hole_down = 2000000;
         int hole_up = 3000000;
         int bird = 4000000;
+        int tree = 5000000;
 
         int[][] tiles = new int[30][30];
         for (int y = 0; y < 30; y++) {
@@ -209,6 +210,10 @@ public final class Maps {
         tiles[27][16] += stone;
 
         tiles[27][28] += hole_down;
+
+        tiles[25][28] += tree;
+        tiles[26][29] += tree;
+        tiles[26][27] += tree;
 
         return new Stage(tiles, 2, 2);
     }
