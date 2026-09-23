@@ -23,7 +23,7 @@ import com.rama.fikret.R;
  * GameView reads this list to know what to load.
  */
 public enum TileType {
-    GRASS(1, R.drawable.gm_grass, 3, 3);
+    GRASS(1, R.drawable.grass, 3, 3);
 
     public final int id;
     public final int atlasRes;

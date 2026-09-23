@@ -19,50 +19,39 @@ import com.rama.fikret.R;
  *   row 2, row 3 - the two walk-cycle poses, alternated while stepping.
  */
 public class Goose {
-    private static final int ATLAS_COLUMNS = 4;
+    private static final int ATLAS_COLUMNS = 2;
     private static final int ATLAS_ROWS = 4;
-    private static final long STEP_DURATION_MS = 160; // time to glide across one tile
+    private static final long STEP_DURATION_MS = 200;
     private static final long WALK_FRAME_DURATION_MS = 80;
-
     private static final int FRAME_REST = 0;
     private static final int FRAME_IDLE = 1;
     private static final int FRAME_WALK_A = 2;
     private static final int FRAME_WALK_B = 3;
-
     private final SpriteSheet spriteSheet;
-
-    // Grid position the goose is stepping FROM and TO. Equal when standing still.
     private int fromRow, fromCol;
     private int row, col;
-    private float stepProgress = 1f; // 0 = at fromRow/fromCol, 1 = at row/col
-
-    private Direction facing = Direction.DOWN;
+    private float stepProgress = 1f;
+    private Direction facing = Direction.RIGHT;
     private boolean moving = false;
     private boolean resting = false;
     private boolean walkToggle = false;
     private long walkAnimTimer = 0;
 
     public Goose(Resources res, int startRow, int startCol) {
-        this.spriteSheet = new SpriteSheet(res, R.drawable.gm_goose, ATLAS_COLUMNS, ATLAS_ROWS);
+        this.spriteSheet = new SpriteSheet(res, R.drawable.goose, ATLAS_COLUMNS, ATLAS_ROWS);
         this.row = this.fromRow = startRow;
         this.col = this.fromCol = startCol;
     }
 
-    /**
-     * Advances the goose by one frame. dx/dy is the currently held
-     * direction already resolved down to a single cardinal step by the
-     * caller: exactly one of them is -1, 0, or 1, never both nonzero at
-     * once (see GameView, which collapses 8-directional input to 4 before
-     * calling this).
-     */
     public void update(long deltaMs, int dx, int dy, GameMap map) {
         if (!moving) {
             if (resting) {
                 return;
             }
             if (dx != 0 || dy != 0) {
-                facing = dx > 0 ? Direction.RIGHT : dx < 0 ? Direction.LEFT
-                        : dy > 0 ? Direction.DOWN : Direction.UP;
+                if(dx != 0){
+                    facing = dx < 0 ? Direction.LEFT : Direction.RIGHT;
+                }
 
                 int targetRow = row + dy;
                 int targetCol = col + dx;
@@ -74,9 +63,6 @@ public class Goose {
                     stepProgress = 0f;
                     moving = true;
                 }
-                // else: bumped the edge of the map - just faces that way
-                // without moving. A passability check (water, obstacles...)
-                // belongs right here too, once those tiles exist.
             }
         }
 
@@ -97,10 +83,6 @@ public class Goose {
         }
     }
 
-    /** Call when the goose enters/leaves water or falls asleep - while true,
-     *  it holds the legs-tucked-in resting pose and ignores movement input.
-     *  Not driven by anything yet (no water tiles/sleep trigger exist),
-     *  wire this up once those features land. */
     public void setResting(boolean resting) {
         this.resting = resting;
     }
@@ -111,7 +93,6 @@ public class Goose {
         canvas.drawBitmap(spriteSheet.getBitmap(), src, dst, null);
     }
 
-    /** World-space pixel position, interpolated between tiles mid-step. */
     public float getX() {
         return lerp(fromCol, col) * GameMap.TILE_SIZE;
     }
