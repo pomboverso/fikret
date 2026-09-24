@@ -38,6 +38,11 @@ public final class Maps {
     public static final int FOREST = 1;
     public static final int CAVE = 2;
     public static final int VOLCAN = 3;
+    public static final int NUCLEAR = 4;
+    public static final int ARTIC = 5;
+    public static final int BUBBLEGUM_LAND = 6;
+    public static final int SPACE = 7;
+    public static final int NIGHTMARE = 8;
     // public static final int NEXT_STAGE = 1;
 
     public static Stage get(int stageId) {
@@ -50,16 +55,26 @@ public final class Maps {
                 return cave();
             case VOLCAN:
                 return volcan();
+            case NUCLEAR:
+                return nuclear();
+            case ARTIC:
+                return artic();
+            case BUBBLEGUM_LAND:
+                return bubblegum_land();
+            case SPACE:
+                return space();
+            case NIGHTMARE:
+                return nightmare();
             default:
                 throw new IllegalArgumentException("Unknown stage id: " + stageId);
         }
     }
 
     private static final int[][] POND_1 = {
-            {0,7,0},
-            {7,5,9},
-            {4,-5,6},
-            {1,2,3},
+            {0, 7, 0},
+            {7, 5, 9},
+            {4, -5, 6},
+            {1, 2, 3},
     };
 
     private static final int[][] POND_2 = {
@@ -101,9 +116,22 @@ public final class Maps {
     };
 
     private static final int[][] POND_6 = {
-            {7,8,9},
-            {4,5,6},
-            {1,2,3},
+            {7, 8, 9},
+            {4, 5, 6},
+            {1, 2, 3},
+    };
+
+    private static final int[][] POND_7 = {
+            {7,8,9,0,0,0,0,0,7,8,8,8,8,8,9},
+            {4,5,5,8,8,8,8,8,5,5,5,5,5,3,0},
+            {1,5,5,5,5,5,5,5,5,5,5,5,6,0,0},
+            {0,1,5,5,5,5,5,5,5,5,5,5,5,8,9},
+            {0,0,4,5,5,5,5,5,5,5,5,5,5,5,6},
+            {0,0,4,5,5,5,5,5,5,5,5,5,5,2,3},
+            {0,0,4,5,5,5,5,5,5,5,5,5,6,0,0},
+            {0,7,5,5,5,5,5,5,5,5,5,5,6,0,0},
+            {7,5,5,5,5,5,5,2,2,2,5,5,5,9,0},
+            {1,2,2,2,2,2,3,0,0,0,1,2,2,2,3},
     };
 
     private static int tile(
@@ -567,6 +595,329 @@ public final class Maps {
                 POND_4,
                 VOLCANIC_SOIL
         );
+
+        return new Stage(tiles, 2, 2);
+    }
+
+    private static Stage nuclear() {
+        int[][] tiles = new int[30][30];
+        for (int y = 0; y < 30; y++) {
+            Arrays.fill(tiles[y], 125);
+        }
+
+        drawPond(
+                tiles,
+                0,
+                0,
+                ACID_LAKE,
+                POND_3,
+                ACID_SOIL
+        );
+
+        tiles[1][2] = hole_up + 115;
+
+        drawPond(
+                tiles,
+                11,
+                14,
+                ACID_LAKE,
+                POND_2,
+                ACID_SOIL
+        );
+
+        tiles[13][16] = hole_down + 115;
+
+        drawPond(
+                tiles,
+                23,
+                23,
+                ACID_LAKE,
+                POND_3,
+                ACID_SOIL
+        );
+        tiles[26][25] = hole_down + 115;
+
+        drawPond(
+                tiles,
+                10,
+                4,
+                ACID_LAKE,
+                POND_4,
+                ACID_SOIL
+        );
+
+        drawPond(
+                tiles,
+                22,
+                2,
+                ACID_LAKE,
+                POND_3,
+                ACID_SOIL
+        );
+
+        drawPond(
+                tiles,
+                2,
+                20,
+                ACID_LAKE,
+                POND_6,
+                ACID_SOIL
+        );
+
+        drawPond(
+                tiles,
+                24,
+                13,
+                ACID_LAKE,
+                POND_1,
+                ACID_SOIL
+        );
+
+        return new Stage(tiles, 2, 2);
+    }
+
+    private static Stage artic() {
+        int[][] tiles = new int[30][30];
+        for (int y = 0; y < 30; y++) {
+            Arrays.fill(tiles[y], 75);
+        }
+
+        drawPond(
+                tiles,
+                0,
+                0,
+                SNOW,
+                POND_3,
+                WATER,
+                DEEP_WATER
+        );
+
+        drawPond(
+                tiles,
+                11,
+                14,
+                SNOW,
+                POND_2,
+                ICE
+        );
+
+        drawPond(
+                tiles,
+                23,
+                23,
+                SNOW,
+                POND_3,
+                ICE
+        );
+
+        drawPond(
+                tiles,
+                10,
+                4,
+                SNOW,
+                POND_4,
+                ICE
+        );
+
+        drawPond(
+                tiles,
+                22,
+                2,
+                SNOW,
+                POND_3,
+                ICE
+        );
+
+        drawPond(
+                tiles,
+                2,
+                20,
+                SNOW,
+                POND_6,
+                ICE
+        );
+
+        drawPond(
+                tiles,
+                24,
+                13,
+                SNOW,
+                POND_1,
+                ICE
+        );
+
+        return new Stage(tiles, 2, 2);
+    }
+
+    private static Stage bubblegum_land() {
+        int[][] tiles = new int[30][30];
+        for (int y = 0; y < 30; y++) {
+            Arrays.fill(tiles[y], 145);
+        }
+
+        drawPond(
+                tiles,
+                0,
+                0,
+                BUBBLEGUM_LAKE,
+                POND_3,
+                BUBBLEGUM
+        );
+
+        drawPond(
+                tiles,
+                11,
+                14,
+                BUBBLEGUM_LAKE,
+                POND_2,
+                BUBBLEGUM
+        );
+
+        drawPond(
+                tiles,
+                23,
+                23,
+                BUBBLEGUM_LAKE,
+                POND_3,
+                BUBBLEGUM
+        );
+
+        drawPond(
+                tiles,
+                10,
+                4,
+                BUBBLEGUM_LAKE,
+                POND_4,
+                BUBBLEGUM
+        );
+
+        drawPond(
+                tiles,
+                22,
+                2,
+                BUBBLEGUM_LAKE,
+                POND_3,
+                BUBBLEGUM
+        );
+
+        drawPond(
+                tiles,
+                2,
+                20,
+                BUBBLEGUM_LAKE,
+                POND_6,
+                BUBBLEGUM
+        );
+
+        drawPond(
+                tiles,
+                24,
+                13,
+                BUBBLEGUM_LAKE,
+                POND_1,
+                BUBBLEGUM
+        );
+
+        tiles[1][2] = hole_up + 135;
+        tiles[13][16] = hole_down + 135;
+        tiles[26][25] = hole_down + 135;
+
+        return new Stage(tiles, 2, 2);
+    }
+
+    private static Stage space() {
+        int[][] tiles = new int[30][30];
+        for (int y = 0; y < 30; y++) {
+            Arrays.fill(tiles[y], 155);
+        }
+
+        drawPond(
+                tiles,
+                11,
+                14,
+                SPACE_SOIL,
+                POND_2,
+                SPACE_LAKE
+        );
+
+        drawPond(
+                tiles,
+                23,
+                23,
+                SPACE_SOIL,
+                POND_3,
+                VOLCANIC_SOIL
+        );
+
+        drawPond(
+                tiles,
+                10,
+                4,
+                SPACE_SOIL,
+                POND_4,
+                SPACE_LAKE
+        );
+
+        drawPond(
+                tiles,
+                22,
+                2,
+                SPACE_SOIL,
+                POND_3,
+                SPACE_LAKE
+        );
+
+        drawPond(
+                tiles,
+                2,
+                20,
+                SPACE_SOIL,
+                POND_6,
+                SPACE_LAKE
+        );
+
+        drawPond(
+                tiles,
+                24,
+                13,
+                SPACE_SOIL,
+                POND_1,
+                SPACE_LAKE
+        );
+
+        tiles[1][2] = hole_up + 155;
+        tiles[13][16] = hole_down + 165;
+        tiles[26][25] = hole_down + 95;
+
+        return new Stage(tiles, 2, 2);
+    }
+
+
+    private static Stage nightmare() {
+        int[][] tiles = new int[30][30];
+        for (int y = 0; y < 30; y++) {
+            Arrays.fill(tiles[y], 175);
+        }
+
+        drawPond(
+                tiles,
+                0,
+                0,
+                BLOOD_LAKE,
+                POND_3,
+                VOLCANIC_SOIL
+        );
+
+        drawPond(
+                tiles,
+                11,
+                11,
+                BLOOD_LAKE,
+                POND_7,
+                VOLCANIC_SOIL
+        );
+
+        tiles[1][2] = hole_up + 95;
 
         return new Stage(tiles, 2, 2);
     }
