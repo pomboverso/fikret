@@ -10,7 +10,12 @@ public enum ItemType {
     BIRD(4, 0, false),
     PLANT(5, R.drawable.plant, false),
     BEACH_PLANT(6, R.drawable.beach_plant, false),
-    TREE(7, R.drawable.tree, true);
+    TREE(7, R.drawable.tree, true),
+    WALL_FOREST(8, R.drawable.wall_forest, true),
+    WALL_CAVE(9, R.drawable.wall_cave, true),
+    WALL_VOLCAN(10, R.drawable.wall_volcan, true),
+    WALL_NUCLEAR(11, R.drawable.wall_nuclear, true),
+    WALL_ARTIC(12, R.drawable.wall_artic, true);
 
     public final int id;
     public final int drawableRes;

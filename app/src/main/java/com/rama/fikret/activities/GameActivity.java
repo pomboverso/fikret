@@ -30,7 +30,7 @@ public class GameActivity extends Activity {
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
-        int stageId = getIntent().getIntExtra(EXTRA_STAGE, Maps.NIGHTMARE);
+        int stageId = getIntent().getIntExtra(EXTRA_STAGE, Maps.BUBBLEGUM_LAND);
         gameView = new GameView(this, stageId);
         setContentView(gameView);
         gameView.requestFocus();

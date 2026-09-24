@@ -78,7 +78,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private int touchDx, touchDy;
 
     public GameView(Context context) {
-        this(context, Maps.NIGHTMARE);
+        this(context, Maps.BUBBLEGUM_LAND);
     }
 
     public GameView(Context context, int stageId) {
