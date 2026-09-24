@@ -3,7 +3,6 @@ package com.rama.fikret.game;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Random;
 
 public final class Maps {
     static int stone = 1000000;
@@ -14,13 +13,23 @@ public final class Maps {
     static int beach_plant = 6000000;
     static int tree = 7000000;
 
-    static int grass = 10;
-    static int water = 20;
-    static int sand = 30;
-    static int soil = 40;
-    static int deep_grass = 50;
-    static int deep_water = 60;
-    static int volcanic_soil = 90;
+    static final int GRASS = 1;
+    static final int WATER = 2;
+    static final int SAND = 3;
+    static final int SOIL = 4;
+    static final int DEEP_GRASS = 5;
+    static final int DEEP_WATER = 6;
+    static final int SNOW = 7;
+    static final int ICE = 8;
+    static final int VOLCANIC_SOIL = 9;
+    static final int LAVA = 10;
+    static final int ACID_SOIL = 11;
+    static final int ACID_LAKE = 12;
+    static final int BUBBLEGUM = 13;
+    static final int BUBBLEGUM_LAKE = 14;
+    static final int SPACE_SOIL = 15;
+    static final int SPACE_LAKE = 16;
+    static final int BLOOD_LAKE = 17;
 
     private Maps() {
     }
@@ -28,6 +37,7 @@ public final class Maps {
     public static final int BEACH = 0;
     public static final int FOREST = 1;
     public static final int CAVE = 2;
+    public static final int VOLCAN = 3;
     // public static final int NEXT_STAGE = 1;
 
     public static Stage get(int stageId) {
@@ -38,8 +48,119 @@ public final class Maps {
                 return forest();
             case CAVE:
                 return cave();
+            case VOLCAN:
+                return volcan();
             default:
                 throw new IllegalArgumentException("Unknown stage id: " + stageId);
+        }
+    }
+
+    private static final int[][] POND_1 = {
+            {0,7,0},
+            {7,5,9},
+            {4,5,6},
+            {1,2,3},
+    };
+
+    private static final int[][] POND_2 = {
+            {0, 7, 8, 9},
+            {0, 4, 5, 6},
+            {7, 5, -5, 6},
+            {1, 5, -5, 6},
+            {0, 1, 2, 3}
+    };
+
+    private static final int[][] POND_3 = {
+            {0, 7, 8, 8, 9},
+            {0, 4, 5, 5, 6},
+            {7, 5, -5, -5, 6},
+            {1, 5, 5, -5, 6},
+            {0, 1, 5, 5, 3},
+            {0, 0, 1, 3, 0}
+    };
+
+    private static final int[][] POND_4 = {
+            {0, 0, 7, 9, 0},
+            {0, 0, 4, 5, 9},
+            {7, 8, 5, 5, 6},
+            {4, 5, -5, -5, 6},
+            {1, 2, 5, 5, 3},
+            {0, 0, 1, 3, 0}
+    };
+
+    private static final int[][] POND_5 = {
+            {0, 0, 7, 9, 0, 0},
+            {0, 7, 5, 5, 9, 0},
+            {7, 5, 5, 5, 6, 0},
+            {4, 5, -5, -5, 6, 0},
+            {4, 5, -5, -5, 6, 0},
+            {4, 5, -5, -5, 5, 9},
+            {4, 5, -5, -5, 5, 3},
+            {1, 2, 5, 5, 3, 0},
+            {0, 0, 1, 3, 0, 0}
+    };
+
+    private static final int[][] POND_6 = {
+            {7,8,9},
+            {4,5,6},
+            {1,2,3},
+    };
+
+    private static int tile(
+            int item,
+            int backgroundTile,
+            int backgroundDirection,
+            int foregroundTile,
+            int direction
+    ) {
+        return item * 1_000_000
+                + backgroundTile * 10_000
+                + backgroundDirection * 1_000
+                + foregroundTile * 10
+                + direction;
+    }
+
+    private static void drawPond(
+            int[][] tiles,
+            int startY,
+            int startX,
+            int backgroundTile,
+            int[][] shape,
+            int... internalTiles
+    ) {
+        int primaryTile = internalTiles.length > 0
+                ? internalTiles[0]
+                : backgroundTile;
+
+        int secondaryTile = internalTiles.length > 1
+                ? internalTiles[1]
+                : primaryTile;
+
+        for (int y = 0; y < shape.length; y++) {
+            for (int x = 0; x < shape[y].length; x++) {
+
+                int value = shape[y][x];
+
+                if (value == 0) {
+                    continue;
+                }
+
+                boolean secondary = value < 0;
+                int direction = Math.abs(value);
+
+                int foregroundTile = secondary
+                        ? secondaryTile
+                        : primaryTile;
+
+                tiles[startY + y][startX + x] =
+                        tile(
+                                0,
+                                backgroundTile,
+                                5,
+                                foregroundTile,
+                                direction
+                        );
+            }
         }
     }
 
@@ -391,33 +512,33 @@ public final class Maps {
 
         tiles[1][2] += hole_up;
 
-        tiles[21][8] = 47;
-        tiles[22][7] = 47;
+        tiles[21][8] = 55047;
+        tiles[22][7] = 55047;
         tiles[22][8] = 45;
-        tiles[22][9] = 49;
-        tiles[23][7] = 44;
+        tiles[22][9] = 55049;
+        tiles[23][7] = 55044;
         tiles[23][8] = hole_down + 45;
         tiles[23][9] = 45;
-        tiles[23][10] = 49;
-        tiles[24][7] = 41;
-        tiles[24][8] = 42;
-        tiles[24][9] = 42;
-        tiles[24][10] = 43;
+        tiles[23][10] = 55049;
+        tiles[24][7] = 55041;
+        tiles[24][8] = 55042;
+        tiles[24][9] = 55042;
+        tiles[24][10] = 55043;
 
-        tiles[25][24] = 47;
-        tiles[25][25] = 48;
-        tiles[25][26] = 49;
-        tiles[26][24] = 44;
-        tiles[26][25] = bird + 45;
-        tiles[26][26] = 46;
-        tiles[27][24] = 41;
-        tiles[27][25] = 42;
-        tiles[27][26] = 43;
+        tiles[25][24] = 55047;
+        tiles[25][25] = 55048;
+        tiles[25][26] = 55049;
+        tiles[26][24] = 55044;
+        tiles[26][25] = hole_down + 45;
+        tiles[26][26] = 55046;
+        tiles[27][24] = 55041;
+        tiles[27][25] = 55042;
+        tiles[27][26] = 55043;
 
         randomizedItems(
                 tiles,
-                -deep_grass + grass,
-                350,
+                -DEEP_GRASS * 10 + GRASS * 10,
+                90,
                 1,
                 2, 28,
                 2, 28,
@@ -443,48 +564,125 @@ public final class Maps {
             Arrays.fill(tiles[y], 45);
         }
 
-        drawItemLine(tiles, stone, 0, 5, 15, 5, 45, 15);
-        drawItemLine(tiles, stone, 17, 5, 25, 5, 45, 15);
-        drawItemLine(tiles, stone, 26, 0, 26, 2, 45, 15);
-        drawItemLine(tiles, stone, 26, 4, 26, 10, 45, 15);
-        drawItemLine(tiles, stone, 29, 11, 28, 11, 45, 15);
-        drawItemLine(tiles, stone, 26, 11, 0, 11, 45, 15);
-        drawItemLine(tiles, stone, 29, 20, 5, 20, 45, 15);
-        drawItemLine(tiles, stone, 3, 20, 0, 20, 45, 15);
+        drawItemLine(tiles, stone, 0, 5, 15, 5, 45);
+        drawItemLine(tiles, stone, 17, 5, 25, 5, 45);
+        drawItemLine(tiles, stone, 26, 0, 26, 2, 45);
+        drawItemLine(tiles, stone, 26, 4, 26, 10, 45);
+        drawItemLine(tiles, stone, 29, 11, 28, 11, 45);
+        drawItemLine(tiles, stone, 26, 11, 0, 11, 45);
+        drawItemLine(tiles, stone, 29, 20, 5, 20, 45);
+        drawItemLine(tiles, stone, 3, 20, 0, 20, 45);
 
         tiles[1][2] += hole_up;
 
-        tiles[21][8] = 97;
-        tiles[22][7] = 97;
+        tiles[21][8] = 45097;
+        tiles[22][7] = 45097;
         tiles[22][8] = 95;
-        tiles[22][9] = 99;
-        tiles[23][7] = 94;
+        tiles[22][9] = 45099;
+        tiles[23][7] = 45094;
         tiles[23][8] = hole_down + 95;
         tiles[23][9] = 95;
-        tiles[23][10] = 99;
-        tiles[24][7] = 91;
-        tiles[24][8] = 92;
-        tiles[24][9] = 92;
-        tiles[24][10] = 93;
+        tiles[23][10] = 45099;
+        tiles[24][7] = 45091;
+        tiles[24][8] = 45092;
+        tiles[24][9] = 45092;
+        tiles[24][10] = 45093;
 
-        tiles[25][24] = 97;
-        tiles[25][25] = 98;
-        tiles[25][26] = 99;
-        tiles[26][24] = 94;
-        tiles[26][25] = bird + 95;
-        tiles[26][26] = 96;
-        tiles[27][24] = 91;
-        tiles[27][25] = 92;
-        tiles[27][26] = 93;
+        tiles[25][24] = 45097;
+        tiles[25][25] = 45098;
+        tiles[25][26] = 45099;
+        tiles[26][24] = 45094;
+        tiles[26][25] = hole_down + 95;
+        tiles[26][26] = 45096;
+        tiles[27][24] = 45091;
+        tiles[27][25] = 45092;
+        tiles[27][26] = 45093;
 
         randomizedItems(
                 tiles,
-                -soil + deep_grass + plant,
+                -SOIL * 10 + DEEP_GRASS * 10 + plant,
                 50,
                 1,
                 2, 28,
                 2, 28,
                 45
+        );
+
+        return new Stage(tiles, 2, 2);
+    }
+
+    private static Stage volcan() {
+        int[][] tiles = new int[30][30];
+        for (int y = 0; y < 30; y++) {
+            Arrays.fill(tiles[y], 105);
+        }
+
+        drawPond(
+                tiles,
+                0,
+                0,
+                LAVA,
+                POND_2,
+                VOLCANIC_SOIL
+        );
+
+        tiles[1][2] = hole_up + 95;
+
+        drawPond(
+                tiles,
+                11,
+                14,
+                LAVA,
+                POND_3,
+                VOLCANIC_SOIL
+        );
+
+        tiles[13][16] = hole_down + 95;
+
+        drawPond(
+                tiles,
+                23,
+                23,
+                LAVA,
+                POND_4,
+                VOLCANIC_SOIL
+        );
+        tiles[26][25] = hole_down + 95;
+
+        drawPond(
+                tiles,
+                10,
+                4,
+                LAVA,
+                POND_5,
+                VOLCANIC_SOIL
+        );
+
+        drawPond(
+                tiles,
+                22,
+                2,
+                LAVA,
+                POND_2,
+                VOLCANIC_SOIL
+        );
+
+        drawPond(
+                tiles,
+                2,
+                20,
+                LAVA,
+                POND_3,
+                VOLCANIC_SOIL
+        );
+
+        drawPond(
+                tiles,
+                24,
+                13,
+                LAVA,
+                POND_4,
+                VOLCANIC_SOIL
         );
 
         return new Stage(tiles, 2, 2);
