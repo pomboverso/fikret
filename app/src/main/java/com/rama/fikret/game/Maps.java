@@ -19,12 +19,15 @@ public final class Maps {
     static int sand = 30;
     static int soil = 40;
     static int deep_grass = 50;
+    static int deep_water = 60;
+    static int volcanic_soil = 90;
 
     private Maps() {
     }
 
     public static final int BEACH = 0;
     public static final int FOREST = 1;
+    public static final int CAVE = 2;
     // public static final int NEXT_STAGE = 1;
 
     public static Stage get(int stageId) {
@@ -33,6 +36,8 @@ public final class Maps {
                 return beach();
             case FOREST:
                 return forest();
+            case CAVE:
+                return cave();
             default:
                 throw new IllegalArgumentException("Unknown stage id: " + stageId);
         }
@@ -324,17 +329,17 @@ public final class Maps {
 
         tiles[27][28] += hole_down;
 
-//        int birdMax = 20;
+        int birdMax = 20;
 
-//        randomizedItems(
-//                tiles,
-//                bird,
-//                birdMax,
-//                2,
-//                2, 28,
-//                2, 28,
-//                35021, 35022, 35023, 35024, 25, 35026, 35027, 35028, 35029
-//        );
+        randomizedItems(
+                tiles,
+                bird,
+                birdMax,
+                2,
+                2, 28,
+                2, 28,
+                35021, 35022, 35023, 35024, 25, 35026, 35027, 35028, 35029
+        );
 
         randomizedItems(
                 tiles,
@@ -429,15 +434,58 @@ public final class Maps {
                 55, 15
         );
 
-//        randomizedItems(
-//                tiles,
-//                stone,
-//                10,
-//                1,
-//                2, 28,
-//                2, 28,
-//                55, 15
-//        );
+        return new Stage(tiles, 2, 2);
+    }
+
+    private static Stage cave() {
+        int[][] tiles = new int[30][30];
+        for (int y = 0; y < 30; y++) {
+            Arrays.fill(tiles[y], 45);
+        }
+
+        drawItemLine(tiles, stone, 0, 5, 15, 5, 45, 15);
+        drawItemLine(tiles, stone, 17, 5, 25, 5, 45, 15);
+        drawItemLine(tiles, stone, 26, 0, 26, 2, 45, 15);
+        drawItemLine(tiles, stone, 26, 4, 26, 10, 45, 15);
+        drawItemLine(tiles, stone, 29, 11, 28, 11, 45, 15);
+        drawItemLine(tiles, stone, 26, 11, 0, 11, 45, 15);
+        drawItemLine(tiles, stone, 29, 20, 5, 20, 45, 15);
+        drawItemLine(tiles, stone, 3, 20, 0, 20, 45, 15);
+
+        tiles[1][2] += hole_up;
+
+        tiles[21][8] = 97;
+        tiles[22][7] = 97;
+        tiles[22][8] = 95;
+        tiles[22][9] = 99;
+        tiles[23][7] = 94;
+        tiles[23][8] = hole_down + 95;
+        tiles[23][9] = 95;
+        tiles[23][10] = 99;
+        tiles[24][7] = 91;
+        tiles[24][8] = 92;
+        tiles[24][9] = 92;
+        tiles[24][10] = 93;
+
+        tiles[25][24] = 97;
+        tiles[25][25] = 98;
+        tiles[25][26] = 99;
+        tiles[26][24] = 94;
+        tiles[26][25] = bird + 95;
+        tiles[26][26] = 96;
+        tiles[27][24] = 91;
+        tiles[27][25] = 92;
+        tiles[27][26] = 93;
+
+        randomizedItems(
+                tiles,
+                -soil + deep_grass + plant,
+                50,
+                1,
+                2, 28,
+                2, 28,
+                45
+        );
 
         return new Stage(tiles, 2, 2);
     }
