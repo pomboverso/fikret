@@ -58,7 +58,7 @@ public final class Maps {
     private static final int[][] POND_1 = {
             {0,7,0},
             {7,5,9},
-            {4,5,6},
+            {4,-5,6},
             {1,2,3},
     };
 
@@ -243,7 +243,6 @@ public final class Maps {
         // Randomize candidates
         Collections.shuffle(candidates);
 
-        // Place items
         for (int[] pos : candidates) {
 
             int y = pos[0];
@@ -285,168 +284,74 @@ public final class Maps {
             Arrays.fill(tiles[y], 35);
         }
 
-        // POND 1
-        tiles[2][5] = 35028;
-        tiles[2][6] = 35028;
-        tiles[2][7] = 35029;
-        tiles[3][4] = 35027;
-        tiles[3][5] = 25;
-        tiles[3][6] = 25;
-        tiles[3][7] = 35026;
-        tiles[4][4] = 35024;
-        tiles[4][5] = 25;
-        tiles[4][6] = 65;
-        tiles[4][7] = 35026;
-        tiles[5][5] = 35021;
-        tiles[5][6] = 35022;
-        tiles[5][7] = 35023;
+        drawPond(
+                tiles,
+                2,
+                2,
+                SAND,
+                POND_2,
+                WATER,
+                DEEP_WATER
+        );
 
-        // POND 2
-        tiles[3][15] = 35028;
-        tiles[3][16] = 35028;
-        tiles[3][17] = 35028;
-        tiles[3][18] = 35029;
-        tiles[4][14] = 35027;
-        tiles[4][15] = 25;
-        tiles[4][16] = 25;
-        tiles[4][17] = 25;
-        tiles[4][18] = 35026;
-        tiles[5][14] = 35024;
-        tiles[5][15] = 25;
-        tiles[5][16] = 65;
-        tiles[5][17] = 65;
-        tiles[5][18] = 35026;
-        tiles[6][13] = 35027;
-        tiles[6][14] = 25;
-        tiles[6][15] = 25;
-        tiles[6][16] = 65;
-        tiles[6][17] = 65;
-        tiles[6][18] = 35026;
-        tiles[7][14] = 35021;
-        tiles[7][15] = 35022;
-        tiles[7][16] = 35022;
-        tiles[7][17] = 35022;
-        tiles[7][18] = 35023;
+        drawPond(
+                tiles,
+                10,
+                6,
+                SAND,
+                POND_3,
+                WATER,
+                DEEP_WATER
+        );
 
-        // POND 3
-        tiles[10][4] = 35028;
-        tiles[10][5] = 35028;
-        tiles[10][6] = 35028;
-        tiles[10][7] = 35029;
-        tiles[11][3] = 35027;
-        tiles[11][4] = 25;
-        tiles[11][5] = 25;
-        tiles[11][6] = 25;
-        tiles[11][7] = 35026;
-        tiles[12][3] = 35024;
-        tiles[12][4] = 25;
-        tiles[12][5] = 65;
-        tiles[12][6] = 65;
-        tiles[12][7] = 35026;
-        tiles[13][3] = 35024;
-        tiles[13][4] = 25;
-        tiles[13][5] = 25;
-        tiles[13][6] = 65;
-        tiles[13][7] = 35026;
-        tiles[14][4] = 35021;
-        tiles[14][5] = 25;
-        tiles[14][6] = 25;
-        tiles[14][7] = 35026;
-        tiles[15][5] = 35021;
-        tiles[15][6] = 35022;
-        tiles[15][7] = 35023;
+        drawPond(
+                tiles,
+                18,
+                1,
+                SAND,
+                POND_4,
+                WATER,
+                DEEP_WATER
+        );
 
-        // POND 4
-        tiles[11][18] = 35028;
-        tiles[11][19] = 35028;
-        tiles[11][20] = 35028;
-        tiles[11][21] = 35029;
-        tiles[12][17] = 35027;
-        tiles[12][18] = 25;
-        tiles[12][19] = 25;
-        tiles[12][20] = 25;
-        tiles[12][21] = 35026;
-        tiles[13][17] = 35024;
-        tiles[13][18] = 25;
-        tiles[13][19] = 65;
-        tiles[13][20] = 65;
-        tiles[13][21] = 35026;
-        tiles[14][18] = 35021;
-        tiles[14][19] = 25;
-        tiles[14][20] = 25;
-        tiles[14][21] = 35026;
-        tiles[15][19] = 35021;
-        tiles[15][20] = 35022;
-        tiles[15][21] = 35023;
+        drawPond(
+                tiles,
+                3,
+                18,
+                SAND,
+                POND_5,
+                WATER,
+                DEEP_WATER
+        );
 
-        // POND 5
-        tiles[21][10] = 35028;
-        tiles[21][11] = 35028;
-        tiles[21][12] = 35028;
-        tiles[21][13] = 35028;
-        tiles[21][14] = 35029;
-        tiles[22][9] = 35027;
-        tiles[22][10] = 25;
-        tiles[22][11] = 65;
-        tiles[22][12] = 25;
-        tiles[22][13] = 25;
-        tiles[22][14] = 35026;
-        tiles[23][9] = 35024;
-        tiles[23][10] = 25;
-        tiles[23][11] = 65;
-        tiles[23][12] = 65;
-        tiles[23][13] = 25;
-        tiles[23][14] = 35026;
-        tiles[24][8] = 35027;
-        tiles[24][9] = 25;
-        tiles[24][10] = 25;
-        tiles[24][11] = 65;
-        tiles[24][12] = 65;
-        tiles[24][13] = 25;
-        tiles[24][14] = 35026;
-        tiles[25][8] = 35024;
-        tiles[25][9] = 25;
-        tiles[25][10] = 25;
-        tiles[25][11] = 25;
-        tiles[25][12] = 65;
-        tiles[25][13] = 25;
-        tiles[25][14] = 35026;
-        tiles[26][9] = 35021;
-        tiles[26][10] = 25;
-        tiles[26][11] = 25;
-        tiles[26][12] = 25;
-        tiles[26][13] = 35026;
-        tiles[27][10] = 35021;
-        tiles[27][11] = 35022;
-        tiles[27][12] = 35022;
-        tiles[27][13] = 35023;
+        drawPond(
+                tiles,
+                15,
+                13,
+                SAND,
+                POND_2,
+                WATER,
+                DEEP_WATER
+        );
 
-        // Grass
-        tiles[24][26] = 35017;
-        tiles[24][27] = 35019;
-        tiles[24][29] = 35017;
-        tiles[25][25] = 35017;
-        tiles[25][26] = 15;
-        tiles[25][27] = 15;
-        tiles[25][28] = 35018;
-        tiles[25][29] = 15;
-        tiles[26][25] = 35011;
-        tiles[26][26] = 15;
-        tiles[26][27] = 15;
-        tiles[26][28] = 15;
-        tiles[26][29] = 35015;
-        tiles[27][26] = 35014;
-        tiles[27][27] = 15;
-        tiles[27][28] = 15;
-        tiles[27][29] = 15;
-        tiles[28][26] = 35014;
-        tiles[28][27] = 15;
-        tiles[28][28] = 15;
-        tiles[28][29] = 15;
-        tiles[29][26] = 35014;
-        tiles[29][27] = 15;
-        tiles[29][28] = 15;
-        tiles[29][29] = 15;
+        drawPond(
+                tiles,
+                17,
+                23,
+                SAND,
+                POND_3,
+                WATER,
+                DEEP_WATER
+        );
+
+        drawPond(
+                tiles,
+                24,
+                25,
+                SAND,
+                POND_4,
+                GRASS
+        );
 
         tiles[27][28] += hole_down;
 
@@ -465,31 +370,11 @@ public final class Maps {
         randomizedItems(
                 tiles,
                 plant,
-                40,
+                30,
                 2,
                 2, 28,
                 2, 28,
                 15, 35
-        );
-
-        randomizedItems(
-                tiles,
-                beach_plant,
-                10,
-                2,
-                2, 28,
-                2, 28,
-                35
-        );
-
-        randomizedItems(
-                tiles,
-                stone,
-                10,
-                1,
-                2, 28,
-                2, 28,
-                35
         );
 
         return new Stage(tiles, 2, 2);
@@ -501,6 +386,30 @@ public final class Maps {
             Arrays.fill(tiles[y], 55);
         }
 
+        tiles[1][2] += hole_up;
+
+        drawPond(
+                tiles,
+                21,
+                7,
+                DEEP_GRASS,
+                POND_1,
+                SOIL
+        );
+
+        tiles[23][8] = hole_down + 45;
+
+        drawPond(
+                tiles,
+                25,
+                24,
+                DEEP_GRASS,
+                POND_6,
+                SOIL
+        );
+
+        tiles[26][25] = hole_down + 45;
+
         drawItemLine(tiles, tree, 0, 5, 15, 5, 55, 15);
         drawItemLine(tiles, tree, 17, 5, 25, 5, 55, 15);
         drawItemLine(tiles, tree, 26, 0, 26, 2, 55, 15);
@@ -509,31 +418,6 @@ public final class Maps {
         drawItemLine(tiles, tree, 26, 11, 0, 11, 55, 15);
         drawItemLine(tiles, tree, 29, 20, 5, 20, 55, 15);
         drawItemLine(tiles, tree, 3, 20, 0, 20, 55, 15);
-
-        tiles[1][2] += hole_up;
-
-        tiles[21][8] = 55047;
-        tiles[22][7] = 55047;
-        tiles[22][8] = 45;
-        tiles[22][9] = 55049;
-        tiles[23][7] = 55044;
-        tiles[23][8] = hole_down + 45;
-        tiles[23][9] = 45;
-        tiles[23][10] = 55049;
-        tiles[24][7] = 55041;
-        tiles[24][8] = 55042;
-        tiles[24][9] = 55042;
-        tiles[24][10] = 55043;
-
-        tiles[25][24] = 55047;
-        tiles[25][25] = 55048;
-        tiles[25][26] = 55049;
-        tiles[26][24] = 55044;
-        tiles[26][25] = hole_down + 45;
-        tiles[26][26] = 55046;
-        tiles[27][24] = 55041;
-        tiles[27][25] = 55042;
-        tiles[27][26] = 55043;
 
         randomizedItems(
                 tiles,
@@ -575,33 +459,32 @@ public final class Maps {
 
         tiles[1][2] += hole_up;
 
-        tiles[21][8] = 45097;
-        tiles[22][7] = 45097;
-        tiles[22][8] = 95;
-        tiles[22][9] = 45099;
-        tiles[23][7] = 45094;
-        tiles[23][8] = hole_down + 95;
-        tiles[23][9] = 95;
-        tiles[23][10] = 45099;
-        tiles[24][7] = 45091;
-        tiles[24][8] = 45092;
-        tiles[24][9] = 45092;
-        tiles[24][10] = 45093;
+        drawPond(
+                tiles,
+                21,
+                7,
+                SOIL,
+                POND_1,
+                VOLCANIC_SOIL
+        );
 
-        tiles[25][24] = 45097;
-        tiles[25][25] = 45098;
-        tiles[25][26] = 45099;
-        tiles[26][24] = 45094;
+        tiles[23][8] = hole_down + 95;
+
+        drawPond(
+                tiles,
+                25,
+                24,
+                SOIL,
+                POND_6,
+                VOLCANIC_SOIL
+        );
+
         tiles[26][25] = hole_down + 95;
-        tiles[26][26] = 45096;
-        tiles[27][24] = 45091;
-        tiles[27][25] = 45092;
-        tiles[27][26] = 45093;
 
         randomizedItems(
                 tiles,
-                -SOIL * 10 + DEEP_GRASS * 10 + plant,
-                50,
+                beach_plant,
+                20,
                 1,
                 2, 28,
                 2, 28,
