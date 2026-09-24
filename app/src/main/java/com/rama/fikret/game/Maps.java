@@ -15,6 +15,9 @@ public final class Maps {
     static int tree = 7000000;
 
     static int grass = 10;
+    static int water = 20;
+    static int sand = 30;
+    static int soil = 40;
     static int deep_grass = 50;
 
     private Maps() {
@@ -372,16 +375,6 @@ public final class Maps {
             Arrays.fill(tiles[y], 55);
         }
 
-        randomizedItems(
-                tiles,
-                -deep_grass + grass,
-                350,
-                1,
-                2, 28,
-                2, 28,
-                55
-        );
-
         drawItemLine(tiles, tree, 0, 5, 15, 5, 55, 15);
         drawItemLine(tiles, tree, 17, 5, 25, 5, 55, 15);
         drawItemLine(tiles, tree, 26, 0, 26, 2, 55, 15);
@@ -391,7 +384,40 @@ public final class Maps {
         drawItemLine(tiles, tree, 29, 20, 5, 20, 55, 15);
         drawItemLine(tiles, tree, 3, 20, 0, 20, 55, 15);
 
-        tiles[26][25] += bird;
+        tiles[1][2] += hole_up;
+
+        tiles[21][8] = 47;
+        tiles[22][7] = 47;
+        tiles[22][8] = 45;
+        tiles[22][9] = 49;
+        tiles[23][7] = 44;
+        tiles[23][8] = hole_down + 45;
+        tiles[23][9] = 45;
+        tiles[23][10] = 49;
+        tiles[24][7] = 41;
+        tiles[24][8] = 42;
+        tiles[24][9] = 42;
+        tiles[24][10] = 43;
+
+        tiles[25][24] = 47;
+        tiles[25][25] = 48;
+        tiles[25][26] = 49;
+        tiles[26][24] = 44;
+        tiles[26][25] = bird + 45;
+        tiles[26][26] = 46;
+        tiles[27][24] = 41;
+        tiles[27][25] = 42;
+        tiles[27][26] = 43;
+
+        randomizedItems(
+                tiles,
+                -deep_grass + grass,
+                350,
+                1,
+                2, 28,
+                2, 28,
+                55
+        );
 
         randomizedItems(
                 tiles,
