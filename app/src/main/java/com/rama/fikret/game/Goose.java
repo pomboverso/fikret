@@ -10,7 +10,9 @@ import com.rama.fikret.R;
  * The player-controlled goose. Moves one whole tile at a time: pressing a
  * direction steps it to the next tile over, snapped to the grid, with a
  * short smooth glide between the two tiles rather than an instant jump.
- * Holding a direction keeps stepping, tile after tile.
+ * Holding a direction keeps stepping, tile after tile. Steps can be
+ * diagonal (dx and dy both non-zero) - a diagonal is still exactly one
+ * tile-step, taking the same time as a straight one.
  *
  * Animation rows in gm_goose (per direction column):
  *   row 0 - resting pose, legs tucked in - used ONLY while swimming or
@@ -53,13 +55,13 @@ public class Goose {
                     facing = dx < 0 ? Direction.LEFT : Direction.RIGHT;
                 }
 
-                int targetRow = row + dy;
-                int targetCol = col + dx;
-                if (map.isInBounds(targetRow, targetCol) && map.isPassable(targetRow, targetCol)) {
+                // dx/dy can both be non-zero: that's a diagonal step (one
+                // tile over AND one tile up/down), see GameMap.canStep().
+                if (map.canStep(row, col, dx, dy)) {
                     fromRow = row;
                     fromCol = col;
-                    row = targetRow;
-                    col = targetCol;
+                    row = row + dy;
+                    col = col + dx;
                     stepProgress = 0f;
                     moving = true;
                 }

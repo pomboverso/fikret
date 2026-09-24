@@ -55,6 +55,30 @@ public class GameMap {
         return !cells[row][col].item.blocksMovement;
     }
 
+    /** Whether a mover standing on (row, col) may take one step of
+     *  (dx, dy), each -1/0/1. The target tile must be passable. A diagonal
+     *  step additionally can't squeeze through a pinch point: if BOTH of
+     *  the tiles it cuts across (the horizontal and vertical neighbours)
+     *  are blocked, the step is refused. With only one of them blocked
+     *  the diagonal is allowed, so rounding the corner of a single stone
+     *  works. (Out-of-bounds counts as blocked, same as isPassable().) */
+    public boolean canStep(int row, int col, int dx, int dy) {
+        if (dx == 0 && dy == 0) {
+            return false;
+        }
+        if (!isPassable(row + dy, col + dx)) {
+            return false;
+        }
+        if (dx != 0 && dy != 0) {
+            boolean horizontalSideOpen = isPassable(row, col + dx);
+            boolean verticalSideOpen = isPassable(row + dy, col);
+            if (!horizontalSideOpen && !verticalSideOpen) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public int getRows() {
         return rows;
     }
