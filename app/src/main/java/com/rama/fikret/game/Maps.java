@@ -45,7 +45,15 @@ public final class Maps {
     public static final int BUBBLEGUM_LAND = 6;
     public static final int SPACE = 7;
     public static final int NIGHTMARE = 8;
-    // public static final int NEXT_STAGE = 1;
+
+    public static final int FOREST_NEST = 101;
+    public static final int CAVE_NEST = 102;
+    public static final int VOLCAN_NEST = 103;
+    public static final int NUCLEAR_NEST = 104;
+    public static final int ARTIC_NEST = 105;
+    public static final int BUBBLEGUM_LAND_NEST = 106;
+    public static final int SPACE_NEST = 107;
+    public static final int NIGHTMARE_NEST = 108;
 
     private static final int[][] POND_1 = {
             {0, 7, 0},

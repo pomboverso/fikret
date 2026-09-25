@@ -41,6 +41,11 @@ import java.util.EnumMap;
  * It stands still until the goose steps onto its tile, then follows one
  * tile behind for the rest of the stage (see updateBird()/Bird).
  *
+ * Holes: stepping onto a HOLE_DOWN item cell moves to the next stage id
+ * (Maps.get(stageId + 1)); HOLE_UP moves to the previous one. Either is a
+ * no-op if that neighbouring stage doesn't exist. See
+ * checkHoleTransition()/changeStage().
+ *
  * Pinch-to-zoom is wired up (ScaleGestureDetector, isolated in
  * PinchZoomDetector so it never loads on devices below API 8).
  *
@@ -55,8 +60,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private Goose goose;
     private Bird bird;
     private Stage stage;
+    private int stageId;
     private int birdSpawnRow = -1, birdSpawnCol = -1;
     private int lastGooseRow, lastGooseCol;
+    // Tracks the last cell the goose was seen on, so a hole (see
+    // checkHoleTransition()) is only acted on once - the instant the goose
+    // steps onto it - rather than every frame it happens to still be
+    // standing there.
+    private int holeGooseRow, holeGooseCol;
     private final EnumMap<TileType, SpriteSheet> tileSheets = new EnumMap<TileType, SpriteSheet>(TileType.class);
     private final EnumMap<ItemType, Bitmap> itemBitmaps = new EnumMap<ItemType, Bitmap>(ItemType.class);
     private final Paint backgroundPaint = new Paint();
@@ -107,6 +118,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             });
         }
 
+        this.stageId = stageId;
         stage = Maps.get(stageId);
         map = new GameMap(stage.tiles);
         loadTileSheets();
@@ -143,6 +155,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
      *  surfaceCreated() spawns the actual Bird entity. Supports one bird
      *  per stage for now; extend this to a list if a stage ever needs more. */
     private void findBirdSpawn() {
+        // Reset first: switching stages (see changeStage()) reuses this
+        // method, and the new stage may not have a bird at all.
+        birdSpawnRow = -1;
+        birdSpawnCol = -1;
         for (int r = 0; r < map.getRows(); r++) {
             for (int c = 0; c < map.getCols(); c++) {
                 if (map.getCell(r, c).item == ItemType.BIRD) {
@@ -163,6 +179,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         goose = new Goose(getResources(), stage.spawnRow, stage.spawnCol);
         lastGooseRow = goose.getRow();
         lastGooseCol = goose.getCol();
+        holeGooseRow = goose.getRow();
+        holeGooseCol = goose.getCol();
         if (birdSpawnRow >= 0) {
             bird = new Bird(getResources(), birdSpawnRow, birdSpawnCol);
         }
@@ -365,8 +383,61 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
         goose.update(deltaMs, resolvedDx(), resolvedDy(), map);
         goose.setSwimming(isOverLiquid(goose.getX(), goose.getY()));
+        checkHoleTransition();
         updateBird(deltaMs);
         updateCamera();
+    }
+
+    /** Fires the moment the goose lands on a new cell (see holeGooseRow/Col
+     *  doc) that holds a HOLE_DOWN or HOLE_UP item: HOLE_DOWN advances to
+     *  the next stage id, HOLE_UP goes back to the previous one. If that
+     *  neighbouring stage doesn't exist (e.g. HOLE_UP on the very first
+     *  stage) Maps.get() throws and the hole is simply a no-op. */
+    private void checkHoleTransition() {
+        if (goose.getRow() == holeGooseRow && goose.getCol() == holeGooseCol) {
+            return;
+        }
+        holeGooseRow = goose.getRow();
+        holeGooseCol = goose.getCol();
+
+        MapCell cell = map.getCell(holeGooseRow, holeGooseCol);
+        if (cell == null) {
+            return;
+        }
+        if (cell.item == ItemType.HOLE_DOWN) {
+            changeStage(stageId + 1);
+        } else if (cell.item == ItemType.HOLE_UP) {
+            changeStage(stageId - 1);
+        }
+    }
+
+    /** Swaps in a different stage in place: new map, a freshly-spawned
+     *  goose at that stage's spawn point, and a freshly-spawned bird if
+     *  that stage has one (or none, if it doesn't). Tile/item art
+     *  (tileSheets/itemBitmaps) is loaded once per TileType/ItemType at
+     *  construction time and covers every stage already, so it's left
+     *  alone here. Does nothing if newStageId isn't a real stage - e.g.
+     *  walking a HOLE_UP on the first stage, or a HOLE_DOWN on the last. */
+    private void changeStage(int newStageId) {
+        Stage newStage;
+        try {
+            newStage = Maps.get(newStageId);
+        } catch (IllegalArgumentException noSuchStage) {
+            return;
+        }
+
+        stageId = newStageId;
+        stage = newStage;
+        map = new GameMap(stage.tiles);
+        findBirdSpawn();
+
+        goose = new Goose(getResources(), stage.spawnRow, stage.spawnCol);
+        bird = (birdSpawnRow >= 0) ? new Bird(getResources(), birdSpawnRow, birdSpawnCol) : null;
+
+        lastGooseRow = goose.getRow();
+        lastGooseCol = goose.getCol();
+        holeGooseRow = goose.getRow();
+        holeGooseCol = goose.getCol();
     }
 
     /** Whether a sprite whose top-left is at (spriteX, spriteY) is standing
