@@ -6,29 +6,16 @@ import android.graphics.Rect;
 
 import com.rama.fikret.R;
 
-/**
- * The player-controlled goose. Moves one whole tile at a time: pressing a
- * direction steps it to the next tile over, snapped to the grid, with a
- * short smooth glide between the two tiles rather than an instant jump.
- * Holding a direction keeps stepping, tile after tile. Steps can be
- * diagonal (dx and dy both non-zero) - a diagonal is still exactly one
- * tile-step, taking the same time as a straight one.
- *
- * Animation rows in gm_goose (per direction column):
- *   row 0 - resting pose, legs tucked in - used ONLY while swimming or
- *           sleeping, never during normal walking/idle.
- *   row 1 - standing still (used whenever the goose has no movement input).
- *   row 2, row 3 - the two walk-cycle poses, alternated while stepping.
- */
 public class Goose {
     private static final int ATLAS_COLUMNS = 2;
-    private static final int ATLAS_ROWS = 4;
+    private static final int ATLAS_ROWS = 5;
     private static final long STEP_DURATION_MS = 200;
     private static final long WALK_FRAME_DURATION_MS = 80;
-    private static final int FRAME_REST = 0;
-    private static final int FRAME_IDLE = 1;
-    private static final int FRAME_WALK_A = 2;
-    private static final int FRAME_WALK_B = 3;
+    private static final int FRAME_SWIMMING_A = 0;
+    private static final int FRAME_SWIMMING_B = 1;
+    private static final int FRAME_IDLE = 2;
+    private static final int FRAME_WALK_A = 3;
+    private static final int FRAME_WALK_B = 4;
     private final SpriteSheet spriteSheet;
     private int fromRow, fromCol;
     private int row, col;
@@ -103,7 +90,11 @@ public class Goose {
     }
 
     public void draw(Canvas canvas, Rect dst) {
-        int frame = (resting || swimming) ? FRAME_REST : (moving ? (walkToggle ? FRAME_WALK_A : FRAME_WALK_B) : FRAME_IDLE);
+        int frame = resting
+                ? FRAME_SWIMMING_A
+                : swimming
+                ? (walkToggle ? FRAME_SWIMMING_A : FRAME_SWIMMING_B)
+                : (moving ? (walkToggle ? FRAME_WALK_A : FRAME_WALK_B) : FRAME_IDLE);
         Rect src = spriteSheet.frameRect(facing.column, frame);
         canvas.drawBitmap(spriteSheet.getBitmap(), src, dst, null);
     }
