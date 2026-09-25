@@ -23,7 +23,10 @@ public enum ItemType {
     FLOWER_PINK(17, R.drawable.flower_pink, false),
     FLOWER_ORANGE(18, R.drawable.flower_orange, false),
     NAUTILUS(19, R.drawable.nautilus, false),
-    GEMS(20, R.drawable.gem_group, false);
+    GEMS(20, R.drawable.gem_group, false),
+    SPACE_GEMS(21, R.drawable.space_gem_group, false),
+    SPACE_GEM(22, R.drawable.space_gem, false),
+    WALL_SPACE(23, R.drawable.wall_space, true);
 
     public final int id;
     public final int drawableRes;

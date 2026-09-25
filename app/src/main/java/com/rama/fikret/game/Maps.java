@@ -25,6 +25,9 @@ public final class Maps {
     static int flower_orange = 18000000;
     static int nautilus = 19000000;
     static int gems = 20000000;
+    static int space_gems = 21000000;
+    static int space_gem = 22000000;
+    static int wall_space = 23000000;
 
     static final int GRASS = 1;
     static final int WATER = 2;
@@ -280,7 +283,7 @@ public final class Maps {
                 0,
                 0,
                 NEST_WALLS,
-                stone,
+                wall_space,
                 base_tile
         );
 
@@ -500,20 +503,34 @@ public final class Maps {
     private static Stage beach() {
         int[][] tiles = new int[30][30];
         for (int y = 0; y < 30; y++) {
-            Arrays.fill(tiles[y], 35);
+            Arrays.fill(tiles[y], 25);
         }
 
-        drawPond(tiles, 2, 2, SAND, POND_2, WATER, DEEP_WATER);
-        drawPond(tiles, 10, 6, SAND, POND_3, WATER, DEEP_WATER);
-        drawPond(tiles, 18, 1, SAND, POND_4, WATER, DEEP_WATER);
-        drawPond(tiles, 3, 18, SAND, POND_5, WATER, DEEP_WATER);
-        drawPond(tiles, 15, 13, SAND, POND_2, WATER, DEEP_WATER);
-        drawPond(tiles, 17, 23, SAND, POND_3, WATER, DEEP_WATER);
-        drawPond(tiles, 24, 25, SAND, POND_4, GRASS);
-        tiles[27][28] += hole_down;
-        tiles[26][28] += bird;
+        drawPond(tiles, 2, 2, WATER, POND_2, GRASS);
+        drawPond(tiles, 10, 6, WATER, POND_3, GRASS);
+        drawPond(tiles, 24, 24, WATER, POND_4, GRASS);
+        drawPond(tiles, 3, 18, WATER, POND_5, GRASS);
+        drawPond(tiles, 15, 13, WATER, POND_2, SAND);
+        drawPond(tiles, 17, 23, WATER, POND_3, GRASS);
+        drawPond(tiles, 24, 0, WATER, POND_4, SAND);
 
-        randomizedItems(tiles, plant, 20, 2, 2, 28, 2, 28, 15, 35);
+        tiles[3][12] = 65;
+        tiles[3][13] = 65;
+        tiles[4][13] = 65;
+
+        tiles[14][19] = 65;
+        tiles[14][20] = 65;
+        tiles[15][19] = 65;
+        tiles[15][20] = 65;
+
+        tiles[27][2] += hole_down;
+        tiles[26][2] += bird;
+
+        randomizedItems(tiles, plant, 5, 1, 2, 28, 2, 28, 25031, 25032, 25033, 25034, 25035, 25036, 25037, 25038, 25039);
+        randomizedItems(tiles, wall_forest, 30, 1, 2, 28, 2, 28, 25011, 25012, 25013, 25014, 25015, 25016, 25017, 25018, 25019);
+        randomizedItems(tiles, flower_floor_blue, 50, 1, 2, 28, 2, 28, 25011, 25012, 25013, 25014, 25015, 25016, 25017, 25018, 25019);
+        randomizedItems(tiles, flower_floor_pink, 20, 1, 2, 28, 2, 28, 25011, 25012, 25013, 25014, 25015, 25016, 25017, 25018, 25019);
+        randomizedItems(tiles, flower_floor_yellow, 10, 1, 2, 28, 2, 28, 25011, 25012, 25013, 25014, 25015, 25016, 25017, 25018, 25019);
 
         return new Stage(tiles, 2, 2);
     }
@@ -862,6 +879,9 @@ public final class Maps {
         tiles[2][2] += hole_up;
         tiles[13][16] += hole_down_nest;
         tiles[26][25] += hole_down;
+
+        randomizedItems(tiles, space_gem, 50, 2, 2, 28, 2, 28, 155);
+        randomizedItems(tiles, space_gems, 30, 2, 2, 28, 2, 28, 155);
 
         return new Stage(tiles, 2, 2);
     }
