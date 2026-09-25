@@ -17,6 +17,7 @@ public final class Maps {
     static int wall_volcan = 10000000;
     static int wall_nuclear = 11000000;
     static int wall_artic = 12000000;
+    static int hole_down_nest = 13000000;
 
     static final int GRASS = 1;
     static final int WATER = 2;
@@ -46,14 +47,16 @@ public final class Maps {
     public static final int SPACE = 7;
     public static final int NIGHTMARE = 8;
 
-    public static final int FOREST_NEST = 101;
-    public static final int CAVE_NEST = 102;
-    public static final int VOLCAN_NEST = 103;
-    public static final int NUCLEAR_NEST = 104;
-    public static final int ARTIC_NEST = 105;
-    public static final int BUBBLEGUM_LAND_NEST = 106;
-    public static final int SPACE_NEST = 107;
-    public static final int NIGHTMARE_NEST = 108;
+    public static final int NEST_OFFSET = 100;
+
+    public static final int FOREST_NEST = FOREST + NEST_OFFSET;
+    public static final int CAVE_NEST = CAVE + NEST_OFFSET;
+    public static final int VOLCAN_NEST = VOLCAN + NEST_OFFSET;
+    public static final int NUCLEAR_NEST = NUCLEAR + NEST_OFFSET;
+    public static final int ARTIC_NEST = ARTIC + NEST_OFFSET;
+    public static final int BUBBLEGUM_LAND_NEST = BUBBLEGUM_LAND + NEST_OFFSET;
+    public static final int SPACE_NEST = SPACE + NEST_OFFSET;
+    public static final int NIGHTMARE_NEST = NIGHTMARE + NEST_OFFSET;
 
     private static final int[][] POND_1 = {
             {0, 7, 0},
@@ -122,6 +125,88 @@ public final class Maps {
     private Maps() {
     }
 
+    /**
+     * Bare placeholder room for a nest stage: just the parent's floor
+     * tile plus a HOLE_UP back out. Swap the body of each *Nest() method
+     * below for a real layout whenever - the HOLE_UP always finds its
+     * way back to the correct parent stage on its own (see NEST_OFFSET).
+     */
+    private static Stage nestRoom(int fillTile) {
+        int[][] tiles = new int[30][30];
+        for (int y = 0; y < 30; y++) {
+            Arrays.fill(tiles[y], fillTile);
+        }
+        tiles[1][2] += hole_up;
+        return new Stage(tiles, 2, 2);
+    }
+
+    private static Stage forestNest() {
+        int[][] tiles = new int[10][10];
+        for (int y = 0; y < 10; y++) {
+            Arrays.fill(tiles[y], 55);
+        }
+
+        int[][] FOREST_WALLS = {
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+                {1, 0, 0, 1, 1, 0, 1, 0, 0, 1},
+                {1, 0, 0, 0, 0, 0, 0, 0, 1, 1},
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                {1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
+                {1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
+                {1, 1, 1, 0, 0, 0, 0, 0, 1, 1},
+                {1, 0, 0, 0, 0, 0, 0, 0, 1, 1},
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+        };
+
+        drawWalls(
+                tiles,
+                0,
+                0,
+                FOREST_WALLS,
+                wall_forest,
+                55,
+                15
+        );
+
+        drawPond(tiles, 5, 5, DEEP_GRASS, POND_6, SOIL);
+        tiles[2][2] += hole_up;
+        tiles[6][6] += bird;
+
+        randomizedItems(tiles, -DEEP_GRASS * 10 + GRASS * 10, 5, 1, 2, 8, 2, 8, 55);
+        randomizedItems(tiles, plant, 5, 2, 2, 8, 2, 8, 55, 15);
+
+        return new Stage(tiles, 2, 2);
+    }
+
+    private static Stage caveNest() {
+        return nestRoom(45);
+    }
+
+    private static Stage volcanNest() {
+        return nestRoom(105);
+    }
+
+    private static Stage nuclearNest() {
+        return nestRoom(125);
+    }
+
+    private static Stage articNest() {
+        return nestRoom(75);
+    }
+
+    private static Stage bubblegumLandNest() {
+        return nestRoom(145);
+    }
+
+    private static Stage spaceNest() {
+        return nestRoom(155);
+    }
+
+    private static Stage nightmareNest() {
+        return nestRoom(175);
+    }
+
     public static Stage get(int stageId) {
         switch (stageId) {
             case BEACH:
@@ -142,6 +227,22 @@ public final class Maps {
                 return space();
             case NIGHTMARE:
                 return nightmare();
+            case FOREST_NEST:
+                return forestNest();
+            case CAVE_NEST:
+                return caveNest();
+            case VOLCAN_NEST:
+                return volcanNest();
+            case NUCLEAR_NEST:
+                return nuclearNest();
+            case ARTIC_NEST:
+                return articNest();
+            case BUBBLEGUM_LAND_NEST:
+                return bubblegumLandNest();
+            case SPACE_NEST:
+                return spaceNest();
+            case NIGHTMARE_NEST:
+                return nightmareNest();
             default:
                 throw new IllegalArgumentException("Unknown stage id: " + stageId);
         }
@@ -344,11 +445,11 @@ public final class Maps {
             Arrays.fill(tiles[y], 55);
         }
 
-        tiles[1][2] += hole_up;
         drawPond(tiles, 21, 7, DEEP_GRASS, POND_1, SOIL);
-        tiles[23][8] = hole_down + 45;
         drawPond(tiles, 25, 24, DEEP_GRASS, POND_6, SOIL);
-        tiles[26][25] = hole_down + 45;
+        tiles[2][2] += hole_up;
+        tiles[23][8] = hole_down + 45;
+        tiles[26][25] = hole_down_nest + 45;
 
         int[][] FOREST_WALLS = {
                 {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, // 0
@@ -449,7 +550,7 @@ public final class Maps {
 
         drawPond(tiles, 8, 4, SOIL, POND_1, VOLCANIC_SOIL);
         drawPond(tiles, 19, 14, SOIL, POND_6, VOLCANIC_SOIL);
-        tiles[1][2] += hole_up;
+        tiles[2][2] += hole_up;
         tiles[10][5] = hole_down + 95;
         tiles[20][15] = hole_down + 95;
         randomizedItems(tiles, beach_plant, 20, 1, 2, 28, 2, 28, 45);
@@ -526,36 +627,36 @@ public final class Maps {
         }
 
         int[][] NUCLEAR_WALLS = {
-                {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}, // 0
-                {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1}, // 1
-                {1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1}, // 2
-                {1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1}, // 3
-                {1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1}, // 4
-                {1,0,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1}, // 5
-                {1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1}, // 6
-                {1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1}, // 7
-                {1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1}, // 9
-                {1,1,1,1,0,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}, // 8
-                {1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1}, // 10
-                {1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1}, // 11
-                {1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1}, // 12
-                {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1}, // 13
-                {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1}, // 14
-                {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1}, // 15
-                {1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1}, // 16
-                {1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1}, // 17
-                {1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1}, // 18
-                {1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1}, // 19
-                {1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1}, // 20
-                {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1}, // 21
-                {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1}, // 22
-                {1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1}, // 23
-                {1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1}, // 24
-                {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1}, // 25
-                {1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1}, // 26
-                {1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,1}, // 27
-                {1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1}, // 28
-                {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}  // 29
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, // 0
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 1
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 2
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 3
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 4
+                {1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1}, // 5
+                {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 6
+                {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 7
+                {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 9
+                {1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, // 8
+                {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 10
+                {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 11
+                {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 12
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 13
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1}, // 14
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 15
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 16
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 17
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 18
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 19
+                {1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1}, // 20
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}, // 21
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}, // 22
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1}, // 23
+                {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}, // 24
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}, // 25
+                {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}, // 26
+                {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1}, // 27
+                {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 28
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}  // 29
         };
 
         drawWalls(
@@ -655,7 +756,7 @@ public final class Maps {
         drawPond(tiles, 22, 2, BUBBLEGUM_LAKE, POND_3, BUBBLEGUM);
         drawPond(tiles, 2, 20, BUBBLEGUM_LAKE, POND_6, BUBBLEGUM);
         drawPond(tiles, 24, 13, BUBBLEGUM_LAKE, POND_1, BUBBLEGUM);
-        tiles[1][2] = hole_up + 135;
+        tiles[2][2] = hole_up + 135;
         tiles[13][16] = hole_down + 135;
         tiles[26][25] = hole_down + 135;
 
@@ -672,9 +773,10 @@ public final class Maps {
         drawPond(tiles, 23, 23, SPACE_SOIL, POND_3, VOLCANIC_SOIL);
         drawPond(tiles, 10, 4, SPACE_SOIL, POND_4, SPACE_LAKE);
         drawPond(tiles, 22, 2, SPACE_SOIL, POND_3, SPACE_LAKE);
-        drawPond(tiles, 2, 20, SPACE_SOIL, POND_6, SPACE_LAKE);
+        drawPond(tiles, 3, 20, SPACE_SOIL, POND_6, SPACE_LAKE);
         drawPond(tiles, 24, 13, SPACE_SOIL, POND_1, SPACE_LAKE);
-        tiles[1][2] = hole_up + 155;
+
+        tiles[2][2] = hole_up + 155;
         tiles[13][16] = hole_down + 165;
         tiles[26][25] = hole_down + 95;
 

@@ -389,10 +389,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     /** Fires the moment the goose lands on a new cell (see holeGooseRow/Col
-     *  doc) that holds a HOLE_DOWN or HOLE_UP item: HOLE_DOWN advances to
-     *  the next stage id, HOLE_UP goes back to the previous one. If that
-     *  neighbouring stage doesn't exist (e.g. HOLE_UP on the very first
-     *  stage) Maps.get() throws and the hole is simply a no-op. */
+     *  doc) that holds a HOLE_DOWN, HOLE_UP or HOLE_DOWN_NEST item:
+     *  HOLE_DOWN advances to the next stage id, HOLE_UP goes back to the
+     *  previous one (or, from inside a nest, back to that nest's parent
+     *  stage), and HOLE_DOWN_NEST drops into that stage's nest. If the
+     *  target stage doesn't exist (e.g. HOLE_UP on the very first stage,
+     *  or HOLE_DOWN_NEST on a stage with no nest defined) Maps.get()
+     *  throws and the hole is simply a no-op. */
     private void checkHoleTransition() {
         if (goose.getRow() == holeGooseRow && goose.getCol() == holeGooseCol) {
             return;
@@ -407,8 +410,18 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (cell.item == ItemType.HOLE_DOWN) {
             changeStage(stageId + 1);
         } else if (cell.item == ItemType.HOLE_UP) {
-            changeStage(stageId - 1);
+            changeStage(isNestStage(stageId) ? stageId - Maps.NEST_OFFSET : stageId - 1);
+        } else if (cell.item == ItemType.HOLE_DOWN_NEST) {
+            changeStage(stageId + Maps.NEST_OFFSET);
         }
+    }
+
+    /** A nest stage id is always its parent stage id + Maps.NEST_OFFSET
+     *  (e.g. Maps.FOREST_NEST == Maps.FOREST + 100), so HOLE_UP can find
+     *  its way back to the right parent without knowing which nest it's
+     *  in, and without needing a HOLE_UP_NEST item type. */
+    private static boolean isNestStage(int stageId) {
+        return stageId >= Maps.NEST_OFFSET;
     }
 
     /** Swaps in a different stage in place: new map, a freshly-spawned
