@@ -11,13 +11,20 @@ public final class Maps {
     static int bird = 4000000;
     static int plant = 5000000;
     static int beach_plant = 6000000;
-    static int tree = 7000000;
+    static int gem = 7000000;
     static int wall_forest = 8000000;
     static int wall_cave = 9000000;
-    static int wall_volcan = 10000000;
+    static int wall_volcano = 10000000;
     static int wall_nuclear = 11000000;
-    static int wall_artic = 12000000;
+    static int wall_arctic = 12000000;
     static int hole_down_nest = 13000000;
+    static int flower_floor_pink = 14000000;
+    static int flower_floor_blue = 15000000;
+    static int flower_floor_yellow = 16000000;
+    static int flower_pink = 17000000;
+    static int flower_orange = 18000000;
+    static int nautilus = 19000000;
+    static int gems = 20000000;
 
     static final int GRASS = 1;
     static final int WATER = 2;
@@ -40,9 +47,9 @@ public final class Maps {
     public static final int BEACH = 0;
     public static final int FOREST = 1;
     public static final int CAVE = 2;
-    public static final int VOLCAN = 3;
+    public static final int VOLCANO = 3;
     public static final int NUCLEAR = 4;
-    public static final int ARTIC = 5;
+    public static final int ARCTIC = 5;
     public static final int BUBBLEGUM_LAND = 6;
     public static final int SPACE = 7;
     public static final int NIGHTMARE = 8;
@@ -51,12 +58,11 @@ public final class Maps {
 
     public static final int FOREST_NEST = FOREST + NEST_OFFSET;
     public static final int CAVE_NEST = CAVE + NEST_OFFSET;
-    public static final int VOLCAN_NEST = VOLCAN + NEST_OFFSET;
-    public static final int NUCLEAR_NEST = NUCLEAR + NEST_OFFSET;
-    public static final int ARTIC_NEST = ARTIC + NEST_OFFSET;
+    public static final int VOLCAN_NEST = VOLCANO + NEST_OFFSET;
+
+    public static final int ARTIC_NEST = ARCTIC + NEST_OFFSET;
     public static final int BUBBLEGUM_LAND_NEST = BUBBLEGUM_LAND + NEST_OFFSET;
     public static final int SPACE_NEST = SPACE + NEST_OFFSET;
-    public static final int NIGHTMARE_NEST = NIGHTMARE + NEST_OFFSET;
 
     private static final int[][] POND_1 = {
             {0, 7, 0},
@@ -138,21 +144,6 @@ public final class Maps {
     private Maps() {
     }
 
-    /**
-     * Bare placeholder room for a nest stage: just the parent's floor
-     * tile plus a HOLE_UP back out. Swap the body of each *Nest() method
-     * below for a real layout whenever - the HOLE_UP always finds its
-     * way back to the correct parent stage on its own (see NEST_OFFSET).
-     */
-    private static Stage nestRoom(int fillTile) {
-        int[][] tiles = new int[30][30];
-        for (int y = 0; y < 30; y++) {
-            Arrays.fill(tiles[y], fillTile);
-        }
-        tiles[1][2] += hole_up;
-        return new Stage(tiles, 2, 2);
-    }
-
     private static Stage forestNest() {
         int[][] tiles = new int[10][10];
         int base_tile = 55;
@@ -175,7 +166,9 @@ public final class Maps {
         tiles[6][6] += bird;
 
         randomizedItems(tiles, -DEEP_GRASS * 10 + GRASS * 10, 5, 1, 2, 8, 2, 8, base_tile);
-        randomizedItems(tiles, plant, 5, 2, 2, 8, 2, 8, base_tile, 15);
+        randomizedItems(tiles, flower_floor_pink, 8, 2, 2, 8, 2, 8, base_tile, 15);
+        randomizedItems(tiles, flower_floor_blue, 5, 2, 2, 8, 2, 8, base_tile, 15);
+        randomizedItems(tiles, flower_floor_yellow, 1, 2, 2, 8, 2, 8, base_tile, 15);
 
         return new Stage(tiles, 2, 2);
     }
@@ -196,14 +189,17 @@ public final class Maps {
                 base_tile
         );
 
-        drawPond(tiles, 5, 5, DEEP_GRASS, POND_6, VOLCANIC_SOIL);
+        drawPond(tiles, 5, 5, SOIL, POND_6, VOLCANIC_SOIL);
         tiles[2][2] += hole_up;
         tiles[6][6] += bird;
+
+        randomizedItems(tiles, gem, 5, 2, 2, 8, 2, 8, base_tile);
+        randomizedItems(tiles, gems, 3, 2, 2, 8, 2, 8, base_tile);
 
         return new Stage(tiles, 2, 2);
     }
 
-    private static Stage volcanNest() {
+    private static Stage volcanoNest() {
         int[][] tiles = new int[10][10];
         int base_tile = 105;
         for (int y = 0; y < 10; y++) {
@@ -215,20 +211,20 @@ public final class Maps {
                 0,
                 0,
                 NEST_WALLS,
-                wall_volcan,
+                wall_volcano,
                 base_tile
         );
 
-        drawPond(tiles, 5, 5, DEEP_GRASS, POND_6, VOLCANIC_SOIL);
+        drawPond(tiles, 5, 5, LAVA, POND_6, VOLCANIC_SOIL);
         tiles[2][2] += hole_up;
         tiles[6][6] += bird;
 
         return new Stage(tiles, 2, 2);
     }
 
-    private static Stage nuclearNest() {
+    private static Stage arcticNest() {
         int[][] tiles = new int[10][10];
-        int base_tile = 125;
+        int base_tile = 75;
         for (int y = 0; y < 10; y++) {
             Arrays.fill(tiles[y], base_tile);
         }
@@ -238,31 +234,61 @@ public final class Maps {
                 0,
                 0,
                 NEST_WALLS,
-                wall_nuclear,
+                wall_arctic,
                 base_tile
         );
 
-        drawPond(tiles, 5, 5, DEEP_GRASS, POND_6, ACID_SOIL);
+        drawPond(tiles, 5, 5, SNOW, POND_6, ICE);
         tiles[2][2] += hole_up;
         tiles[6][6] += bird;
 
         return new Stage(tiles, 2, 2);
     }
 
-    private static Stage articNest() {
-        return nestRoom(75);
-    }
-
     private static Stage bubblegumLandNest() {
-        return nestRoom(145);
+        int[][] tiles = new int[10][10];
+        int base_tile = 145;
+        for (int y = 0; y < 10; y++) {
+            Arrays.fill(tiles[y], base_tile);
+        }
+
+        drawWalls(
+                tiles,
+                0,
+                0,
+                NEST_WALLS,
+                stone,
+                base_tile
+        );
+
+        drawPond(tiles, 5, 5, BUBBLEGUM_LAKE, POND_6, BUBBLEGUM_LAND);
+        tiles[2][2] += hole_up;
+        tiles[6][6] += bird;
+
+        return new Stage(tiles, 2, 2);
     }
 
     private static Stage spaceNest() {
-        return nestRoom(155);
-    }
+        int[][] tiles = new int[10][10];
+        int base_tile = 165;
+        for (int y = 0; y < 10; y++) {
+            Arrays.fill(tiles[y], base_tile);
+        }
 
-    private static Stage nightmareNest() {
-        return nestRoom(175);
+        drawWalls(
+                tiles,
+                0,
+                0,
+                NEST_WALLS,
+                stone,
+                base_tile
+        );
+
+        drawPond(tiles, 5, 5, SPACE_LAKE, POND_6, SPACE_SOIL);
+        tiles[2][2] += hole_up;
+        tiles[6][6] += bird;
+
+        return new Stage(tiles, 2, 2);
     }
 
     public static Stage get(int stageId) {
@@ -273,12 +299,12 @@ public final class Maps {
                 return forest();
             case CAVE:
                 return cave();
-            case VOLCAN:
-                return volcan();
+            case VOLCANO:
+                return volcano();
             case NUCLEAR:
                 return nuclear();
-            case ARTIC:
-                return artic();
+            case ARCTIC:
+                return arctic();
             case BUBBLEGUM_LAND:
                 return bubblegum_land();
             case SPACE:
@@ -290,17 +316,13 @@ public final class Maps {
             case CAVE_NEST:
                 return caveNest();
             case VOLCAN_NEST:
-                return volcanNest();
-            case NUCLEAR_NEST:
-                return nuclearNest();
+                return volcanoNest();
             case ARTIC_NEST:
-                return articNest();
+                return arcticNest();
             case BUBBLEGUM_LAND_NEST:
                 return bubblegumLandNest();
             case SPACE_NEST:
                 return spaceNest();
-            case NIGHTMARE_NEST:
-                return nightmareNest();
             default:
                 throw new IllegalArgumentException("Unknown stage id: " + stageId);
         }
@@ -382,6 +404,7 @@ public final class Maps {
         return count;
     }
 
+    // TODO TEMP
     private static int drawItemLine(int[][] tiles, int item, int startY, int startX, int endY, int endX, int... allowedTiles) {
         int dy = Integer.compare(endY, startY);
         int dx = Integer.compare(endX, startX);
@@ -490,7 +513,7 @@ public final class Maps {
         tiles[27][28] += hole_down;
         tiles[26][28] += bird;
 
-        randomizedItems(tiles, plant, 30, 2, 2, 28, 2, 28, 15, 35);
+        randomizedItems(tiles, plant, 20, 2, 2, 28, 2, 28, 15, 35);
 
         return new Stage(tiles, 2, 2);
     }
@@ -504,8 +527,8 @@ public final class Maps {
         drawPond(tiles, 21, 7, DEEP_GRASS, POND_1, SOIL);
         drawPond(tiles, 25, 24, DEEP_GRASS, POND_6, SOIL);
         tiles[2][2] += hole_up;
-        tiles[23][8] = hole_down + 45;
-        tiles[26][25] = hole_down_nest + 45;
+        tiles[23][8] += hole_down;
+        tiles[26][25] += hole_down_nest;
 
         int[][] FOREST_WALLS = {
                 {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, // 0
@@ -551,7 +574,11 @@ public final class Maps {
         );
 
         randomizedItems(tiles, -DEEP_GRASS * 10 + GRASS * 10, 90, 1, 2, 28, 2, 28, 55);
-        randomizedItems(tiles, plant, 40, 2, 2, 28, 2, 28, 55, 15);
+        randomizedItems(tiles, plant, 10, 2, 2, 28, 2, 28, 55, 15);
+        randomizedItems(tiles, flower_floor_yellow, 10, 2, 2, 28, 2, 28, 55, 15);
+        randomizedItems(tiles, flower_floor_pink, 10, 2, 2, 28, 2, 28, 55, 15);
+        randomizedItems(tiles, flower_floor_blue, 10, 2, 2, 28, 2, 28, 55, 15);
+        randomizedItems(tiles, gem, 7, 2, 2, 28, 2, 28, 55041, 55042, 55043, 55044, 55046, 55047, 55048, 55049, 45);
 
         return new Stage(tiles, 2, 2);
     }
@@ -611,18 +638,19 @@ public final class Maps {
         tiles[10][5] += hole_down_nest;
         tiles[20][15] += hole_down;
 
-        randomizedItems(tiles, beach_plant, 20, 1, 2, 28, 2, 28, 45);
+        randomizedItems(tiles, gem, 30, 1, 2, 28, 2, 28, 45);
+        randomizedItems(tiles, gems, 20, 1, 2, 28, 2, 28, 45);
 
         return new Stage(tiles, 2, 2);
     }
 
-    private static Stage volcan() {
+    private static Stage volcano() {
         int[][] tiles = new int[30][30];
         for (int y = 0; y < 30; y++) {
             Arrays.fill(tiles[y], 105);
         }
 
-        int[][] VOLCAN_WALLS = {
+        int[][] VOLCANO_WALLS = {
                 {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, // 0
                 {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 1
                 {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1}, // 2
@@ -659,8 +687,8 @@ public final class Maps {
                 tiles,
                 0,
                 0,
-                VOLCAN_WALLS,
-                wall_cave,
+                VOLCANO_WALLS,
+                wall_volcano,
                 105
         );
 
@@ -672,8 +700,11 @@ public final class Maps {
         drawPond(tiles, 22, 15, LAVA, POND_4, VOLCANIC_SOIL);
 
         tiles[2][2] += hole_up;
-        tiles[3][16] += hole_down ;
+        tiles[3][16] += hole_down;
         tiles[26][26] += hole_down_nest;
+
+        randomizedItems(tiles, gem, 10, 1, 2, 28, 2, 28, 105091, 105092, 105093, 105094, 105095, 105096, 105097, 105098, 105099);
+        randomizedItems(tiles, gems, 5, 1, 2, 28, 2, 28, 105091, 105092, 105093, 105094, 105095, 105096, 105097, 105098, 105099);
 
         return new Stage(tiles, 2, 2);
     }
@@ -684,7 +715,84 @@ public final class Maps {
             Arrays.fill(tiles[y], 125);
         }
 
-        int[][] NUCLEAR_WALLS = {
+        drawPond(tiles, 0, 0, ACID_LAKE, POND_3, ACID_SOIL);
+        drawPond(tiles, 11, 11, ACID_LAKE, POND_7, ACID_SOIL);
+        tiles[1][2] += hole_up;
+        tiles[15][23] += bird;
+
+        return new Stage(tiles, 2, 2);
+    }
+
+    private static Stage arctic() {
+        int[][] tiles = new int[30][30];
+        for (int y = 0; y < 30; y++) {
+            Arrays.fill(tiles[y], 75);
+        }
+
+        drawPond(tiles, 0, 0, SNOW, POND_3, WATER, DEEP_WATER);
+        drawPond(tiles, 23, 23, SNOW, POND_3, ICE);
+
+        drawItemLine(tiles, wall_arctic, 0, 6, 5, 6, 75);
+        drawItemLine(tiles, wall_arctic, 7, 6, 13, 6, 75);
+        drawItemLine(tiles, wall_arctic, 15, 6, 21, 6, 75);
+        drawItemLine(tiles, wall_arctic, 23, 6, 29, 6, 75);
+        drawItemLine(tiles, wall_arctic, 0, 13, 7, 13, 75);
+        drawItemLine(tiles, wall_arctic, 9, 13, 17, 13, 75);
+        drawItemLine(tiles, wall_arctic, 19, 13, 25, 13, 75);
+        drawItemLine(tiles, wall_arctic, 27, 13, 29, 13, 75);
+        drawItemLine(tiles, wall_arctic, 0, 20, 4, 20, 75);
+        drawItemLine(tiles, wall_arctic, 6, 20, 12, 20, 75);
+        drawItemLine(tiles, wall_arctic, 14, 20, 20, 20, 75);
+        drawItemLine(tiles, wall_arctic, 22, 20, 29, 20, 75);
+        drawItemLine(tiles, wall_arctic, 0, 26, 6, 26, 75);
+        drawItemLine(tiles, wall_arctic, 8, 26, 14, 26, 75);
+        drawItemLine(tiles, wall_arctic, 16, 26, 22, 26, 75);
+        drawItemLine(tiles, wall_arctic, 24, 26, 29, 26, 75);
+        drawItemLine(tiles, wall_arctic, 6, 0, 6, 4, 75);
+        drawItemLine(tiles, wall_arctic, 6, 6, 6, 11, 75);
+        drawItemLine(tiles, wall_arctic, 6, 13, 6, 18, 75);
+        drawItemLine(tiles, wall_arctic, 6, 20, 6, 24, 75);
+        drawItemLine(tiles, wall_arctic, 6, 26, 6, 29, 75);
+        drawItemLine(tiles, wall_arctic, 12, 0, 12, 2, 75);
+        drawItemLine(tiles, wall_arctic, 12, 4, 12, 11, 75);
+        drawItemLine(tiles, wall_arctic, 12, 13, 12, 17, 75);
+        drawItemLine(tiles, wall_arctic, 12, 20, 12, 24, 75);
+        drawItemLine(tiles, wall_arctic, 12, 26, 12, 29, 75);
+        drawItemLine(tiles, wall_arctic, 18, 0, 18, 5, 75);
+        drawItemLine(tiles, wall_arctic, 18, 7, 18, 11, 75);
+        drawItemLine(tiles, wall_arctic, 18, 13, 18, 18, 75);
+        drawItemLine(tiles, wall_arctic, 18, 20, 18, 24, 75);
+        drawItemLine(tiles, wall_arctic, 18, 26, 18, 29, 75);
+        drawItemLine(tiles, wall_arctic, 24, 0, 24, 3, 75);
+        drawItemLine(tiles, wall_arctic, 24, 5, 24, 11, 75);
+        drawItemLine(tiles, wall_arctic, 24, 13, 24, 16, 75);
+        drawItemLine(tiles, wall_arctic, 24, 18, 24, 24, 75);
+        drawItemLine(tiles, wall_arctic, 24, 26, 24, 29, 75);
+        drawItemLine(tiles, wall_arctic, 2, 3, 4, 3, 75);
+        drawItemLine(tiles, wall_arctic, 9, 2, 9, 5, 75);
+        drawItemLine(tiles, wall_arctic, 3, 9, 5, 9, 75);
+        drawItemLine(tiles, wall_arctic, 8, 15, 8, 18, 75);
+        drawItemLine(tiles, wall_arctic, 3, 22, 5, 22, 75);
+        drawItemLine(tiles, wall_arctic, 9, 23, 9, 25, 75);
+        drawItemLine(tiles, wall_arctic, 14, 2, 16, 2, 75);
+        drawItemLine(tiles, wall_arctic, 14, 8, 17, 8, 75);
+        drawItemLine(tiles, wall_arctic, 15, 15, 17, 15, 75);
+        drawItemLine(tiles, wall_arctic, 14, 22, 16, 22, 75);
+        drawItemLine(tiles, wall_arctic, 20, 9, 23, 9, 75);
+        drawItemLine(tiles, wall_arctic, 20, 16, 23, 16, 75);
+        drawItemLine(tiles, wall_arctic, 20, 23, 23, 23, 75);
+        drawItemLine(tiles, wall_arctic, 26, 24, 28, 24, 75);
+
+        return new Stage(tiles, 2, 2);
+    }
+
+    private static Stage bubblegum_land() {
+        int[][] tiles = new int[30][30];
+        for (int y = 0; y < 30; y++) {
+            Arrays.fill(tiles[y], 145);
+        }
+
+        int[][] BUBBLEGUM_WALLS = {
                 {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, // 0
                 {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 1
                 {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 2
@@ -721,101 +829,19 @@ public final class Maps {
                 tiles,
                 0,
                 0,
-                NUCLEAR_WALLS,
+                BUBBLEGUM_WALLS,
                 wall_nuclear,
-                125
+                145
         );
 
-        drawPond(tiles, 1, 1, ACID_LAKE, POND_6, ACID_SOIL);
-        drawPond(tiles, 1, 24, ACID_LAKE, POND_6, ACID_SOIL);
-        drawPond(tiles, 24, 1, ACID_LAKE, POND_6, ACID_SOIL);
-        drawPond(tiles, 15, 15, ACID_LAKE, POND_2, ACID_SOIL);
+        drawPond(tiles, 1, 1, BUBBLEGUM_LAKE, POND_6, BUBBLEGUM);
+        drawPond(tiles, 1, 24, BUBBLEGUM_LAKE, POND_6, BUBBLEGUM);
+        drawPond(tiles, 24, 1, BUBBLEGUM_LAKE, POND_6, BUBBLEGUM);
+        drawPond(tiles, 15, 15, BUBBLEGUM_LAKE, POND_2, BUBBLEGUM);
 
         tiles[2][2] += hole_up;
+        tiles[2][25] += hole_down;
         tiles[25][2] += hole_down_nest;
-
-        return new Stage(tiles, 2, 2);
-    }
-
-    private static Stage artic() {
-        int[][] tiles = new int[30][30];
-        for (int y = 0; y < 30; y++) {
-            Arrays.fill(tiles[y], 75);
-        }
-
-        drawPond(tiles, 0, 0, SNOW, POND_3, WATER, DEEP_WATER);
-        drawPond(tiles, 23, 23, SNOW, POND_3, ICE);
-
-        drawItemLine(tiles, wall_artic, 0, 6, 5, 6, 75);
-        drawItemLine(tiles, wall_artic, 7, 6, 13, 6, 75);
-        drawItemLine(tiles, wall_artic, 15, 6, 21, 6, 75);
-        drawItemLine(tiles, wall_artic, 23, 6, 29, 6, 75);
-        drawItemLine(tiles, wall_artic, 0, 13, 7, 13, 75);
-        drawItemLine(tiles, wall_artic, 9, 13, 17, 13, 75);
-        drawItemLine(tiles, wall_artic, 19, 13, 25, 13, 75);
-        drawItemLine(tiles, wall_artic, 27, 13, 29, 13, 75);
-        drawItemLine(tiles, wall_artic, 0, 20, 4, 20, 75);
-        drawItemLine(tiles, wall_artic, 6, 20, 12, 20, 75);
-        drawItemLine(tiles, wall_artic, 14, 20, 20, 20, 75);
-        drawItemLine(tiles, wall_artic, 22, 20, 29, 20, 75);
-        drawItemLine(tiles, wall_artic, 0, 26, 6, 26, 75);
-        drawItemLine(tiles, wall_artic, 8, 26, 14, 26, 75);
-        drawItemLine(tiles, wall_artic, 16, 26, 22, 26, 75);
-        drawItemLine(tiles, wall_artic, 24, 26, 29, 26, 75);
-        drawItemLine(tiles, wall_artic, 6, 0, 6, 4, 75);
-        drawItemLine(tiles, wall_artic, 6, 6, 6, 11, 75);
-        drawItemLine(tiles, wall_artic, 6, 13, 6, 18, 75);
-        drawItemLine(tiles, wall_artic, 6, 20, 6, 24, 75);
-        drawItemLine(tiles, wall_artic, 6, 26, 6, 29, 75);
-        drawItemLine(tiles, wall_artic, 12, 0, 12, 2, 75);
-        drawItemLine(tiles, wall_artic, 12, 4, 12, 11, 75);
-        drawItemLine(tiles, wall_artic, 12, 13, 12, 17, 75);
-        drawItemLine(tiles, wall_artic, 12, 20, 12, 24, 75);
-        drawItemLine(tiles, wall_artic, 12, 26, 12, 29, 75);
-        drawItemLine(tiles, wall_artic, 18, 0, 18, 5, 75);
-        drawItemLine(tiles, wall_artic, 18, 7, 18, 11, 75);
-        drawItemLine(tiles, wall_artic, 18, 13, 18, 18, 75);
-        drawItemLine(tiles, wall_artic, 18, 20, 18, 24, 75);
-        drawItemLine(tiles, wall_artic, 18, 26, 18, 29, 75);
-        drawItemLine(tiles, wall_artic, 24, 0, 24, 3, 75);
-        drawItemLine(tiles, wall_artic, 24, 5, 24, 11, 75);
-        drawItemLine(tiles, wall_artic, 24, 13, 24, 16, 75);
-        drawItemLine(tiles, wall_artic, 24, 18, 24, 24, 75);
-        drawItemLine(tiles, wall_artic, 24, 26, 24, 29, 75);
-        drawItemLine(tiles, wall_artic, 2, 3, 4, 3, 75);
-        drawItemLine(tiles, wall_artic, 9, 2, 9, 5, 75);
-        drawItemLine(tiles, wall_artic, 3, 9, 5, 9, 75);
-        drawItemLine(tiles, wall_artic, 8, 15, 8, 18, 75);
-        drawItemLine(tiles, wall_artic, 3, 22, 5, 22, 75);
-        drawItemLine(tiles, wall_artic, 9, 23, 9, 25, 75);
-        drawItemLine(tiles, wall_artic, 14, 2, 16, 2, 75);
-        drawItemLine(tiles, wall_artic, 14, 8, 17, 8, 75);
-        drawItemLine(tiles, wall_artic, 15, 15, 17, 15, 75);
-        drawItemLine(tiles, wall_artic, 14, 22, 16, 22, 75);
-        drawItemLine(tiles, wall_artic, 20, 9, 23, 9, 75);
-        drawItemLine(tiles, wall_artic, 20, 16, 23, 16, 75);
-        drawItemLine(tiles, wall_artic, 20, 23, 23, 23, 75);
-        drawItemLine(tiles, wall_artic, 26, 24, 28, 24, 75);
-
-        return new Stage(tiles, 2, 2);
-    }
-
-    private static Stage bubblegum_land() {
-        int[][] tiles = new int[30][30];
-        for (int y = 0; y < 30; y++) {
-            Arrays.fill(tiles[y], 145);
-        }
-
-        drawPond(tiles, 0, 0, BUBBLEGUM_LAKE, POND_3, BUBBLEGUM);
-        drawPond(tiles, 11, 14, BUBBLEGUM_LAKE, POND_2, BUBBLEGUM);
-        drawPond(tiles, 23, 23, BUBBLEGUM_LAKE, POND_3, BUBBLEGUM);
-        drawPond(tiles, 10, 4, BUBBLEGUM_LAKE, POND_4, BUBBLEGUM);
-        drawPond(tiles, 22, 2, BUBBLEGUM_LAKE, POND_3, BUBBLEGUM);
-        drawPond(tiles, 2, 20, BUBBLEGUM_LAKE, POND_6, BUBBLEGUM);
-        drawPond(tiles, 24, 13, BUBBLEGUM_LAKE, POND_1, BUBBLEGUM);
-        tiles[2][2] = hole_up + 135;
-        tiles[13][16] = hole_down + 135;
-        tiles[26][25] = hole_down + 135;
 
         return new Stage(tiles, 2, 2);
     }
@@ -833,9 +859,9 @@ public final class Maps {
         drawPond(tiles, 3, 20, SPACE_SOIL, POND_6, SPACE_LAKE);
         drawPond(tiles, 24, 13, SPACE_SOIL, POND_1, SPACE_LAKE);
 
-        tiles[2][2] = hole_up + 155;
-        tiles[13][16] = hole_down + 165;
-        tiles[26][25] = hole_down + 95;
+        tiles[2][2] += hole_up;
+        tiles[13][16] += hole_down_nest;
+        tiles[26][25] += hole_down;
 
         return new Stage(tiles, 2, 2);
     }
@@ -849,7 +875,8 @@ public final class Maps {
 
         drawPond(tiles, 0, 0, BLOOD_LAKE, POND_3, VOLCANIC_SOIL);
         drawPond(tiles, 11, 11, BLOOD_LAKE, POND_7, VOLCANIC_SOIL);
-        tiles[1][2] = hole_up + 95;
+        tiles[1][2] += hole_up;
+        tiles[15][23] += bird;
 
         return new Stage(tiles, 2, 2);
     }
