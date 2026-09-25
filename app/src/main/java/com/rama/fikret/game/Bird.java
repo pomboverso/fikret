@@ -19,8 +19,9 @@ import com.rama.fikret.R;
  *
  * Shares the goose's sprite layout: 2 direction columns (left/right) x 4
  * rows (rest, idle, walk A, walk B) - see Goose for what each row means.
- * The bird never rests/swims (no water interaction yet), so row 0 is
- * unused for now.
+ * The bird swims (row 0, legs tucked) whenever it is standing in liquid -
+ * see setSwimming(), which GameView drives from the tile under the bird,
+ * whether it is still idle or already following the goose.
  */
 public class Bird {
     private static final int ATLAS_COLUMNS = 2;
@@ -29,6 +30,7 @@ public class Bird {
     private static final long STEP_DURATION_MS = 200;
     private static final long WALK_FRAME_DURATION_MS = 80;
 
+    private static final int FRAME_REST = 0;
     private static final int FRAME_IDLE = 1;
     private static final int FRAME_WALK_A = 2;
     private static final int FRAME_WALK_B = 3;
@@ -44,6 +46,7 @@ public class Bird {
     private Direction facing = Direction.RIGHT;
     private boolean moving = false;
     private boolean following = false;
+    private boolean swimming = false;
     private boolean walkToggle = false;
     private long walkAnimTimer = 0;
 
@@ -55,6 +58,17 @@ public class Bird {
 
     public boolean isFollowing() {
         return following;
+    }
+
+    /** Swimming = standing in liquid: draws the tucked-legs pose (row 0)
+     *  instead of idle/walk. Independent of following - an idle bird
+     *  sitting in a pond swims too. */
+    public void setSwimming(boolean swimming) {
+        this.swimming = swimming;
+    }
+
+    public boolean isSwimming() {
+        return swimming;
     }
 
     public void startFollowing() {
@@ -107,7 +121,7 @@ public class Bird {
     }
 
     public void draw(Canvas canvas, Rect dst) {
-        int frame = moving ? (walkToggle ? FRAME_WALK_A : FRAME_WALK_B) : FRAME_IDLE;
+        int frame = swimming ? FRAME_REST : (moving ? (walkToggle ? FRAME_WALK_A : FRAME_WALK_B) : FRAME_IDLE);
         Rect src = spriteSheet.frameRect(facing.column, frame);
         canvas.drawBitmap(spriteSheet.getBitmap(), src, dst, null);
     }

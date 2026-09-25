@@ -36,6 +36,7 @@ public class Goose {
     private Direction facing = Direction.RIGHT;
     private boolean moving = false;
     private boolean resting = false;
+    private boolean swimming = false;
     private boolean walkToggle = false;
     private long walkAnimTimer = 0;
 
@@ -89,8 +90,20 @@ public class Goose {
         this.resting = resting;
     }
 
+    /** Swimming = standing in liquid (water, lava...). Unlike resting the
+     *  goose can still move; it just uses the tucked-legs pose (row 0)
+     *  instead of the walk/idle poses. GameView sets this every frame from
+     *  the tile under the goose. */
+    public void setSwimming(boolean swimming) {
+        this.swimming = swimming;
+    }
+
+    public boolean isSwimming() {
+        return swimming;
+    }
+
     public void draw(Canvas canvas, Rect dst) {
-        int frame = resting ? FRAME_REST : (moving ? (walkToggle ? FRAME_WALK_A : FRAME_WALK_B) : FRAME_IDLE);
+        int frame = (resting || swimming) ? FRAME_REST : (moving ? (walkToggle ? FRAME_WALK_A : FRAME_WALK_B) : FRAME_IDLE);
         Rect src = spriteSheet.frameRect(facing.column, frame);
         canvas.drawBitmap(spriteSheet.getBitmap(), src, dst, null);
     }

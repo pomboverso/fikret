@@ -28,7 +28,11 @@ import java.util.EnumMap;
  *  - Keyboard / d-pad: arrow keys or WASD; press two at once for a diagonal.
  *    Numpad 1-9 (5 = stop) sets a direction directly.
  *  - Analog stick / gamepad d-pad hat (API 12+ only, see GamepadAxes).
- * All sources are combined, so they can be mixed freely. Goose itself
+ * All sources are combined, so they can be mixed freely.
+ *
+ * Swimming: whenever the goose (or the bird) is over a liquid tile - water,
+ * deep water, lava, acid/bubblegum/space/blood lakes; see TileType.liquid -
+ * it switches to its swimming pose (see Goose/Bird.setSwimming()). Goose itself
  * refuses to step onto a blocking item like a stone, and won't squeeze
  * diagonally between two of them (see GameMap.canStep()).
  *
@@ -82,7 +86,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private boolean pinching;
 
     public GameView(Context context) {
-        this(context, Maps.NUCLEAR);
+        this(context, Maps.FOREST);
     }
 
     public GameView(Context context, int stageId) {
@@ -360,8 +364,17 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             return;
         }
         goose.update(deltaMs, resolvedDx(), resolvedDy(), map);
+        goose.setSwimming(isOverLiquid(goose.getX(), goose.getY()));
         updateBird(deltaMs);
         updateCamera();
+    }
+
+    /** Whether a sprite whose top-left is at (spriteX, spriteY) is standing
+     *  in liquid. Checks the sprite's centre, so mid-glide the pose flips
+     *  when it is half over the shoreline rather than as the step starts.
+     *  Applies to every creature alike (goose, and each bird). */
+    private boolean isOverLiquid(float spriteX, float spriteY) {
+        return map.isLiquidAt(spriteX + GameMap.TILE_SIZE / 2f, spriteY + GameMap.TILE_SIZE / 2f);
     }
 
     private void updateBird(long deltaMs) {
@@ -377,6 +390,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             lastGooseCol = goose.getCol();
         }
         bird.update(deltaMs);
+        bird.setSwimming(isOverLiquid(bird.getX(), bird.getY()));
 
         if (!bird.isFollowing() && bird.getRow() == goose.getRow() && bird.getCol() == goose.getCol()) {
             bird.startFollowing();

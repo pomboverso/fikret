@@ -61,6 +61,16 @@ public class MapCell {
         return sb.toString();
     }
 
+    /** True if a creature standing on this cell is standing in liquid
+     *  (water, lava, ...) and should swim. The foreground tile is what's
+     *  actually on top; only if the cell has no foreground tile (00) does
+     *  the background layer show through and count. A land foreground over
+     *  a liquid background is land. */
+    public boolean isLiquid() {
+        TileType top = tile != TileType.NONE ? tile : backgroundTile;
+        return top.liquid;
+    }
+
     public boolean hasBackground() {
         return backgroundTile != TileType.NONE;
     }

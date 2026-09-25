@@ -79,6 +79,17 @@ public class GameMap {
         return true;
     }
 
+    /** Whether the world-pixel point (worldX, worldY) is over a liquid
+     *  cell. Used with a sprite's CENTRE so that the swim pose kicks in when
+     *  the creature is actually half over the water, mid-glide. False
+     *  outside the map. */
+    public boolean isLiquidAt(float worldX, float worldY) {
+        int col = (int) Math.floor(worldX / TILE_SIZE);
+        int row = (int) Math.floor(worldY / TILE_SIZE);
+        MapCell cell = getCell(row, col);
+        return cell != null && cell.isLiquid();
+    }
+
     public int getRows() {
         return rows;
     }
