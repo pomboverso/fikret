@@ -13,12 +13,15 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 /**
- * The game surface: owns the map, the goose, the bird, the camera/zoom,
+ * The game surface: owns the map, the goose, the birds, the camera/zoom,
  * and all input.
  *
  * The goose moves one whole tile at a time, locked to the grid, in 8
@@ -38,12 +41,16 @@ import java.util.Map;
  * refuses to step onto a blocking item like a stone, and won't squeeze
  * diagonally between two of them (see GameMap.canStep()).
  *
- * The bird: if the map has an ItemType.BIRD cell, findBirdSpawn() finds it
- * once at load time and a Bird entity is spawned there in surfaceCreated().
- * It stands still until the goose steps onto its tile, then follows one
- * tile behind for the rest of the stage - and every stage after that too:
- * once a bird is following, changeStage() carries it along instead of
- * replacing it with the new stage's own (unrescued) bird.
+ * Birds: every ItemType.BIRD cell in the map spawns an idle Bird (see
+ * findIdleBirdSpawns()), standing still until the goose steps onto its
+ * tile. Freed birds don't just join the goose - they queue up behind
+ * whichever bird was freed before them: the 1st follows the goose, the
+ * 2nd follows the 1st, the 3rd follows the 2nd, and so on, each one
+ * trailing exactly one tile behind the one in front of it (see
+ * followingBirds/chaseTargets/updateBirds()). Once freed, a bird stays in
+ * that chain forever, including into every later stage - changeStage()
+ * carries the whole chain along instead of resetting it to that stage's
+ * own (unrescued) birds.
  *
  * Holes: stepping onto a HOLE_DOWN item cell moves to the next stage id
  * (Maps.get(stageId + 1)); HOLE_UP moves to the previous one, or - from
@@ -65,10 +72,22 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private GameThread thread;
     private GameMap map;
     private Goose goose;
-    private Bird bird;
     private Stage stage;
     private int stageId;
-    private int birdSpawnRow = -1, birdSpawnCol = -1;
+    // Birds already freed, in follow-chain order: index 0 trails the
+    // goose, index i (i > 0) trails followingBirds.get(i - 1). Persists
+    // across changeStage() - see that method.
+    private final List<Bird> followingBirds = new ArrayList<Bird>();
+    // Parallel to followingBirds. chaseTargets.get(i) is the tile whatever
+    // followingBirds.get(i) is chasing (the goose for i == 0, otherwise
+    // followingBirds.get(i - 1)) was standing on one frame ago - i.e. the
+    // tile that leader just vacated, and so where bird i should walk to
+    // next. Same "vacated tile" tracking a single following bird needs,
+    // just one pair per link in the chain. See updateBirds().
+    private final List<int[]> chaseTargets = new ArrayList<int[]>();
+    // Birds still waiting to be freed on the CURRENT stage only - rebuilt
+    // from scratch by findIdleBirdSpawns() every time the stage changes.
+    private final List<Bird> idleBirds = new ArrayList<Bird>();
     // Where the goose was standing the last time each stage was left, keyed
     // by stage id (see Maps) - so walking back into a stage (a HOLE_UP out
     // of a nest, or backtracking through HOLE_DOWN/HOLE_UP) resumes exactly
@@ -76,7 +95,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     // point. Only written/read by changeStage(); a stage not yet visited
     // this session has no entry and falls back to Stage.spawnRow/spawnCol.
     private final Map<Integer, int[]> lastPositionByStage = new HashMap<Integer, int[]>();
-    private int lastGooseRow, lastGooseCol;
     // Tracks the last cell the goose was seen on, so a hole (see
     // checkHoleTransition()) is only acted on once - the instant the goose
     // steps onto it - rather than every frame it happens to still be
@@ -111,7 +129,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private boolean pinching;
 
     public GameView(Context context) {
-        this(context, Maps.FOREST);
+        this(context, Maps.BEACH);
     }
 
     public GameView(Context context, int stageId) {
@@ -137,7 +155,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         map = new GameMap(stage.tiles);
         loadTileSheets();
         loadItemBitmaps();
-        findBirdSpawn();
+        findIdleBirdSpawns();
     }
 
     private void loadTileSheets() {
@@ -152,7 +170,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     /** Stone/hole/hole-up are plain static images (no direction, no
      *  animation) - decoded straight to a Bitmap rather than through
      *  SpriteSheet. BIRD is excluded on purpose: it's a moving entity, not
-     *  something drawn from map data every frame (see findBirdSpawn()). */
+     *  something drawn from map data every frame (see findIdleBirdSpawns()). */
     private void loadItemBitmaps() {
         BitmapFactory.Options opts = new BitmapFactory.Options();
         opts.inScaled = false;
@@ -165,20 +183,17 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
-    /** Scans the map once for the (first) BIRD item cell - that's where
-     *  surfaceCreated() spawns the actual Bird entity. Supports one bird
-     *  per stage for now; extend this to a list if a stage ever needs more. */
-    private void findBirdSpawn() {
-        // Reset first: switching stages (see changeStage()) reuses this
-        // method, and the new stage may not have a bird at all.
-        birdSpawnRow = -1;
-        birdSpawnCol = -1;
+    /** Scans the map for every ItemType.BIRD cell and spawns an idle Bird
+     *  standing on each one - any number of birds per stage is fine now,
+     *  not just one. Called once per stage (constructor/changeStage()); a
+     *  stage's own idle birds are map-local and don't persist, unlike
+     *  followingBirds (see class doc). */
+    private void findIdleBirdSpawns() {
+        idleBirds.clear();
         for (int r = 0; r < map.getRows(); r++) {
             for (int c = 0; c < map.getCols(); c++) {
                 if (map.getCell(r, c).item == ItemType.BIRD) {
-                    birdSpawnRow = r;
-                    birdSpawnCol = c;
-                    return;
+                    idleBirds.add(new Bird(getResources(), r, c));
                 }
             }
         }
@@ -191,22 +206,18 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     /** Runs whenever the drawing surface becomes available - the very
      *  first time GameView is shown, and again any time it's torn down and
      *  recreated without the Activity itself restarting (e.g. the app is
-     *  backgrounded and resumed). goose/bird are only created here if they
-     *  don't already exist, so a surface bounce mid-game resumes exactly
-     *  where the goose was standing rather than snapping back to the
-     *  stage's spawn point. */
+     *  backgrounded and resumed). goose is only created here if it doesn't
+     *  already exist, so a surface bounce mid-game resumes exactly where
+     *  the goose was standing rather than snapping back to the stage's
+     *  spawn point. idleBirds/followingBirds don't need similar handling -
+     *  they're plain fields that already survive a surface bounce as-is. */
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         if (goose == null) {
             goose = new Goose(getResources(), stage.spawnRow, stage.spawnCol);
         }
-        lastGooseRow = goose.getRow();
-        lastGooseCol = goose.getCol();
         holeGooseRow = goose.getRow();
         holeGooseCol = goose.getCol();
-        if (bird == null && birdSpawnRow >= 0) {
-            bird = new Bird(getResources(), birdSpawnRow, birdSpawnCol);
-        }
         thread = new GameThread(holder, this);
         thread.setRunning(true);
         thread.start();
@@ -407,7 +418,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         goose.update(deltaMs, resolvedDx(), resolvedDy(), map);
         goose.setSwimming(isOverLiquid(goose.getX(), goose.getY()));
         checkHoleTransition();
-        updateBird(deltaMs);
+        checkBirdRescues();
+        updateBirds(deltaMs);
         updateCamera();
     }
 
@@ -459,6 +471,19 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
      *  or if the remembered spot is no longer valid on that map. A bird
      *  that's already following stays with the goose into the new stage
      *  instead of being replaced by that stage's own (unrescued) bird. */
+    /** Swaps in a different stage in place. Tile/item art (tileSheets/
+     *  itemBitmaps) is loaded once per TileType/ItemType at construction
+     *  time and covers every stage already, so it's left alone here. Does
+     *  nothing if newStageId isn't a real stage - e.g. walking a HOLE_UP on
+     *  the first stage, or a HOLE_DOWN on the last.
+     *
+     *  The goose resumes at whatever spot it last left newStageId from (see
+     *  lastPositionByStage), not that stage's fixed spawn point - falling
+     *  back to the spawn point only the first time a stage is ever entered,
+     *  or if the remembered spot is no longer valid on that map. Every
+     *  already-freed bird crosses over too, lined up behind the goose at
+     *  its new position - see followingBirds - instead of being replaced
+     *  by that stage's own (unrescued) birds. */
     private void changeStage(int newStageId) {
         Stage newStage;
         try {
@@ -468,12 +493,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
 
         lastPositionByStage.put(stageId, new int[]{goose.getRow(), goose.getCol()});
-        boolean birdWasFollowing = bird != null && bird.isFollowing();
 
         stageId = newStageId;
         stage = newStage;
         map = new GameMap(stage.tiles);
-        findBirdSpawn();
+        findIdleBirdSpawns();
 
         int spawnRow = stage.spawnRow;
         int spawnCol = stage.spawnCol;
@@ -485,15 +509,19 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         goose = new Goose(getResources(), spawnRow, spawnCol);
 
-        if (birdWasFollowing) {
-            bird = new Bird(getResources(), spawnRow, spawnCol);
-            bird.startFollowing();
-        } else {
-            bird = (birdSpawnRow >= 0) ? new Bird(getResources(), birdSpawnRow, birdSpawnCol) : null;
+        // Recreate every already-freed bird stacked on the goose's new
+        // spot (their old coordinates belong to the old map), keep them in
+        // the same chain order, and reset each link's chase tracking to
+        // that same spot so nobody tries to walk back across the old map.
+        for (int i = 0; i < followingBirds.size(); i++) {
+            Bird carried = new Bird(getResources(), spawnRow, spawnCol);
+            carried.startFollowing();
+            followingBirds.set(i, carried);
+            int[] chaseTarget = chaseTargets.get(i);
+            chaseTarget[0] = spawnRow;
+            chaseTarget[1] = spawnCol;
         }
 
-        lastGooseRow = goose.getRow();
-        lastGooseCol = goose.getCol();
         holeGooseRow = goose.getRow();
         holeGooseCol = goose.getCol();
     }
@@ -506,23 +534,68 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         return map.isLiquidAt(spriteX + GameMap.TILE_SIZE / 2f, spriteY + GameMap.TILE_SIZE / 2f);
     }
 
-    private void updateBird(long deltaMs) {
-        if (bird == null) {
-            return;
-        }
-        // The goose only ever changes tile when it actually took a step
-        // (blocked/out-of-bounds attempts leave it in place) - so this is
-        // exactly "the goose just moved one tile".
-        if (goose.getRow() != lastGooseRow || goose.getCol() != lastGooseCol) {
-            bird.moveTowards(lastGooseRow, lastGooseCol);
-            lastGooseRow = goose.getRow();
-            lastGooseCol = goose.getCol();
-        }
-        bird.update(deltaMs);
-        bird.setSwimming(isOverLiquid(bird.getX(), bird.getY()));
+    /** The goose is the only thing that ever frees a bird. A trailing bird
+     *  only ever re-treads tiles the goose has already been through, so it
+     *  can never reach an idle bird's tile before the goose does - checking
+     *  the goose's position alone is enough. A freed bird joins the back of
+     *  followingBirds, chasing whoever's currently last in line (the goose
+     *  itself, if this is the first bird freed this game). */
+    private void checkBirdRescues() {
+        for (Iterator<Bird> it = idleBirds.iterator(); it.hasNext(); ) {
+            Bird idle = it.next();
+            if (idle.getRow() != goose.getRow() || idle.getCol() != goose.getCol()) {
+                continue;
+            }
+            it.remove();
+            idle.startFollowing();
 
-        if (!bird.isFollowing() && bird.getRow() == goose.getRow() && bird.getCol() == goose.getCol()) {
-            bird.startFollowing();
+            int leaderRow, leaderCol;
+            if (followingBirds.isEmpty()) {
+                leaderRow = goose.getRow();
+                leaderCol = goose.getCol();
+            } else {
+                Bird lastInChain = followingBirds.get(followingBirds.size() - 1);
+                leaderRow = lastInChain.getRow();
+                leaderCol = lastInChain.getCol();
+            }
+
+            followingBirds.add(idle);
+            // Starts equal to the leader's CURRENT tile (where the new
+            // bird is standing right now, having just been freed there) -
+            // so it holds still until that leader takes its next step.
+            chaseTargets.add(new int[]{leaderRow, leaderCol});
+        }
+    }
+
+    /** Advances the whole conga line by one link at a time: bird 0 chases
+     *  the goose, bird 1 chases bird 0, bird 2 chases bird 1, and so on.
+     *  Each step forward, chaseTargets.get(i) holds the tile that bird i's
+     *  leader was standing on one frame ago - the tile that leader just
+     *  vacated, and so exactly where bird i should walk to next (the same
+     *  single "vacated tile" a lone following bird needs, just tracked once
+     *  per link here). Processing the chain front-to-back means by the time
+     *  we reach bird i, bird i - 1 has already taken this frame's step, so
+     *  its position is ready to hand to bird i as this frame's leaderRow/
+     *  leaderCol. */
+    private void updateBirds(long deltaMs) {
+        int leaderRow = goose.getRow();
+        int leaderCol = goose.getCol();
+
+        for (int i = 0; i < followingBirds.size(); i++) {
+            Bird bird = followingBirds.get(i);
+            int[] chaseTarget = chaseTargets.get(i);
+
+            if (leaderRow != chaseTarget[0] || leaderCol != chaseTarget[1]) {
+                bird.moveTowards(chaseTarget[0], chaseTarget[1]);
+            }
+            chaseTarget[0] = leaderRow;
+            chaseTarget[1] = leaderCol;
+
+            bird.update(deltaMs);
+            bird.setSwimming(isOverLiquid(bird.getX(), bird.getY()));
+
+            leaderRow = bird.getRow();
+            leaderCol = bird.getCol();
         }
     }
 
@@ -575,12 +648,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
 
-        if (bird != null) {
-            int bx = Math.round(bird.getX()) - cameraX;
-            int by = Math.round(bird.getY()) - cameraY;
-            reusableDst.set(bx, by, bx + tileSize, by + tileSize);
-            bird.draw(canvas, reusableDst);
-        }
+        drawBirds(canvas, idleBirds, tileSize);
+        drawBirds(canvas, followingBirds, tileSize);
 
         if (goose != null) {
             int screenX = Math.round(goose.getX()) - cameraX;
@@ -594,6 +663,18 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         // Screen-space overlay: drawn after restore() so the joystick isn't
         // scaled by the zoom or scrolled by the camera.
         joystick.draw(canvas);
+    }
+
+    /** Draws every Bird in the given list (idle or following - both draw
+     *  identically, see Bird.draw()) at its current world position. */
+    private void drawBirds(Canvas canvas, List<Bird> birds, int tileSize) {
+        for (int i = 0; i < birds.size(); i++) {
+            Bird bird = birds.get(i);
+            int bx = Math.round(bird.getX()) - cameraX;
+            int by = Math.round(bird.getY()) - cameraY;
+            reusableDst.set(bx, by, bx + tileSize, by + tileSize);
+            bird.draw(canvas, reusableDst);
+        }
     }
 
     private void drawTile(Canvas canvas, int row, int col, int tileSize) {

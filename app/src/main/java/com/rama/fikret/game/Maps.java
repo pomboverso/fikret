@@ -122,6 +122,19 @@ public final class Maps {
             {1, 2, 2, 2, 2, 2, 3, 0, 0, 0, 1, 2, 2, 2, 3},
     };
 
+    private static final int[][] NEST_WALLS = {
+            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+            {1, 0, 0, 1, 1, 0, 1, 0, 0, 1},
+            {1, 0, 0, 0, 0, 0, 0, 0, 1, 1},
+            {1, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+            {1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
+            {1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
+            {1, 1, 1, 0, 0, 0, 0, 0, 1, 1},
+            {1, 0, 0, 0, 0, 0, 0, 0, 1, 1},
+            {1, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+    };
+
     private Maps() {
     }
 
@@ -142,30 +155,18 @@ public final class Maps {
 
     private static Stage forestNest() {
         int[][] tiles = new int[10][10];
+        int base_tile = 55;
         for (int y = 0; y < 10; y++) {
-            Arrays.fill(tiles[y], 55);
+            Arrays.fill(tiles[y], base_tile);
         }
-
-        int[][] FOREST_WALLS = {
-                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-                {1, 0, 0, 1, 1, 0, 1, 0, 0, 1},
-                {1, 0, 0, 0, 0, 0, 0, 0, 1, 1},
-                {1, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                {1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
-                {1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
-                {1, 1, 1, 0, 0, 0, 0, 0, 1, 1},
-                {1, 0, 0, 0, 0, 0, 0, 0, 1, 1},
-                {1, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-        };
 
         drawWalls(
                 tiles,
                 0,
                 0,
-                FOREST_WALLS,
+                NEST_WALLS,
                 wall_forest,
-                55,
+                base_tile,
                 15
         );
 
@@ -173,22 +174,79 @@ public final class Maps {
         tiles[2][2] += hole_up;
         tiles[6][6] += bird;
 
-        randomizedItems(tiles, -DEEP_GRASS * 10 + GRASS * 10, 5, 1, 2, 8, 2, 8, 55);
-        randomizedItems(tiles, plant, 5, 2, 2, 8, 2, 8, 55, 15);
+        randomizedItems(tiles, -DEEP_GRASS * 10 + GRASS * 10, 5, 1, 2, 8, 2, 8, base_tile);
+        randomizedItems(tiles, plant, 5, 2, 2, 8, 2, 8, base_tile, 15);
 
         return new Stage(tiles, 2, 2);
     }
 
     private static Stage caveNest() {
-        return nestRoom(45);
+        int[][] tiles = new int[10][10];
+        int base_tile = 45;
+        for (int y = 0; y < 10; y++) {
+            Arrays.fill(tiles[y], base_tile);
+        }
+
+        drawWalls(
+                tiles,
+                0,
+                0,
+                NEST_WALLS,
+                wall_cave,
+                base_tile
+        );
+
+        drawPond(tiles, 5, 5, DEEP_GRASS, POND_6, VOLCANIC_SOIL);
+        tiles[2][2] += hole_up;
+        tiles[6][6] += bird;
+
+        return new Stage(tiles, 2, 2);
     }
 
     private static Stage volcanNest() {
-        return nestRoom(105);
+        int[][] tiles = new int[10][10];
+        int base_tile = 105;
+        for (int y = 0; y < 10; y++) {
+            Arrays.fill(tiles[y], base_tile);
+        }
+
+        drawWalls(
+                tiles,
+                0,
+                0,
+                NEST_WALLS,
+                wall_volcan,
+                base_tile
+        );
+
+        drawPond(tiles, 5, 5, DEEP_GRASS, POND_6, VOLCANIC_SOIL);
+        tiles[2][2] += hole_up;
+        tiles[6][6] += bird;
+
+        return new Stage(tiles, 2, 2);
     }
 
     private static Stage nuclearNest() {
-        return nestRoom(125);
+        int[][] tiles = new int[10][10];
+        int base_tile = 125;
+        for (int y = 0; y < 10; y++) {
+            Arrays.fill(tiles[y], base_tile);
+        }
+
+        drawWalls(
+                tiles,
+                0,
+                0,
+                NEST_WALLS,
+                wall_nuclear,
+                base_tile
+        );
+
+        drawPond(tiles, 5, 5, DEEP_GRASS, POND_6, ACID_SOIL);
+        tiles[2][2] += hole_up;
+        tiles[6][6] += bird;
+
+        return new Stage(tiles, 2, 2);
     }
 
     private static Stage articNest() {
@@ -430,10 +488,8 @@ public final class Maps {
         drawPond(tiles, 17, 23, SAND, POND_3, WATER, DEEP_WATER);
         drawPond(tiles, 24, 25, SAND, POND_4, GRASS);
         tiles[27][28] += hole_down;
+        tiles[26][28] += bird;
 
-        int birdMax = 20;
-
-        randomizedItems(tiles, bird, birdMax, 2, 2, 28, 2, 28, 35021, 35022, 35023, 35024, 25, 35026, 35027, 35028, 35029);
         randomizedItems(tiles, plant, 30, 2, 2, 28, 2, 28, 15, 35);
 
         return new Stage(tiles, 2, 2);
@@ -550,9 +606,11 @@ public final class Maps {
 
         drawPond(tiles, 8, 4, SOIL, POND_1, VOLCANIC_SOIL);
         drawPond(tiles, 19, 14, SOIL, POND_6, VOLCANIC_SOIL);
+
         tiles[2][2] += hole_up;
-        tiles[10][5] = hole_down + 95;
-        tiles[20][15] = hole_down + 95;
+        tiles[10][5] += hole_down_nest;
+        tiles[20][15] += hole_down;
+
         randomizedItems(tiles, beach_plant, 20, 1, 2, 28, 2, 28, 45);
 
         return new Stage(tiles, 2, 2);
@@ -613,9 +671,9 @@ public final class Maps {
         drawPond(tiles, 22, 2, LAVA, POND_2, VOLCANIC_SOIL);
         drawPond(tiles, 22, 15, LAVA, POND_4, VOLCANIC_SOIL);
 
-        tiles[2][2] = hole_up + 95;
-        tiles[3][16] = hole_down + 95;
-        tiles[26][26] = hole_down + 95;
+        tiles[2][2] += hole_up;
+        tiles[3][16] += hole_down ;
+        tiles[26][26] += hole_down_nest;
 
         return new Stage(tiles, 2, 2);
     }
@@ -673,9 +731,8 @@ public final class Maps {
         drawPond(tiles, 24, 1, ACID_LAKE, POND_6, ACID_SOIL);
         drawPond(tiles, 15, 15, ACID_LAKE, POND_2, ACID_SOIL);
 
-        tiles[2][2] = hole_up + 115;
-        tiles[25][2] = hole_down + 115;
-        tiles[2][25] = hole_down + 115;
+        tiles[2][2] += hole_up;
+        tiles[25][2] += hole_down_nest;
 
         return new Stage(tiles, 2, 2);
     }
