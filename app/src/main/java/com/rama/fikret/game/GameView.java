@@ -82,7 +82,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private boolean pinching;
 
     public GameView(Context context) {
-        this(context, Maps.BUBBLEGUM_LAND);
+        this(context, Maps.NUCLEAR);
     }
 
     public GameView(Context context, int stageId) {
