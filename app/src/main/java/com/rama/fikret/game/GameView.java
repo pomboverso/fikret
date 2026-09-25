@@ -14,6 +14,8 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * The game surface: owns the map, the goose, the bird, the camera/zoom,
@@ -39,12 +41,17 @@ import java.util.EnumMap;
  * The bird: if the map has an ItemType.BIRD cell, findBirdSpawn() finds it
  * once at load time and a Bird entity is spawned there in surfaceCreated().
  * It stands still until the goose steps onto its tile, then follows one
- * tile behind for the rest of the stage (see updateBird()/Bird).
+ * tile behind for the rest of the stage - and every stage after that too:
+ * once a bird is following, changeStage() carries it along instead of
+ * replacing it with the new stage's own (unrescued) bird.
  *
  * Holes: stepping onto a HOLE_DOWN item cell moves to the next stage id
- * (Maps.get(stageId + 1)); HOLE_UP moves to the previous one. Either is a
- * no-op if that neighbouring stage doesn't exist. See
- * checkHoleTransition()/changeStage().
+ * (Maps.get(stageId + 1)); HOLE_UP moves to the previous one, or - from
+ * inside a nest stage - back to that nest's parent; HOLE_DOWN_NEST drops
+ * into the current stage's nest. Any of these is a no-op if the target
+ * stage doesn't exist. Re-entering any stage resumes at the spot the goose
+ * left it from (see changeStage()/lastPositionByStage), not that stage's
+ * fixed spawn point. See checkHoleTransition()/changeStage().
  *
  * Pinch-to-zoom is wired up (ScaleGestureDetector, isolated in
  * PinchZoomDetector so it never loads on devices below API 8).
@@ -62,6 +69,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private Stage stage;
     private int stageId;
     private int birdSpawnRow = -1, birdSpawnCol = -1;
+    // Where the goose was standing the last time each stage was left, keyed
+    // by stage id (see Maps) - so walking back into a stage (a HOLE_UP out
+    // of a nest, or backtracking through HOLE_DOWN/HOLE_UP) resumes exactly
+    // where the goose stepped off, instead of that stage's fixed spawn
+    // point. Only written/read by changeStage(); a stage not yet visited
+    // this session has no entry and falls back to Stage.spawnRow/spawnCol.
+    private final Map<Integer, int[]> lastPositionByStage = new HashMap<Integer, int[]>();
     private int lastGooseRow, lastGooseCol;
     // Tracks the last cell the goose was seen on, so a hole (see
     // checkHoleTransition()) is only acted on once - the instant the goose
@@ -174,14 +188,23 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         zoom = Math.max(MIN_ZOOM, Math.min(newZoom, MAX_ZOOM));
     }
 
+    /** Runs whenever the drawing surface becomes available - the very
+     *  first time GameView is shown, and again any time it's torn down and
+     *  recreated without the Activity itself restarting (e.g. the app is
+     *  backgrounded and resumed). goose/bird are only created here if they
+     *  don't already exist, so a surface bounce mid-game resumes exactly
+     *  where the goose was standing rather than snapping back to the
+     *  stage's spawn point. */
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
-        goose = new Goose(getResources(), stage.spawnRow, stage.spawnCol);
+        if (goose == null) {
+            goose = new Goose(getResources(), stage.spawnRow, stage.spawnCol);
+        }
         lastGooseRow = goose.getRow();
         lastGooseCol = goose.getCol();
         holeGooseRow = goose.getRow();
         holeGooseCol = goose.getCol();
-        if (birdSpawnRow >= 0) {
+        if (bird == null && birdSpawnRow >= 0) {
             bird = new Bird(getResources(), birdSpawnRow, birdSpawnCol);
         }
         thread = new GameThread(holder, this);
@@ -424,13 +447,18 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         return stageId >= Maps.NEST_OFFSET;
     }
 
-    /** Swaps in a different stage in place: new map, a freshly-spawned
-     *  goose at that stage's spawn point, and a freshly-spawned bird if
-     *  that stage has one (or none, if it doesn't). Tile/item art
-     *  (tileSheets/itemBitmaps) is loaded once per TileType/ItemType at
-     *  construction time and covers every stage already, so it's left
-     *  alone here. Does nothing if newStageId isn't a real stage - e.g.
-     *  walking a HOLE_UP on the first stage, or a HOLE_DOWN on the last. */
+    /** Swaps in a different stage in place. Tile/item art (tileSheets/
+     *  itemBitmaps) is loaded once per TileType/ItemType at construction
+     *  time and covers every stage already, so it's left alone here. Does
+     *  nothing if newStageId isn't a real stage - e.g. walking a HOLE_UP on
+     *  the first stage, or a HOLE_DOWN on the last.
+     *
+     *  The goose resumes at whatever spot it last left newStageId from (see
+     *  lastPositionByStage), not that stage's fixed spawn point - falling
+     *  back to the spawn point only the first time a stage is ever entered,
+     *  or if the remembered spot is no longer valid on that map. A bird
+     *  that's already following stays with the goose into the new stage
+     *  instead of being replaced by that stage's own (unrescued) bird. */
     private void changeStage(int newStageId) {
         Stage newStage;
         try {
@@ -439,13 +467,30 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             return;
         }
 
+        lastPositionByStage.put(stageId, new int[]{goose.getRow(), goose.getCol()});
+        boolean birdWasFollowing = bird != null && bird.isFollowing();
+
         stageId = newStageId;
         stage = newStage;
         map = new GameMap(stage.tiles);
         findBirdSpawn();
 
-        goose = new Goose(getResources(), stage.spawnRow, stage.spawnCol);
-        bird = (birdSpawnRow >= 0) ? new Bird(getResources(), birdSpawnRow, birdSpawnCol) : null;
+        int spawnRow = stage.spawnRow;
+        int spawnCol = stage.spawnCol;
+        int[] savedPos = lastPositionByStage.get(newStageId);
+        if (savedPos != null && map.isPassable(savedPos[0], savedPos[1])) {
+            spawnRow = savedPos[0];
+            spawnCol = savedPos[1];
+        }
+
+        goose = new Goose(getResources(), spawnRow, spawnCol);
+
+        if (birdWasFollowing) {
+            bird = new Bird(getResources(), spawnRow, spawnCol);
+            bird.startFollowing();
+        } else {
+            bird = (birdSpawnRow >= 0) ? new Bird(getResources(), birdSpawnRow, birdSpawnCol) : null;
+        }
 
         lastGooseRow = goose.getRow();
         lastGooseCol = goose.getCol();
