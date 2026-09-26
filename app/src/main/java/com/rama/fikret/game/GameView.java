@@ -13,6 +13,8 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import com.rama.fikret.managers.PrefsManager;
+
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -129,7 +131,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private boolean pinching;
 
     public GameView(Context context) {
-        this(context, Maps.ARCTIC);
+        this(context, Maps.BEACH);
     }
 
     public GameView(Context context, int stageId) {
@@ -187,12 +189,21 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
      *  standing on each one - any number of birds per stage is fine now,
      *  not just one. Called once per stage (constructor/changeStage()); a
      *  stage's own idle birds are map-local and don't persist, unlike
-     *  followingBirds (see class doc). */
+     *  followingBirds (see class doc).
+     *
+     *  A spawn already rescued (PrefsManager.isBirdRescued() - set the
+     *  moment it's freed, see checkBirdRescues()) is skipped rather than
+     *  respawned: once a bird is taken out of the world it stays gone,
+     *  even if the goose leaves the stage and comes back, and even across
+     *  app restarts - Maps rebuilds the same tile data with the same BIRD
+     *  cell every time, so without this check the cell would otherwise
+     *  look freshly idle again on every re-entry. */
     private void findIdleBirdSpawns() {
         idleBirds.clear();
+        PrefsManager prefs = PrefsManager.getInstance(getContext());
         for (int r = 0; r < map.getRows(); r++) {
             for (int c = 0; c < map.getCols(); c++) {
-                if (map.getCell(r, c).item == ItemType.BIRD) {
+                if (map.getCell(r, c).item == ItemType.BIRD && !prefs.isBirdRescued(stageId, r, c)) {
                     idleBirds.add(new Bird(getResources(), r, c));
                 }
             }
@@ -209,18 +220,45 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
      *  backgrounded and resumed). goose is only created here if it doesn't
      *  already exist, so a surface bounce mid-game resumes exactly where
      *  the goose was standing rather than snapping back to the stage's
-     *  spawn point. idleBirds/followingBirds don't need similar handling -
-     *  they're plain fields that already survive a surface bounce as-is. */
+     *  spawn point, and idleBirds/followingBirds don't need similar
+     *  handling then - they're plain fields that already survive a surface
+     *  bounce as-is. A brand-new goose, on the other hand, means a brand-new
+     *  GameView too (a fresh GameActivity), so followingBirds starts out
+     *  empty and needs rebuilding from disk - see restoreRescuedBirds(). */
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         if (goose == null) {
             goose = new Goose(getResources(), stage.spawnRow, stage.spawnCol);
+            restoreRescuedBirds();
         }
         holeGooseRow = goose.getRow();
         holeGooseCol = goose.getCol();
         thread = new GameThread(holder, this);
         thread.setRunning(true);
         thread.start();
+    }
+
+    /** Runs exactly once, right after a brand-new goose is created (a cold
+     *  start of GameActivity/GameView - see surfaceCreated() - never a mere
+     *  surface bounce, since then goose already exists and followingBirds
+     *  is already correct in memory). Rebuilds the whole follow-chain from
+     *  PrefsManager.getRescuedBirdKeys() - every bird ever rescued, in the
+     *  order it was rescued - stacked on the goose's spawn tile, exactly
+     *  like changeStage() carries an in-memory chain across stages. Without
+     *  this, leaving the game (e.g. backing out to the main menu) and
+     *  coming back would make every already-rescued bird vanish outright:
+     *  findIdleBirdSpawns() correctly refuses to respawn it as idle, but
+     *  nothing was putting it back into followingBirds either. */
+    private void restoreRescuedBirds() {
+        List<String> rescuedKeys = PrefsManager.getInstance(getContext()).getRescuedBirdKeys();
+        int row = goose.getRow();
+        int col = goose.getCol();
+        for (int i = 0; i < rescuedKeys.size(); i++) {
+            Bird bird = new Bird(getResources(), row, col);
+            bird.startFollowing();
+            followingBirds.add(bird);
+            chaseTargets.add(new int[]{row, col});
+        }
     }
 
     @Override
@@ -564,6 +602,26 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             // bird is standing right now, having just been freed there) -
             // so it holds still until that leader takes its next step.
             chaseTargets.add(new int[]{leaderRow, leaderCol});
+
+            onBirdRescued(idle.getRow(), idle.getCol());
+        }
+    }
+
+    /** Called once, the instant a bird is freed (see checkBirdRescues()),
+     *  at (spawnRow, spawnCol) - that bird's own spawn cell, since an idle
+     *  bird never moves before it starts following. Records the rescue
+     *  permanently (see PrefsManager.setBirdRescued()/
+     *  findIdleBirdSpawns()) and, if this stage's bird grants an ability
+     *  (see Ability.forStage()), unlocks it for good too - one bird can
+     *  unlock at most one ability, and rescuing it a second time can't
+     *  happen since it's gone from the world for good after the first. */
+    private void onBirdRescued(int spawnRow, int spawnCol) {
+        PrefsManager prefs = PrefsManager.getInstance(getContext());
+        prefs.setBirdRescued(stageId, spawnRow, spawnCol);
+
+        Ability ability = Ability.forStage(stageId);
+        if (ability != null) {
+            prefs.unlockAbility(ability);
         }
     }
 

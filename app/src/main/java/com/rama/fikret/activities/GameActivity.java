@@ -30,7 +30,7 @@ public class GameActivity extends Activity {
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
-        int stageId = getIntent().getIntExtra(EXTRA_STAGE, Maps.ARCTIC);
+        int stageId = getIntent().getIntExtra(EXTRA_STAGE, Maps.BEACH);
         gameView = new GameView(this, stageId);
         setContentView(gameView);
         gameView.requestFocus();
