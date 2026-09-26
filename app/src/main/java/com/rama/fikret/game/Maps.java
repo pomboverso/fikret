@@ -28,6 +28,9 @@ public final class Maps {
     static int space_gems = 21000000;
     static int space_gem = 22000000;
     static int wall_space = 23000000;
+    static int lava_stones_01 = 24000000;
+    static int lava_stones_02 = 25000000;
+    static int lava_stones_03 = 26000000;
 
     static final int GRASS = 1;
     static final int WATER = 2;
@@ -548,6 +551,10 @@ public final class Maps {
         tiles[3][16] += hole_down;
         tiles[26][26] += hole_down_nest;
 
+        randomizedItems(tiles, lava_stones_01, 50, 2, 2, 28, 2, 28, 105);
+        randomizedItems(tiles, lava_stones_02, 50, 2, 2, 28, 2, 28, 105);
+        randomizedItems(tiles, lava_stones_03, 50, 2, 2, 28, 2, 28, 105);
+
         randomizedItems(tiles, gem, 10, 1, 2, 28, 2, 28, 105091, 105092, 105093, 105094, 105095, 105096, 105097, 105098, 105099);
         randomizedItems(tiles, gems, 5, 1, 2, 28, 2, 28, 105091, 105092, 105093, 105094, 105095, 105096, 105097, 105098, 105099);
 
@@ -620,11 +627,6 @@ public final class Maps {
         drawPond(tiles, 2, 23, SNOW, POND_6, ICE);
 
         tiles[24][26] += hole_down;
-
-//        randomizedItems(tiles, gems, 30, 1, 2, 28, 2, 28, 75);
-//        randomizedItems(tiles, gem, 40, 1, 2, 28, 2, 28, 75);
-//        randomizedItems(tiles, space_gems, 30, 1, 2, 28, 2, 28, 75);
-//        randomizedItems(tiles, space_gem, 40, 1, 2, 28, 2, 28, 75);
 
         return new Stage(tiles, 2, 2);
     }
@@ -748,10 +750,10 @@ public final class Maps {
         tiles[2][2] += hole_up;
         tiles[6][6] += bird;
 
-        randomizedItems(tiles, -DEEP_GRASS * 10 + GRASS * 10, 5, 1, 2, 8, 2, 8, base_tile);
-        randomizedItems(tiles, flower_floor_pink, 8, 2, 2, 8, 2, 8, base_tile, 15);
-        randomizedItems(tiles, flower_floor_blue, 5, 2, 2, 8, 2, 8, base_tile, 15);
-        randomizedItems(tiles, flower_floor_yellow, 1, 2, 2, 8, 2, 8, base_tile, 15);
+        randomizedItems(tiles, -DEEP_GRASS * 10 + GRASS * 10, 5, 1, 1, 9, 1, 9, base_tile);
+        randomizedItems(tiles, flower_floor_pink, 8, 2, 1, 9, 1, 9, base_tile, 15);
+        randomizedItems(tiles, flower_floor_blue, 5, 2, 1, 9, 1, 9, base_tile, 15);
+        randomizedItems(tiles, flower_floor_yellow, 1, 2, 1, 9, 1, 9, base_tile, 15);
 
         return new Stage(tiles, 2, 2);
     }
@@ -776,8 +778,8 @@ public final class Maps {
         tiles[2][2] += hole_up;
         tiles[6][6] += bird;
 
-        randomizedItems(tiles, gem, 5, 2, 2, 8, 2, 8, base_tile);
-        randomizedItems(tiles, gems, 3, 2, 2, 8, 2, 8, base_tile);
+        randomizedItems(tiles, gem, 5, 2, 1, 9, 1, 9, base_tile);
+        randomizedItems(tiles, gems, 3, 2, 1, 9, 1, 9, base_tile);
 
         return new Stage(tiles, 2, 2);
     }
@@ -801,6 +803,10 @@ public final class Maps {
         drawPond(tiles, 5, 5, LAVA, POND_6, VOLCANIC_SOIL);
         tiles[2][2] += hole_up;
         tiles[6][6] += bird;
+
+        randomizedItems(tiles, lava_stones_01, 5, 2, 1, 9, 1, 9, 105);
+        randomizedItems(tiles, lava_stones_02, 5, 2, 1, 9, 1, 9, 105);
+        randomizedItems(tiles, lava_stones_03, 5, 2, 1, 9, 1, 9, 105);
 
         return new Stage(tiles, 2, 2);
     }

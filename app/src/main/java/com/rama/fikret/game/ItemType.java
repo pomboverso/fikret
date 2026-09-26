@@ -26,7 +26,10 @@ public enum ItemType {
     GEMS(20, R.drawable.gem_group, false),
     SPACE_GEMS(21, R.drawable.space_gem_group, false),
     SPACE_GEM(22, R.drawable.space_gem, false),
-    WALL_SPACE(23, R.drawable.wall_space, true);
+    WALL_SPACE(23, R.drawable.wall_space, true),
+    LAVA_STONES_01(24, R.drawable.lava_stone_01, false),
+    LAVA_STONES_02(25, R.drawable.lava_stone_02, false),
+    LAVA_STONES_03(26, R.drawable.lava_stone_03, false);
 
     public final int id;
     public final int drawableRes;
