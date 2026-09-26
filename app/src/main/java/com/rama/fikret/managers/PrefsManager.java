@@ -3,6 +3,7 @@ package com.rama.fikret.managers;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import com.rama.fikret.game.Ability;
 import com.rama.fikret.objects.PrefTheme;
 
 import java.util.ArrayList;
@@ -22,6 +23,8 @@ public class PrefsManager {
     private static final String APPS_SHOW_SIZE = "apps:show_size";
     private static final String KEY_PROFILE_INDICATOR = "apps:profile_indicator";
     private static final String KEY_ZOOM_PERCENT = "settings:zoom_percent";
+    private static final String KEY_BIRD_RESCUED = "bird:rescued";
+    private static final String KEY_ABILITY_UNLOCKED = "ability:unlocked";
     private static PrefsManager instance;
     private final SharedPreferences prefs;
 
@@ -214,6 +217,54 @@ public class PrefsManager {
 
     public void setZoomPercent(int percent) {
         prefs.edit().putInt(KEY_ZOOM_PERCENT, percent).commit();
+    }
+
+    /** Whether the bird spawned at (row, col) on this stage has already
+     *  been rescued - permanently, across app restarts, so GameView never
+     *  spawns it as idle again once this is true (see
+     *  GameView.findIdleBirdSpawns()), and can rebuild the follow-chain
+     *  from scratch on a cold start (see GameView.restoreRescuedBirds()).
+     *  Row/col (not just stageId) are part of the key so a stage with more
+     *  than one bird tracks each spawn independently. */
+    public boolean isBirdRescued(int stageId, int row, int col) {
+        return getRescuedBirdKeys().contains(birdKey(stageId, row, col));
+    }
+
+    /** Marks the bird spawned at (row, col) on this stage as rescued for
+     *  good - see isBirdRescued() - and appends it to the rescue order (see
+     *  getRescuedBirdKeys()) if it isn't there already, so the very first
+     *  bird ever rescued always stays first in the follow-chain. */
+    public void setBirdRescued(int stageId, int row, int col) {
+        String key = birdKey(stageId, row, col);
+        List<String> keys = getRescuedBirdKeys();
+        if (!keys.contains(key)) {
+            keys.add(key);
+            prefs.edit().putString(KEY_BIRD_RESCUED, joinCsv(keys)).commit();
+        }
+    }
+
+    /** Every rescued bird's key, oldest-first - the exact order the
+     *  follow-chain should be rebuilt in on a cold start (index 0 trails
+     *  the goose, same convention as GameView.followingBirds), since that's
+     *  the order they were originally freed in during the game. */
+    public List<String> getRescuedBirdKeys() {
+        return splitCsv(prefs.getString(KEY_BIRD_RESCUED, ""));
+    }
+
+    private String birdKey(int stageId, int row, int col) {
+        return stageId + "_" + row + "_" + col;
+    }
+
+    /** Whether the given ability has been unlocked - permanently, across
+     *  app restarts - by rescuing the bird that grants it (see
+     *  GameView.checkBirdRescues()/Ability). */
+    public boolean hasAbility(Ability ability) {
+        return getBoolean(key(KEY_ABILITY_UNLOCKED, ability.name()), false);
+    }
+
+    /** Unlocks the given ability for good - see hasAbility(). */
+    public void unlockAbility(Ability ability) {
+        setBoolean(key(KEY_ABILITY_UNLOCKED, ability.name()), true);
     }
 
     public boolean getBoolean(String key, boolean defaultValue) {

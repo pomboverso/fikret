@@ -6,86 +6,117 @@ import android.graphics.Rect;
 
 import com.rama.fikret.R;
 
-/**
- * The player-controlled goose. Moves freely in continuous world-space pixels
- * while a direction is held (see {@link GameView} for where the direction
- * comes from: screen regions or the keyboard/numpad).
- */
 public class Goose {
-    private static final int ATLAS_COLUMNS = 4;
-    private static final int ATLAS_ROWS = 4; // 4 walk-cycle frames per direction
-    private static final float PIXELS_PER_SECOND = GameMap.TILE_SIZE * 3f;
-    private static final long FRAME_DURATION_MS = 120;
-
+    private static final int ATLAS_COLUMNS = 2;
+    private static final int ATLAS_ROWS = 5;
+    private static final long STEP_DURATION_MS = 200;
+    private static final long WALK_FRAME_DURATION_MS = 80;
+    private static final int FRAME_SWIMMING_A = 0;
+    private static final int FRAME_SWIMMING_B = 1;
+    private static final int FRAME_IDLE = 2;
+    private static final int FRAME_WALK_A = 3;
+    private static final int FRAME_WALK_B = 4;
     private final SpriteSheet spriteSheet;
-
-    // World-space top-left pixel position.
-    private float x, y;
-
-    private Direction facing = Direction.DOWN;
-    private int animFrame = 0;
-    private long animTimer = 0;
+    private int fromRow, fromCol;
+    private int row, col;
+    private float stepProgress = 1f;
+    private Direction facing = Direction.RIGHT;
     private boolean moving = false;
+    private boolean resting = false;
+    private boolean swimming = false;
+    private boolean walkToggle = false;
+    private long walkAnimTimer = 0;
 
-    public Goose(Resources res, float startX, float startY) {
-        this.spriteSheet = new SpriteSheet(res, R.drawable.gm_goose, ATLAS_COLUMNS, ATLAS_ROWS);
-        this.x = startX;
-        this.y = startY;
+    public Goose(Resources res, int startRow, int startCol) {
+        this.spriteSheet = new SpriteSheet(res, R.drawable.goose, ATLAS_COLUMNS, ATLAS_ROWS);
+        this.row = this.fromRow = startRow;
+        this.col = this.fromCol = startCol;
     }
 
-    /**
-     * Advances the goose by one frame. dx/dy describe the held direction,
-     * each in [-1, 1] - only their direction matters, this normalizes the
-     * vector itself so diagonal movement isn't faster than cardinal movement.
-     * (0, 0) means "no input", i.e. stand still.
-     */
-    public void update(long deltaMs, float dx, float dy, GameMap map) {
-        moving = dx != 0f || dy != 0f;
+    public void update(long deltaMs, int dx, int dy, GameMap map) {
+        if (!moving) {
+            if (resting) {
+                return;
+            }
+            if (dx != 0 || dy != 0) {
+                if(dx != 0){
+                    facing = dx < 0 ? Direction.LEFT : Direction.RIGHT;
+                }
+
+                // dx/dy can both be non-zero: that's a diagonal step (one
+                // tile over AND one tile up/down), see GameMap.canStep().
+                if (map.canStep(row, col, dx, dy)) {
+                    fromRow = row;
+                    fromCol = col;
+                    row = row + dy;
+                    col = col + dx;
+                    stepProgress = 0f;
+                    moving = true;
+                }
+            }
+        }
 
         if (moving) {
-            float length = (float) Math.sqrt(dx * dx + dy * dy);
-            float normalizedX = dx / length;
-            float normalizedY = dy / length;
-
-            // Sprite only has 4 facings - horizontal wins on a diagonal.
-            if (Math.abs(dx) > 0.0001f) {
-                facing = dx > 0 ? Direction.RIGHT : Direction.LEFT;
-            } else {
-                facing = dy > 0 ? Direction.DOWN : Direction.UP;
+            stepProgress += deltaMs / (float) STEP_DURATION_MS;
+            if (stepProgress >= 1f) {
+                stepProgress = 1f;
+                moving = false;
             }
 
-            float distance = PIXELS_PER_SECOND * (deltaMs / 1000f);
-            x += normalizedX * distance;
-            y += normalizedY * distance;
-
-            float maxX = Math.max(0, map.getWidthPx() - GameMap.TILE_SIZE);
-            float maxY = Math.max(0, map.getHeightPx() - GameMap.TILE_SIZE);
-            x = clamp(x, 0, maxX);
-            y = clamp(y, 0, maxY);
-        }
-
-        animTimer += deltaMs;
-        if (animTimer >= FRAME_DURATION_MS) {
-            animTimer = 0;
-            animFrame = moving ? (animFrame + 1) % ATLAS_ROWS : 0;
+            walkAnimTimer += deltaMs;
+            if (walkAnimTimer >= WALK_FRAME_DURATION_MS) {
+                walkAnimTimer = 0;
+                walkToggle = !walkToggle;
+            }
+        } else {
+            walkAnimTimer = 0;
         }
     }
 
-    private static float clamp(float value, float min, float max) {
-        return Math.max(min, Math.min(value, max));
+    public void setResting(boolean resting) {
+        this.resting = resting;
+    }
+
+    /** Swimming = standing in liquid (water, lava...). Unlike resting the
+     *  goose can still move; it just uses the tucked-legs pose (row 0)
+     *  instead of the walk/idle poses. GameView sets this every frame from
+     *  the tile under the goose. */
+    public void setSwimming(boolean swimming) {
+        this.swimming = swimming;
+    }
+
+    public boolean isSwimming() {
+        return swimming;
     }
 
     public void draw(Canvas canvas, Rect dst) {
-        Rect src = spriteSheet.frameRect(facing.column, animFrame);
+        int frame = resting
+                ? FRAME_SWIMMING_A
+                : swimming
+                ? (walkToggle ? FRAME_SWIMMING_A : FRAME_SWIMMING_B)
+                : (moving ? (walkToggle ? FRAME_WALK_A : FRAME_WALK_B) : FRAME_IDLE);
+        Rect src = spriteSheet.frameRect(facing.column, frame);
         canvas.drawBitmap(spriteSheet.getBitmap(), src, dst, null);
     }
 
     public float getX() {
-        return x;
+        return lerp(fromCol, col) * GameMap.TILE_SIZE;
     }
 
     public float getY() {
-        return y;
+        return lerp(fromRow, row) * GameMap.TILE_SIZE;
+    }
+
+    private float lerp(int from, int to) {
+        return from + (to - from) * stepProgress;
+    }
+
+    public int getRow() {
+        return row;
+    }
+
+    public int getCol() {
+        return col;
     }
 
     public boolean isMoving() {

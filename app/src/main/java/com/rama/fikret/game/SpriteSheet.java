@@ -9,10 +9,15 @@ import android.graphics.Rect;
  * A bitmap cut into a fixed grid of equally-sized frames.
  *
  * Frame size is computed from the decoded bitmap's own dimensions divided
- * by the known column/row count, instead of being hardcoded in pixels.
- * Vector drawables get rasterized into different-sized PNGs per screen
- * density at build time (since minSdk is below 21), so this keeps tile
- * slicing correct no matter which density bucket ends up loaded.
+ * by the known column/row count, instead of being hardcoded in pixels, so
+ * this doesn't care what resolution the source PNG actually is.
+ *
+ * gm_goose/gm_grass are plain PNGs in res/drawable-nodpi (NOT vector
+ * drawables): the originals were vectors, but their pathData turned out to
+ * be tens of thousands of characters long (auto-traced pixel art, not
+ * hand-drawn vector shapes), which crashes or blanks out on a chunk of real
+ * Android versions/OEM builds. drawable-nodpi tells Android to never
+ * density-scale these, so every device decodes the exact same pixels.
  */
 public class SpriteSheet {
     private final Bitmap bitmap;
@@ -23,6 +28,9 @@ public class SpriteSheet {
         BitmapFactory.Options opts = new BitmapFactory.Options();
         opts.inScaled = false;
         this.bitmap = BitmapFactory.decodeResource(res, resId, opts);
+        if (this.bitmap == null) {
+            throw new IllegalStateException("Could not decode drawable resource id " + resId);
+        }
         this.frameWidth = bitmap.getWidth() / columns;
         this.frameHeight = bitmap.getHeight() / rows;
     }
@@ -37,3 +45,5 @@ public class SpriteSheet {
         return bitmap;
     }
 }
+
+

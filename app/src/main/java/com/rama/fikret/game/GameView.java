@@ -1,102 +1,295 @@
 package com.rama.fikret.game;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.os.Build;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import com.rama.fikret.managers.PrefsManager;
+
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
- * The game surface: owns the map, the goose, the camera, and all input.
+ * The game surface: owns the map, the goose, the birds, the camera/zoom,
+ * and all input.
  *
- * Movement is an 8-direction hold, fed from two sources that both write into
- * the same dx/dy state:
- *  - Screen touch, split into a 3x3 grid of regions (same numpad layout used
- *    everywhere else in this project: top-right region = up-right, center
- *    region = stand still, etc).
- *  - Keyboard: arrow keys / WASD (combine for diagonals), or the numeric
- *    keypad 1-9 directly (5 = stop) for the same numpad-shaped input on a
- *    physical/emulator keyboard.
+ * The goose moves one whole tile at a time, locked to the grid, in 8
+ * directions (diagonals included) - see Goose. Controls:
+ *  - Touch: put a finger down ANYWHERE and a 3x3 grid with a circle in its
+ *    middle appears under it (see SwipeJoystick). Drag the circle into one
+ *    of the outer cells and the goose walks that way until you let go or
+ *    drag back to the middle. Two fingers = pinch-to-zoom and/or drag-to-pan
+ *    instead (see the panOffset fields and onTouchEvent).
+ *  - Keyboard / d-pad: arrow keys or WASD; press two at once for a diagonal.
+ *    Numpad 1-9 (5 = stop) sets a direction directly.
+ *  - Analog stick / gamepad d-pad hat (API 12+ only, see GamepadAxes).
+ * All sources are combined, so they can be mixed freely.
  *
- * This is deliberately a starting point: one map, one character, a camera
- * that follows the goose and clamps to the map edges. Swap out
- * {@link #buildTestMap()} for your own map data, and this is the place to
- * add more layers (items, other characters, UI) as you build them out.
+ * Swimming: whenever the goose (or the bird) is over a liquid tile - water,
+ * deep water, lava, acid/bubblegum/space/blood lakes; see TileType.liquid -
+ * it switches to its swimming pose (see Goose/Bird.setSwimming()). Goose itself
+ * refuses to step onto a blocking item like a stone, and won't squeeze
+ * diagonally between two of them (see GameMap.canStep()).
+ *
+ * Birds: every ItemType.BIRD cell in the map spawns an idle Bird (see
+ * findIdleBirdSpawns()), standing still until the goose steps onto its
+ * tile. Freed birds don't just join the goose - they queue up behind
+ * whichever bird was freed before them: the 1st follows the goose, the
+ * 2nd follows the 1st, the 3rd follows the 2nd, and so on, each one
+ * trailing exactly one tile behind the one in front of it (see
+ * followingBirds/chaseTargets/updateBirds()). Once freed, a bird stays in
+ * that chain forever, including into every later stage - changeStage()
+ * carries the whole chain along instead of resetting it to that stage's
+ * own (unrescued) birds.
+ *
+ * Holes: stepping onto a HOLE_DOWN item cell moves to the next stage id
+ * (Maps.get(stageId + 1)); HOLE_UP moves to the previous one, or - from
+ * inside a nest stage - back to that nest's parent; HOLE_DOWN_NEST drops
+ * into the current stage's nest. Any of these is a no-op if the target
+ * stage doesn't exist. Re-entering any stage resumes at the spot the goose
+ * left it from (see changeStage()/lastPositionByStage), not that stage's
+ * fixed spawn point. See checkHoleTransition()/changeStage().
+ *
+ * Pinch-to-zoom is wired up (ScaleGestureDetector, isolated in
+ * PinchZoomDetector so it never loads on devices below API 8).
+ *
+ * This is deliberately a starting point. Stages live in {@link Maps} - add
+ * one there and pass its id to this view's constructor (or via
+ * GameActivity.EXTRA_STAGE) to switch maps.
  */
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
     private GameThread thread;
     private GameMap map;
     private Goose goose;
+    private Stage stage;
+    private int stageId;
+    // Birds already freed, in follow-chain order: index 0 trails the
+    // goose, index i (i > 0) trails followingBirds.get(i - 1). Persists
+    // across changeStage() - see that method.
+    private final List<Bird> followingBirds = new ArrayList<Bird>();
+    // Parallel to followingBirds. chaseTargets.get(i) is the tile whatever
+    // followingBirds.get(i) is chasing (the goose for i == 0, otherwise
+    // followingBirds.get(i - 1)) was standing on one frame ago - i.e. the
+    // tile that leader just vacated, and so where bird i should walk to
+    // next. Same "vacated tile" tracking a single following bird needs,
+    // just one pair per link in the chain. See updateBirds().
+    private final List<int[]> chaseTargets = new ArrayList<int[]>();
+    // Birds still waiting to be freed on the CURRENT stage only - rebuilt
+    // from scratch by findIdleBirdSpawns() every time the stage changes.
+    private final List<Bird> idleBirds = new ArrayList<Bird>();
+    // Where the goose was standing the last time each stage was left, keyed
+    // by stage id (see Maps) - so walking back into a stage (a HOLE_UP out
+    // of a nest, or backtracking through HOLE_DOWN/HOLE_UP) resumes exactly
+    // where the goose stepped off, instead of that stage's fixed spawn
+    // point. Only written/read by changeStage(); a stage not yet visited
+    // this session has no entry and falls back to Stage.spawnRow/spawnCol.
+    private final Map<Integer, int[]> lastPositionByStage = new HashMap<Integer, int[]>();
+    // Tracks the last cell the goose was seen on, so a hole (see
+    // checkHoleTransition()) is only acted on once - the instant the goose
+    // steps onto it - rather than every frame it happens to still be
+    // standing there.
+    private int holeGooseRow, holeGooseCol;
     private final EnumMap<TileType, SpriteSheet> tileSheets = new EnumMap<TileType, SpriteSheet>(TileType.class);
+    private final EnumMap<ItemType, Bitmap> itemBitmaps = new EnumMap<ItemType, Bitmap>(ItemType.class);
     private final Paint backgroundPaint = new Paint();
-    private final Paint regionGridPaint = new Paint();
-    private final Paint regionHighlightPaint = new Paint();
     private final Rect reusableSrc = new Rect();
     private final Rect reusableDst = new Rect();
+    private final SwipeJoystick joystick;
 
     private int cameraX, cameraY;
 
-    // --- Input state -------------------------------------------------
+    // --- Zoom ----------------------------------------------------------
+    private static final float MIN_ZOOM = 1f;
+    private static final float MAX_ZOOM = 4f;
+    private float zoom = 2f; // default a bit zoomed in - 64px tiles read as small otherwise
+    private PinchZoomDetector pinchZoomDetector; // null below API 8
+
+    // --- Pan (two-finger drag) -------------------------------------------
+    // Offset from the goose-centered camera, in world (pre-zoom) pixels -
+    // see updateCamera(). The same two fingers used to pinch-zoom (see
+    // PinchZoomDetector/onTouchEvent) also drag the camera when moved
+    // together rather than apart, the standard "pinch to zoom, drag to
+    // pan" gesture from maps/photo apps - both can happen in the same
+    // gesture, same as there. Eased back to 0 over PAN_RESET_DURATION_MS
+    // the instant the goose starts moving again from a standstill (see
+    // update()/updatePanReset()) - a plain "start walking" always ends up
+    // goose-centered, but glides there rather than jump-cutting - and
+    // snapped to 0 outright on a new stage (see changeStage()), since
+    // there's no old camera position worth easing from on a different map.
+    private float panOffsetX, panOffsetY;
+    // Average position of every finger down, one frame ago - the anchor a
+    // two-finger drag measures its movement against. Only meaningful while
+    // pinching is true; set fresh every time a second finger lands (see
+    // onTouchEvent's ACTION_POINTER_DOWN) so the first move frame of a new
+    // gesture never sees a jump from wherever the last one ended.
+    private float panAnchorX, panAnchorY;
+    // Whether the goose was moving as of last frame's update() - so the
+    // *instant* it is (the rising edge, not just "moving") is what starts
+    // the pan-reset ease, once, rather than re-triggering (and restarting
+    // the ease from scratch) every single frame the goose keeps walking.
+    private boolean wasMoving;
+    // --- Pan-reset ease ---------------------------------------------------
+    private static final long PAN_RESET_DURATION_MS = 200; // matches Goose/Bird's STEP_DURATION_MS
+    private boolean panResetting;
+    private long panResetElapsedMs;
+    private float panResetStartX, panResetStartY;
+
+    // --- Input state -----------------------------------------------------
+    // Written on the UI thread, read every frame on GameThread - hence volatile.
     // Keyboard: arrow keys / WASD, combined additively for diagonals.
-    private boolean keyLeft, keyRight, keyUp, keyDown;
-    // Keyboard: numpad 1-9 sets the vector directly (5 = stop), matches
-    // the touch regions below key-for-key.
-    private int activeNumpadKeyCode = 0;
-    private float numpadDx, numpadDy;
-    // Touch: which of the 3x3 screen regions is currently pressed, -1 if none.
-    private int touchCol = -1, touchRow = -1;
+    private volatile boolean keyLeft, keyRight, keyUp, keyDown;
+    // Keyboard: numpad 1-9 sets the vector directly (5 = stop).
+    private volatile int activeNumpadKeyCode = 0;
+    private volatile int numpadDx, numpadDy;
+    // Analog stick / gamepad hat, already reduced to -1/0/1 per axis.
+    private volatile int stickDx, stickDy;
+    // Touch: true once a second finger lands, until every finger is lifted -
+    // that gesture is a pinch/pan, and must not also drive the joystick.
+    private boolean pinching;
 
     public GameView(Context context) {
+        this(context, Maps.ARCTIC);
+    }
+
+    public GameView(Context context, int stageId) {
         super(context);
         getHolder().addCallback(this);
         setFocusable(true);
         setFocusableInTouchMode(true);
 
         backgroundPaint.setColor(Color.BLACK);
-        regionGridPaint.setColor(Color.WHITE);
-        regionGridPaint.setAlpha(40);
-        regionGridPaint.setStrokeWidth(2);
-        regionHighlightPaint.setColor(Color.WHITE);
-        regionHighlightPaint.setAlpha(35);
+        joystick = new SwipeJoystick(getResources().getDisplayMetrics().density);
 
-        map = new GameMap(buildTestMap());
+        if (Build.VERSION.SDK_INT >= 8) {
+            pinchZoomDetector = new PinchZoomDetector(context, new PinchZoomDetector.Listener() {
+                @Override
+                public void onZoom(float scaleFactor, float focusX, float focusY) {
+                    setZoom(zoom * scaleFactor);
+                }
+            });
+        }
+
+        this.stageId = stageId;
+        stage = Maps.get(stageId);
+        map = new GameMap(stage.tiles);
         loadTileSheets();
-    }
-
-    /** Small placeholder map: a grass rectangle using the border tiles
-     *  around the edge and the plain center tile (5) in the middle. Swap
-     *  this out for real map data whenever you're ready. */
-    private int[][] buildTestMap() {
-        return new int[][]{
-                {7, 8, 8, 8, 8, 9},
-                {4, 5, 5, 5, 5, 6},
-                {4, 5, 5, 5, 5, 6},
-                {4, 5, 5, 5, 5, 6},
-                {1, 2, 2, 2, 2, 3},
-        };
+        loadItemBitmaps();
+        findIdleBirdSpawns();
     }
 
     private void loadTileSheets() {
         for (TileType type : TileType.values()) {
-            tileSheets.put(type, new SpriteSheet(getResources(), type.atlasRes, type.atlasColumns, type.atlasRows));
+            if (type == TileType.NONE) {
+                continue;
+            }
+            tileSheets.put(type, new SpriteSheet(getResources(), type.atlasRes, TileType.ATLAS_COLUMNS, TileType.ATLAS_ROWS));
         }
     }
 
+    /** Stone/hole/hole-up are plain static images (no direction, no
+     *  animation) - decoded straight to a Bitmap rather than through
+     *  SpriteSheet. BIRD is excluded on purpose: it's a moving entity, not
+     *  something drawn from map data every frame (see findIdleBirdSpawns()). */
+    private void loadItemBitmaps() {
+        BitmapFactory.Options opts = new BitmapFactory.Options();
+        opts.inScaled = false;
+        for (ItemType type : ItemType.values()) {
+            if (type == ItemType.NONE || type == ItemType.BIRD || type.drawableRes == 0) {
+                continue;
+            }
+            Bitmap bitmap = BitmapFactory.decodeResource(getResources(), type.drawableRes, opts);
+            itemBitmaps.put(type, bitmap);
+        }
+    }
+
+    /** Scans the map for every ItemType.BIRD cell and spawns an idle Bird
+     *  standing on each one - any number of birds per stage is fine now,
+     *  not just one. Called once per stage (constructor/changeStage()); a
+     *  stage's own idle birds are map-local and don't persist, unlike
+     *  followingBirds (see class doc).
+     *
+     *  A spawn already rescued (PrefsManager.isBirdRescued() - set the
+     *  moment it's freed, see checkBirdRescues()) is skipped rather than
+     *  respawned: once a bird is taken out of the world it stays gone,
+     *  even if the goose leaves the stage and comes back, and even across
+     *  app restarts - Maps rebuilds the same tile data with the same BIRD
+     *  cell every time, so without this check the cell would otherwise
+     *  look freshly idle again on every re-entry. */
+    private void findIdleBirdSpawns() {
+        idleBirds.clear();
+        PrefsManager prefs = PrefsManager.getInstance(getContext());
+        for (int r = 0; r < map.getRows(); r++) {
+            for (int c = 0; c < map.getCols(); c++) {
+                if (map.getCell(r, c).item == ItemType.BIRD && !prefs.isBirdRescued(stageId, r, c)) {
+                    idleBirds.add(new Bird(getResources(), r, c));
+                }
+            }
+        }
+    }
+
+    private void setZoom(float newZoom) {
+        zoom = Math.max(MIN_ZOOM, Math.min(newZoom, MAX_ZOOM));
+    }
+
+    /** Runs whenever the drawing surface becomes available - the very
+     *  first time GameView is shown, and again any time it's torn down and
+     *  recreated without the Activity itself restarting (e.g. the app is
+     *  backgrounded and resumed). goose is only created here if it doesn't
+     *  already exist, so a surface bounce mid-game resumes exactly where
+     *  the goose was standing rather than snapping back to the stage's
+     *  spawn point, and idleBirds/followingBirds don't need similar
+     *  handling then - they're plain fields that already survive a surface
+     *  bounce as-is. A brand-new goose, on the other hand, means a brand-new
+     *  GameView too (a fresh GameActivity), so followingBirds starts out
+     *  empty and needs rebuilding from disk - see restoreRescuedBirds(). */
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
-        float startX = 2 * GameMap.TILE_SIZE;
-        float startY = 2 * GameMap.TILE_SIZE;
-        goose = new Goose(getResources(), startX, startY);
+        if (goose == null) {
+            goose = new Goose(getResources(), stage.spawnRow, stage.spawnCol);
+            restoreRescuedBirds();
+        }
+        holeGooseRow = goose.getRow();
+        holeGooseCol = goose.getCol();
         thread = new GameThread(holder, this);
         thread.setRunning(true);
         thread.start();
+    }
+
+    /** Runs exactly once, right after a brand-new goose is created (a cold
+     *  start of GameActivity/GameView - see surfaceCreated() - never a mere
+     *  surface bounce, since then goose already exists and followingBirds
+     *  is already correct in memory). Rebuilds the whole follow-chain from
+     *  PrefsManager.getRescuedBirdKeys() - every bird ever rescued, in the
+     *  order it was rescued - stacked on the goose's spawn tile, exactly
+     *  like changeStage() carries an in-memory chain across stages. Without
+     *  this, leaving the game (e.g. backing out to the main menu) and
+     *  coming back would make every already-rescued bird vanish outright:
+     *  findIdleBirdSpawns() correctly refuses to respawn it as idle, but
+     *  nothing was putting it back into followingBirds either. */
+    private void restoreRescuedBirds() {
+        List<String> rescuedKeys = PrefsManager.getInstance(getContext()).getRescuedBirdKeys();
+        int row = goose.getRow();
+        int col = goose.getCol();
+        for (int i = 0; i < rescuedKeys.size(); i++) {
+            Bird bird = new Bird(getResources(), row, col);
+            bird.startFollowing();
+            followingBirds.add(bird);
+            chaseTargets.add(new int[]{row, col});
+        }
     }
 
     @Override
@@ -106,6 +299,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
+        clearInput();
         if (thread == null) {
             return;
         }
@@ -120,37 +314,85 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
-    // --- Touch input: 3x3 screen regions, numpad-style -----------------
+    // --- Touch input: floating 3x3 swipe joystick ------------------------
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        switch (event.getAction()) {
+        if (pinchZoomDetector != null) {
+            pinchZoomDetector.onTouchEvent(event);
+        }
+
+        // ACTION_MASK strips the pointer index that multi-touch packs into
+        // getAction() (both exist since API 5; getActionMasked() is API 8).
+        switch (event.getAction() & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN:
+                pinching = false;
+                joystick.begin(event.getX(), event.getY());
+                return true;
+            case MotionEvent.ACTION_POINTER_DOWN:
+                // A second finger means this is a pinch/pan gesture, not a
+                // move request - drop the joystick, and stay out of it
+                // until all fingers lift. Anchor the pan drag at today's
+                // average finger position so the very next MOVE frame
+                // measures from here, not from a stale single-finger spot,
+                // and cancel any pan-reset ease already in flight so manual
+                // dragging isn't fighting it for control of panOffset.
+                pinching = true;
+                panResetting = false;
+                joystick.end();
+                panAnchorX = averagePointerX(event);
+                panAnchorY = averagePointerY(event);
+                return true;
             case MotionEvent.ACTION_MOVE:
-                updateTouchRegion(event.getX(), event.getY());
+                if (event.getPointerCount() > 1) {
+                    pinching = true;
+                    joystick.end();
+                    float avgX = averagePointerX(event);
+                    float avgY = averagePointerY(event);
+                    // Screen-space drag converted to world (pre-zoom)
+                    // pixels and inverted, so the world appears to follow
+                    // the fingers rather than the camera following them -
+                    // same feel as panning a map or a photo.
+                    panOffsetX -= (avgX - panAnchorX) / zoom;
+                    panOffsetY -= (avgY - panAnchorY) / zoom;
+                    panAnchorX = avgX;
+                    panAnchorY = avgY;
+                } else if (!pinching) {
+                    joystick.move(event.getX(), event.getY());
+                }
+                return true;
+            case MotionEvent.ACTION_POINTER_UP:
                 return true;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
-                touchCol = -1;
-                touchRow = -1;
+                pinching = false;
+                joystick.end();
                 return true;
             default:
                 return super.onTouchEvent(event);
         }
     }
 
-    private void updateTouchRegion(float x, float y) {
-        int width = getWidth();
-        int height = getHeight();
-        if (width == 0 || height == 0) {
-            return;
+    /** Average X (and Y, below) across every finger currently on screen -
+     *  the pan anchor/measurement point, so a drag pans by however far
+     *  that average moved rather than needing to track any one finger by
+     *  index (which can change as fingers lift and land). */
+    private static float averagePointerX(MotionEvent event) {
+        float sum = 0f;
+        int count = event.getPointerCount();
+        for (int i = 0; i < count; i++) {
+            sum += event.getX(i);
         }
-        touchCol = clampRegion((int) (x / (width / 3f)));
-        touchRow = clampRegion((int) (y / (height / 3f)));
+        return sum / count;
     }
 
-    private static int clampRegion(int region) {
-        return Math.max(0, Math.min(region, 2));
+    private static float averagePointerY(MotionEvent event) {
+        float sum = 0f;
+        int count = event.getPointerCount();
+        for (int i = 0; i < count; i++) {
+            sum += event.getY(i);
+        }
+        return sum / count;
     }
 
     // --- Keyboard input: arrows/WASD + numpad 1-9 -----------------------
@@ -216,22 +458,66 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
-    /** Combines every input source into one held direction, each axis
-     *  clamped to [-1, 1] (Goose normalizes the resulting vector). */
-    private float inputDx() {
-        float dx = (keyRight ? 1 : 0) - (keyLeft ? 1 : 0) + numpadDx;
-        if (touchCol >= 0) {
-            dx += touchCol - 1;
+    // --- Analog stick / gamepad (API 12+) --------------------------------
+
+    /** Sticks and hats arrive as generic motion events, which don't exist
+     *  before API 12 - on older devices the system just never calls this.
+     *  All API-12-only calls live in GamepadAxes, only reached behind the
+     *  SDK check, so this class still loads fine on API 5. */
+    @Override
+    public boolean onGenericMotionEvent(MotionEvent event) {
+        if (Build.VERSION.SDK_INT >= 12 && GamepadAxes.isJoystickMove(event)) {
+            stickDx = GamepadAxes.digitalX(event);
+            stickDy = GamepadAxes.digitalY(event);
+            return true;
         }
-        return Math.max(-1f, Math.min(1f, dx));
+        return false;
     }
 
-    private float inputDy() {
-        float dy = (keyDown ? 1 : 0) - (keyUp ? 1 : 0) + numpadDy;
-        if (touchRow >= 0) {
-            dy += touchRow - 1;
-        }
-        return Math.max(-1f, Math.min(1f, dy));
+    /** Releases every input source. Called when the surface goes away
+     *  (app paused/backgrounded), because a key-up or touch-up that
+     *  happens while we're not around would otherwise leave the goose
+     *  walking forever on resume. */
+    private void clearInput() {
+        keyLeft = false;
+        keyRight = false;
+        keyUp = false;
+        keyDown = false;
+        activeNumpadKeyCode = 0;
+        numpadDx = 0;
+        numpadDy = 0;
+        stickDx = 0;
+        stickDy = 0;
+        pinching = false;
+        panOffsetX = 0f;
+        panOffsetY = 0f;
+        panResetting = false;
+        wasMoving = false;
+        joystick.end();
+    }
+
+    /** Combines every input source into one direction per axis: each of
+     *  dx/dy is -1, 0 or 1, and both non-zero means a diagonal step. Sources
+     *  are summed then reduced to their sign, so two sources agreeing don't
+     *  double up, and two pushing opposite ways cancel out. */
+    private int resolvedDx() {
+        return sign(rawDx());
+    }
+
+    private int resolvedDy() {
+        return sign(rawDy());
+    }
+
+    private int rawDx() {
+        return (keyRight ? 1 : 0) - (keyLeft ? 1 : 0) + numpadDx + stickDx + joystick.getDx();
+    }
+
+    private int rawDy() {
+        return (keyDown ? 1 : 0) - (keyUp ? 1 : 0) + numpadDy + stickDy + joystick.getDy();
+    }
+
+    private static int sign(int v) {
+        return v > 0 ? 1 : (v < 0 ? -1 : 0);
     }
 
     // --- Update / render -------------------------------------------------
@@ -242,8 +528,266 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (goose == null) {
             return;
         }
-        goose.update(deltaMs, inputDx(), inputDy(), map);
+        int dx = resolvedDx();
+        int dy = resolvedDy();
+
+        // The rising edge only - moving right now but wasn't a moment ago -
+        // so a held direction doesn't keep restarting the ease every frame
+        // (see startPanReset()/wasMoving).
+        boolean nowMoving = dx != 0 || dy != 0;
+        if (nowMoving && !wasMoving) {
+            startPanReset();
+        }
+        wasMoving = nowMoving;
+
+        goose.update(deltaMs, dx, dy, map);
+        goose.setSwimming(isOverLiquid(goose.getX(), goose.getY()));
+        checkHoleTransition();
+        checkBirdRescues();
+        updateBirds(deltaMs);
+        updatePanReset(deltaMs);
         updateCamera();
+    }
+
+    /** Kicks off the pan-reset ease (see panResetting/PAN_RESET_DURATION_MS)
+     *  from wherever panOffset currently sits - called once, the instant
+     *  the goose starts moving from a standstill (see update()). A no-op
+     *  when already centered, so tapping to walk while the camera is
+     *  already goose-centered doesn't restart a pointless zero-length
+     *  ease every time. */
+    private void startPanReset() {
+        if (panOffsetX == 0f && panOffsetY == 0f) {
+            return;
+        }
+        panResetting = true;
+        panResetElapsedMs = 0;
+        panResetStartX = panOffsetX;
+        panResetStartY = panOffsetY;
+    }
+
+    /** Advances the pan-reset ease by one frame: panOffset glides from
+     *  wherever it was when startPanReset() was called down to dead zero
+     *  over PAN_RESET_DURATION_MS, eased out (fast start, gentle finish)
+     *  so it settles into place rather than stopping abruptly. A no-op
+     *  once panResetting is false, i.e. most frames - panOffset is only
+     *  ever touched here or by a manual two-finger drag (see
+     *  onTouchEvent), never both in the same frame (see
+     *  ACTION_POINTER_DOWN, which cancels this the moment a new drag
+     *  starts). */
+    private void updatePanReset(long deltaMs) {
+        if (!panResetting) {
+            return;
+        }
+        panResetElapsedMs += deltaMs;
+        float t = Math.min(1f, panResetElapsedMs / (float) PAN_RESET_DURATION_MS);
+        float eased = 1f - (1f - t) * (1f - t); // ease-out quad
+        panOffsetX = panResetStartX * (1f - eased);
+        panOffsetY = panResetStartY * (1f - eased);
+        if (t >= 1f) {
+            panResetting = false;
+        }
+    }
+
+    /** Fires the moment the goose lands on a new cell (see holeGooseRow/Col
+     *  doc) that holds a HOLE_DOWN, HOLE_UP or HOLE_DOWN_NEST item:
+     *  HOLE_DOWN advances to the next stage id, HOLE_UP goes back to the
+     *  previous one (or, from inside a nest, back to that nest's parent
+     *  stage), and HOLE_DOWN_NEST drops into that stage's nest. If the
+     *  target stage doesn't exist (e.g. HOLE_UP on the very first stage,
+     *  or HOLE_DOWN_NEST on a stage with no nest defined) Maps.get()
+     *  throws and the hole is simply a no-op. */
+    private void checkHoleTransition() {
+        if (goose.getRow() == holeGooseRow && goose.getCol() == holeGooseCol) {
+            return;
+        }
+        holeGooseRow = goose.getRow();
+        holeGooseCol = goose.getCol();
+
+        MapCell cell = map.getCell(holeGooseRow, holeGooseCol);
+        if (cell == null) {
+            return;
+        }
+        if (cell.item == ItemType.HOLE_DOWN) {
+            changeStage(stageId + 1);
+        } else if (cell.item == ItemType.HOLE_UP) {
+            changeStage(isNestStage(stageId) ? stageId - Maps.NEST_OFFSET : stageId - 1);
+        } else if (cell.item == ItemType.HOLE_DOWN_NEST) {
+            changeStage(stageId + Maps.NEST_OFFSET);
+        }
+    }
+
+    /** A nest stage id is always its parent stage id + Maps.NEST_OFFSET
+     *  (e.g. Maps.FOREST_NEST == Maps.FOREST + 100), so HOLE_UP can find
+     *  its way back to the right parent without knowing which nest it's
+     *  in, and without needing a HOLE_UP_NEST item type. */
+    private static boolean isNestStage(int stageId) {
+        return stageId >= Maps.NEST_OFFSET;
+    }
+
+    /** Swaps in a different stage in place. Tile/item art (tileSheets/
+     *  itemBitmaps) is loaded once per TileType/ItemType at construction
+     *  time and covers every stage already, so it's left alone here. Does
+     *  nothing if newStageId isn't a real stage - e.g. walking a HOLE_UP on
+     *  the first stage, or a HOLE_DOWN on the last.
+     *
+     *  The goose resumes at whatever spot it last left newStageId from (see
+     *  lastPositionByStage), not that stage's fixed spawn point - falling
+     *  back to the spawn point only the first time a stage is ever entered,
+     *  or if the remembered spot is no longer valid on that map. A bird
+     *  that's already following stays with the goose into the new stage
+     *  instead of being replaced by that stage's own (unrescued) bird. */
+    /** Swaps in a different stage in place. Tile/item art (tileSheets/
+     *  itemBitmaps) is loaded once per TileType/ItemType at construction
+     *  time and covers every stage already, so it's left alone here. Does
+     *  nothing if newStageId isn't a real stage - e.g. walking a HOLE_UP on
+     *  the first stage, or a HOLE_DOWN on the last.
+     *
+     *  The goose resumes at whatever spot it last left newStageId from (see
+     *  lastPositionByStage), not that stage's fixed spawn point - falling
+     *  back to the spawn point only the first time a stage is ever entered,
+     *  or if the remembered spot is no longer valid on that map. Every
+     *  already-freed bird crosses over too, lined up behind the goose at
+     *  its new position - see followingBirds - instead of being replaced
+     *  by that stage's own (unrescued) birds. */
+    private void changeStage(int newStageId) {
+        Stage newStage;
+        try {
+            newStage = Maps.get(newStageId);
+        } catch (IllegalArgumentException noSuchStage) {
+            return;
+        }
+
+        lastPositionByStage.put(stageId, new int[]{goose.getRow(), goose.getCol()});
+
+        stageId = newStageId;
+        stage = newStage;
+        map = new GameMap(stage.tiles);
+        findIdleBirdSpawns();
+
+        int spawnRow = stage.spawnRow;
+        int spawnCol = stage.spawnCol;
+        int[] savedPos = lastPositionByStage.get(newStageId);
+        if (savedPos != null && map.isPassable(savedPos[0], savedPos[1])) {
+            spawnRow = savedPos[0];
+            spawnCol = savedPos[1];
+        }
+
+        goose = new Goose(getResources(), spawnRow, spawnCol);
+
+        // Recreate every already-freed bird stacked on the goose's new
+        // spot (their old coordinates belong to the old map), keep them in
+        // the same chain order, and reset each link's chase tracking to
+        // that same spot so nobody tries to walk back across the old map.
+        for (int i = 0; i < followingBirds.size(); i++) {
+            Bird carried = new Bird(getResources(), spawnRow, spawnCol);
+            carried.startFollowing();
+            followingBirds.set(i, carried);
+            int[] chaseTarget = chaseTargets.get(i);
+            chaseTarget[0] = spawnRow;
+            chaseTarget[1] = spawnCol;
+        }
+
+        holeGooseRow = goose.getRow();
+        holeGooseCol = goose.getCol();
+        // A new stage always opens goose-centered - carrying a leftover
+        // pan offset (or an in-flight ease toward one) across would aim
+        // the camera at whatever was in that direction on the OLD map.
+        panOffsetX = 0f;
+        panOffsetY = 0f;
+        panResetting = false;
+    }
+
+    /** Whether a sprite whose top-left is at (spriteX, spriteY) is standing
+     *  in liquid. Checks the sprite's centre, so mid-glide the pose flips
+     *  when it is half over the shoreline rather than as the step starts.
+     *  Applies to every creature alike (goose, and each bird). */
+    private boolean isOverLiquid(float spriteX, float spriteY) {
+        return map.isLiquidAt(spriteX + GameMap.TILE_SIZE / 2f, spriteY + GameMap.TILE_SIZE / 2f);
+    }
+
+    /** The goose is the only thing that ever frees a bird. A trailing bird
+     *  only ever re-treads tiles the goose has already been through, so it
+     *  can never reach an idle bird's tile before the goose does - checking
+     *  the goose's position alone is enough. A freed bird joins the back of
+     *  followingBirds, chasing whoever's currently last in line (the goose
+     *  itself, if this is the first bird freed this game). */
+    private void checkBirdRescues() {
+        for (Iterator<Bird> it = idleBirds.iterator(); it.hasNext(); ) {
+            Bird idle = it.next();
+            if (idle.getRow() != goose.getRow() || idle.getCol() != goose.getCol()) {
+                continue;
+            }
+            it.remove();
+            idle.startFollowing();
+
+            int leaderRow, leaderCol;
+            if (followingBirds.isEmpty()) {
+                leaderRow = goose.getRow();
+                leaderCol = goose.getCol();
+            } else {
+                Bird lastInChain = followingBirds.get(followingBirds.size() - 1);
+                leaderRow = lastInChain.getRow();
+                leaderCol = lastInChain.getCol();
+            }
+
+            followingBirds.add(idle);
+            // Starts equal to the leader's CURRENT tile (where the new
+            // bird is standing right now, having just been freed there) -
+            // so it holds still until that leader takes its next step.
+            chaseTargets.add(new int[]{leaderRow, leaderCol});
+
+            onBirdRescued(idle.getRow(), idle.getCol());
+        }
+    }
+
+    /** Called once, the instant a bird is freed (see checkBirdRescues()),
+     *  at (spawnRow, spawnCol) - that bird's own spawn cell, since an idle
+     *  bird never moves before it starts following. Records the rescue
+     *  permanently (see PrefsManager.setBirdRescued()/
+     *  findIdleBirdSpawns()) and, if this stage's bird grants an ability
+     *  (see Ability.forStage()), unlocks it for good too - one bird can
+     *  unlock at most one ability, and rescuing it a second time can't
+     *  happen since it's gone from the world for good after the first. */
+    private void onBirdRescued(int spawnRow, int spawnCol) {
+        PrefsManager prefs = PrefsManager.getInstance(getContext());
+        prefs.setBirdRescued(stageId, spawnRow, spawnCol);
+
+        Ability ability = Ability.forStage(stageId);
+        if (ability != null) {
+            prefs.unlockAbility(ability);
+        }
+    }
+
+    /** Advances the whole conga line by one link at a time: bird 0 chases
+     *  the goose, bird 1 chases bird 0, bird 2 chases bird 1, and so on.
+     *  Each step forward, chaseTargets.get(i) holds the tile that bird i's
+     *  leader was standing on one frame ago - the tile that leader just
+     *  vacated, and so exactly where bird i should walk to next (the same
+     *  single "vacated tile" a lone following bird needs, just tracked once
+     *  per link here). Processing the chain front-to-back means by the time
+     *  we reach bird i, bird i - 1 has already taken this frame's step, so
+     *  its position is ready to hand to bird i as this frame's leaderRow/
+     *  leaderCol. */
+    private void updateBirds(long deltaMs) {
+        int leaderRow = goose.getRow();
+        int leaderCol = goose.getCol();
+
+        for (int i = 0; i < followingBirds.size(); i++) {
+            Bird bird = followingBirds.get(i);
+            int[] chaseTarget = chaseTargets.get(i);
+
+            if (leaderRow != chaseTarget[0] || leaderCol != chaseTarget[1]) {
+                bird.moveTowards(chaseTarget[0], chaseTarget[1]);
+            }
+            chaseTarget[0] = leaderRow;
+            chaseTarget[1] = leaderCol;
+
+            bird.update(deltaMs);
+            bird.setSwimming(isOverLiquid(bird.getX(), bird.getY()));
+
+            leaderRow = bird.getRow();
+            leaderCol = bird.getCol();
+        }
     }
 
     private void updateCamera() {
@@ -252,12 +796,21 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (viewW == 0 || viewH == 0) {
             return;
         }
+        float visibleW = viewW / zoom;
+        float visibleH = viewH / zoom;
 
-        cameraX = (int) (goose.getX() + GameMap.TILE_SIZE / 2f - viewW / 2f);
-        cameraY = (int) (goose.getY() + GameMap.TILE_SIZE / 2f - viewH / 2f);
+        // Built from the same ROUNDED goose position render() draws at, so
+        // camera and sprite always round together: no 1px shimmer while
+        // walking. panOffset (see onTouchEvent's two-finger drag handling)
+        // shifts the camera away from dead-center on the goose - e.g. to
+        // look ahead before walking somewhere - and the clamp below, same
+        // as always, keeps the result from ever showing past the map edge,
+        // so a pan can't be dragged out into empty space either.
+        cameraX = Math.round(goose.getX() + panOffsetX) + GameMap.TILE_SIZE / 2 - (int) (visibleW / 2f);
+        cameraY = Math.round(goose.getY() + panOffsetY) + GameMap.TILE_SIZE / 2 - (int) (visibleH / 2f);
 
-        int maxCamX = Math.max(0, map.getWidthPx() - viewW);
-        int maxCamY = Math.max(0, map.getHeightPx() - viewH);
+        int maxCamX = Math.max(0, (int) (map.getWidthPx() - visibleW));
+        int maxCamY = Math.max(0, (int) (map.getHeightPx() - visibleH));
         cameraX = clamp(cameraX, 0, maxCamX);
         cameraY = clamp(cameraY, 0, maxCamY);
     }
@@ -272,11 +825,18 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             return;
         }
 
+        canvas.save();
+        canvas.scale(zoom, zoom);
+        // Everything from here on draws in "world" pixels (pre-zoom) -
+        // canvas.scale above already applies the zoom multiplication.
+
         int tileSize = GameMap.TILE_SIZE;
+        float visibleW = canvas.getWidth() / zoom; // canvas dims are still physical px pre-scale-application to our math
+        float visibleH = canvas.getHeight() / zoom;
         int firstCol = Math.max(0, cameraX / tileSize);
         int firstRow = Math.max(0, cameraY / tileSize);
-        int lastCol = Math.min(map.getCols() - 1, (cameraX + canvas.getWidth()) / tileSize + 1);
-        int lastRow = Math.min(map.getRows() - 1, (cameraY + canvas.getHeight()) / tileSize + 1);
+        int lastCol = Math.min(map.getCols() - 1, (int) ((cameraX + visibleW) / tileSize) + 1);
+        int lastRow = Math.min(map.getRows() - 1, (int) ((cameraY + visibleH) / tileSize) + 1);
 
         for (int r = firstRow; r <= lastRow; r++) {
             for (int c = firstCol; c <= lastCol; c++) {
@@ -284,14 +844,33 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
 
+        drawBirds(canvas, idleBirds, tileSize);
+        drawBirds(canvas, followingBirds, tileSize);
+
         if (goose != null) {
-            int screenX = (int) (goose.getX() - cameraX);
-            int screenY = (int) (goose.getY() - cameraY);
+            int screenX = Math.round(goose.getX()) - cameraX;
+            int screenY = Math.round(goose.getY()) - cameraY;
             reusableDst.set(screenX, screenY, screenX + tileSize, screenY + tileSize);
             goose.draw(canvas, reusableDst);
         }
 
-        drawTouchRegions(canvas);
+        canvas.restore();
+
+        // Screen-space overlay: drawn after restore() so the joystick isn't
+        // scaled by the zoom or scrolled by the camera.
+        joystick.draw(canvas);
+    }
+
+    /** Draws every Bird in the given list (idle or following - both draw
+     *  identically, see Bird.draw()) at its current world position. */
+    private void drawBirds(Canvas canvas, List<Bird> birds, int tileSize) {
+        for (int i = 0; i < birds.size(); i++) {
+            Bird bird = birds.get(i);
+            int bx = Math.round(bird.getX()) - cameraX;
+            int by = Math.round(bird.getY()) - cameraY;
+            reusableDst.set(bx, by, bx + tileSize, by + tileSize);
+            bird.draw(canvas, reusableDst);
+        }
     }
 
     private void drawTile(Canvas canvas, int row, int col, int tileSize) {
@@ -299,39 +878,38 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (cell == null) {
             return;
         }
-        SpriteSheet sheet = tileSheets.get(cell.tileType);
+
+        if (cell.hasBackground()) {
+            drawTileLayer(canvas, cell.backgroundTile, cell.backgroundPosition, row, col, tileSize);
+        }
+        drawTileLayer(canvas, cell.tile, cell.position, row, col, tileSize);
+
+        // BIRD is drawn as its own moving entity (see render()/Bird), never
+        // as a static per-cell image, even on the tile it spawned on.
+        if (cell.hasItem() && cell.item != ItemType.BIRD) {
+            Bitmap itemBitmap = itemBitmaps.get(cell.item);
+            if (itemBitmap != null) {
+                int screenX = col * tileSize - cameraX;
+                int screenY = row * tileSize - cameraY;
+                reusableDst.set(screenX, screenY, screenX + tileSize, screenY + tileSize);
+                canvas.drawBitmap(itemBitmap, null, reusableDst, null);
+            }
+        }
+    }
+
+    private void drawTileLayer(Canvas canvas, TileType type, int position, int row, int col, int tileSize) {
+        if (type == TileType.NONE) {
+            return;
+        }
+        SpriteSheet sheet = tileSheets.get(type);
         if (sheet == null) {
             return;
         }
 
-        reusableSrc.set(sheet.frameRect(TilePosition.col(cell.position), TilePosition.row(cell.position)));
+        reusableSrc.set(sheet.frameRect(TilePosition.col(position), TilePosition.row(position)));
         int screenX = col * tileSize - cameraX;
         int screenY = row * tileSize - cameraY;
         reusableDst.set(screenX, screenY, screenX + tileSize, screenY + tileSize);
         canvas.drawBitmap(sheet.getBitmap(), reusableSrc, reusableDst, null);
-
-        // Items (cell.itemId) get drawn here as their own layer once there's
-        // item art - e.g. look up an ItemType by cell.itemId and draw its
-        // sprite centered on the same reusableDst rect.
-    }
-
-    /** Faint 3x3 grid + a highlight over whichever region is currently
-     *  pressed, so the touch controls are visible without needing button
-     *  art yet. Safe to delete once you have real on-screen controls. */
-    private void drawTouchRegions(Canvas canvas) {
-        int width = canvas.getWidth();
-        int height = canvas.getHeight();
-        float colWidth = width / 3f;
-        float rowHeight = height / 3f;
-
-        if (touchCol >= 0 && touchRow >= 0) {
-            canvas.drawRect(touchCol * colWidth, touchRow * rowHeight,
-                    (touchCol + 1) * colWidth, (touchRow + 1) * rowHeight, regionHighlightPaint);
-        }
-
-        canvas.drawLine(colWidth, 0, colWidth, height, regionGridPaint);
-        canvas.drawLine(2 * colWidth, 0, 2 * colWidth, height, regionGridPaint);
-        canvas.drawLine(0, rowHeight, width, rowHeight, regionGridPaint);
-        canvas.drawLine(0, 2 * rowHeight, width, 2 * rowHeight, regionGridPaint);
     }
 }
