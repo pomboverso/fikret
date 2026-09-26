@@ -31,6 +31,8 @@ public final class Maps {
     static int lava_stones_01 = 24000000;
     static int lava_stones_02 = 25000000;
     static int lava_stones_03 = 26000000;
+    static int lilypond_01 = 27000000;
+    static int lilypond_02 = 28000000;
 
     static final int GRASS = 1;
     static final int WATER = 2;
@@ -350,18 +352,21 @@ public final class Maps {
         drawPond(tiles, 10, 6, WATER, POND_3, GRASS, DEEP_WATER);
         drawPond(tiles, 24, 24, WATER, POND_4, GRASS);
         drawPond(tiles, 3, 18, WATER, POND_5, GRASS, DEEP_WATER);
-        drawPond(tiles, 15, 13, WATER, POND_2, SAND);
+        drawPond(tiles, 15, 13, WATER, POND_2, GRASS);
         drawPond(tiles, 17, 23, WATER, POND_3, GRASS);
         drawPond(tiles, 24, 0, WATER, POND_4, SAND);
 
         tiles[27][2] += hole_down;
         tiles[26][2] += bird;
 
-        randomizedItems(tiles, plant, 5, 1, 2, 28, 2, 28, 25031, 25032, 25033, 25034, 25035, 25036, 25037, 25038, 25039);
-        randomizedItems(tiles, wall_forest, 30, 1, 2, 28, 2, 28, 25011, 25012, 25013, 25014, 25015, 25016, 25017, 25018, 25019);
+        randomizedItems(tiles, plant, 3, 2, 2, 28, 2, 28, 25031, 25032, 25033, 25034, 25035, 25036, 25037, 25038, 25039);
+        randomizedItems(tiles, wall_forest, 30, 2, 2, 28, 2, 28, 25011, 25012, 25013, 25014, 25015, 25016, 25017, 25018, 25019);
         randomizedItems(tiles, flower_floor_blue, 50, 1, 2, 28, 2, 28, 25011, 25012, 25013, 25014, 25015, 25016, 25017, 25018, 25019);
-        randomizedItems(tiles, flower_floor_pink, 20, 1, 2, 28, 2, 28, 25011, 25012, 25013, 25014, 25015, 25016, 25017, 25018, 25019);
         randomizedItems(tiles, flower_floor_yellow, 10, 1, 2, 28, 2, 28, 25011, 25012, 25013, 25014, 25015, 25016, 25017, 25018, 25019);
+
+        randomizedItems(tiles, flower_floor_pink, 10, 3, 1, 29, 1, 29, 25, 25061, 25062, 25063, 25064, 25065, 25066, 25067, 25068, 25069);
+        randomizedItems(tiles, lilypond_01, 20, 3, 1, 29, 1, 29, 25, 25061, 25062, 25063, 25064, 25065, 25066, 25067, 25068, 25069);
+        randomizedItems(tiles, lilypond_02, 20, 3, 1, 29, 1, 29, 25, 25061, 25062, 25063, 25064, 25065, 25066, 25067, 25068, 25069);
 
         return new Stage(tiles, 2, 2);
     }

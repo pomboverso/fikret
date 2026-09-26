@@ -29,7 +29,9 @@ public enum ItemType {
     WALL_SPACE(23, R.drawable.wall_space, true),
     LAVA_STONES_01(24, R.drawable.lava_stone_01, false),
     LAVA_STONES_02(25, R.drawable.lava_stone_02, false),
-    LAVA_STONES_03(26, R.drawable.lava_stone_03, false);
+    LAVA_STONES_03(26, R.drawable.lava_stone_03, false),
+    LILYPOND_01(27, R.drawable.lilypad_01, false),
+    LILYPOND_02(28, R.drawable.lilypad_02, false);
 
     public final int id;
     public final int drawableRes;
