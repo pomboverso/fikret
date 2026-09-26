@@ -31,7 +31,8 @@ import java.util.Map;
  *  - Touch: put a finger down ANYWHERE and a 3x3 grid with a circle in its
  *    middle appears under it (see SwipeJoystick). Drag the circle into one
  *    of the outer cells and the goose walks that way until you let go or
- *    drag back to the middle. Two fingers = pinch-to-zoom instead.
+ *    drag back to the middle. Two fingers = pinch-to-zoom and/or drag-to-pan
+ *    instead (see the panOffset fields and onTouchEvent).
  *  - Keyboard / d-pad: arrow keys or WASD; press two at once for a diagonal.
  *    Numpad 1-9 (5 = stop) sets a direction directly.
  *  - Analog stick / gamepad d-pad hat (API 12+ only, see GamepadAxes).
@@ -117,6 +118,36 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private float zoom = 2f; // default a bit zoomed in - 64px tiles read as small otherwise
     private PinchZoomDetector pinchZoomDetector; // null below API 8
 
+    // --- Pan (two-finger drag) -------------------------------------------
+    // Offset from the goose-centered camera, in world (pre-zoom) pixels -
+    // see updateCamera(). The same two fingers used to pinch-zoom (see
+    // PinchZoomDetector/onTouchEvent) also drag the camera when moved
+    // together rather than apart, the standard "pinch to zoom, drag to
+    // pan" gesture from maps/photo apps - both can happen in the same
+    // gesture, same as there. Eased back to 0 over PAN_RESET_DURATION_MS
+    // the instant the goose starts moving again from a standstill (see
+    // update()/updatePanReset()) - a plain "start walking" always ends up
+    // goose-centered, but glides there rather than jump-cutting - and
+    // snapped to 0 outright on a new stage (see changeStage()), since
+    // there's no old camera position worth easing from on a different map.
+    private float panOffsetX, panOffsetY;
+    // Average position of every finger down, one frame ago - the anchor a
+    // two-finger drag measures its movement against. Only meaningful while
+    // pinching is true; set fresh every time a second finger lands (see
+    // onTouchEvent's ACTION_POINTER_DOWN) so the first move frame of a new
+    // gesture never sees a jump from wherever the last one ended.
+    private float panAnchorX, panAnchorY;
+    // Whether the goose was moving as of last frame's update() - so the
+    // *instant* it is (the rising edge, not just "moving") is what starts
+    // the pan-reset ease, once, rather than re-triggering (and restarting
+    // the ease from scratch) every single frame the goose keeps walking.
+    private boolean wasMoving;
+    // --- Pan-reset ease ---------------------------------------------------
+    private static final long PAN_RESET_DURATION_MS = 200; // matches Goose/Bird's STEP_DURATION_MS
+    private boolean panResetting;
+    private long panResetElapsedMs;
+    private float panResetStartX, panResetStartY;
+
     // --- Input state -----------------------------------------------------
     // Written on the UI thread, read every frame on GameThread - hence volatile.
     // Keyboard: arrow keys / WASD, combined additively for diagonals.
@@ -127,11 +158,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     // Analog stick / gamepad hat, already reduced to -1/0/1 per axis.
     private volatile int stickDx, stickDy;
     // Touch: true once a second finger lands, until every finger is lifted -
-    // that gesture is a pinch, and must not also drive the joystick.
+    // that gesture is a pinch/pan, and must not also drive the joystick.
     private boolean pinching;
 
     public GameView(Context context) {
-        this(context, Maps.BEACH);
+        this(context, Maps.ARCTIC);
     }
 
     public GameView(Context context, int stageId) {
@@ -299,15 +330,33 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 joystick.begin(event.getX(), event.getY());
                 return true;
             case MotionEvent.ACTION_POINTER_DOWN:
-                // A second finger means this is a pinch, not a move request -
-                // drop the joystick, and stay out of it until all fingers lift.
+                // A second finger means this is a pinch/pan gesture, not a
+                // move request - drop the joystick, and stay out of it
+                // until all fingers lift. Anchor the pan drag at today's
+                // average finger position so the very next MOVE frame
+                // measures from here, not from a stale single-finger spot,
+                // and cancel any pan-reset ease already in flight so manual
+                // dragging isn't fighting it for control of panOffset.
                 pinching = true;
+                panResetting = false;
                 joystick.end();
+                panAnchorX = averagePointerX(event);
+                panAnchorY = averagePointerY(event);
                 return true;
             case MotionEvent.ACTION_MOVE:
                 if (event.getPointerCount() > 1) {
                     pinching = true;
                     joystick.end();
+                    float avgX = averagePointerX(event);
+                    float avgY = averagePointerY(event);
+                    // Screen-space drag converted to world (pre-zoom)
+                    // pixels and inverted, so the world appears to follow
+                    // the fingers rather than the camera following them -
+                    // same feel as panning a map or a photo.
+                    panOffsetX -= (avgX - panAnchorX) / zoom;
+                    panOffsetY -= (avgY - panAnchorY) / zoom;
+                    panAnchorX = avgX;
+                    panAnchorY = avgY;
                 } else if (!pinching) {
                     joystick.move(event.getX(), event.getY());
                 }
@@ -322,6 +371,28 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             default:
                 return super.onTouchEvent(event);
         }
+    }
+
+    /** Average X (and Y, below) across every finger currently on screen -
+     *  the pan anchor/measurement point, so a drag pans by however far
+     *  that average moved rather than needing to track any one finger by
+     *  index (which can change as fingers lift and land). */
+    private static float averagePointerX(MotionEvent event) {
+        float sum = 0f;
+        int count = event.getPointerCount();
+        for (int i = 0; i < count; i++) {
+            sum += event.getX(i);
+        }
+        return sum / count;
+    }
+
+    private static float averagePointerY(MotionEvent event) {
+        float sum = 0f;
+        int count = event.getPointerCount();
+        for (int i = 0; i < count; i++) {
+            sum += event.getY(i);
+        }
+        return sum / count;
     }
 
     // --- Keyboard input: arrows/WASD + numpad 1-9 -----------------------
@@ -418,6 +489,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         stickDx = 0;
         stickDy = 0;
         pinching = false;
+        panOffsetX = 0f;
+        panOffsetY = 0f;
+        panResetting = false;
+        wasMoving = false;
         joystick.end();
     }
 
@@ -453,12 +528,64 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (goose == null) {
             return;
         }
-        goose.update(deltaMs, resolvedDx(), resolvedDy(), map);
+        int dx = resolvedDx();
+        int dy = resolvedDy();
+
+        // The rising edge only - moving right now but wasn't a moment ago -
+        // so a held direction doesn't keep restarting the ease every frame
+        // (see startPanReset()/wasMoving).
+        boolean nowMoving = dx != 0 || dy != 0;
+        if (nowMoving && !wasMoving) {
+            startPanReset();
+        }
+        wasMoving = nowMoving;
+
+        goose.update(deltaMs, dx, dy, map);
         goose.setSwimming(isOverLiquid(goose.getX(), goose.getY()));
         checkHoleTransition();
         checkBirdRescues();
         updateBirds(deltaMs);
+        updatePanReset(deltaMs);
         updateCamera();
+    }
+
+    /** Kicks off the pan-reset ease (see panResetting/PAN_RESET_DURATION_MS)
+     *  from wherever panOffset currently sits - called once, the instant
+     *  the goose starts moving from a standstill (see update()). A no-op
+     *  when already centered, so tapping to walk while the camera is
+     *  already goose-centered doesn't restart a pointless zero-length
+     *  ease every time. */
+    private void startPanReset() {
+        if (panOffsetX == 0f && panOffsetY == 0f) {
+            return;
+        }
+        panResetting = true;
+        panResetElapsedMs = 0;
+        panResetStartX = panOffsetX;
+        panResetStartY = panOffsetY;
+    }
+
+    /** Advances the pan-reset ease by one frame: panOffset glides from
+     *  wherever it was when startPanReset() was called down to dead zero
+     *  over PAN_RESET_DURATION_MS, eased out (fast start, gentle finish)
+     *  so it settles into place rather than stopping abruptly. A no-op
+     *  once panResetting is false, i.e. most frames - panOffset is only
+     *  ever touched here or by a manual two-finger drag (see
+     *  onTouchEvent), never both in the same frame (see
+     *  ACTION_POINTER_DOWN, which cancels this the moment a new drag
+     *  starts). */
+    private void updatePanReset(long deltaMs) {
+        if (!panResetting) {
+            return;
+        }
+        panResetElapsedMs += deltaMs;
+        float t = Math.min(1f, panResetElapsedMs / (float) PAN_RESET_DURATION_MS);
+        float eased = 1f - (1f - t) * (1f - t); // ease-out quad
+        panOffsetX = panResetStartX * (1f - eased);
+        panOffsetY = panResetStartY * (1f - eased);
+        if (t >= 1f) {
+            panResetting = false;
+        }
     }
 
     /** Fires the moment the goose lands on a new cell (see holeGooseRow/Col
@@ -562,6 +689,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         holeGooseRow = goose.getRow();
         holeGooseCol = goose.getCol();
+        // A new stage always opens goose-centered - carrying a leftover
+        // pan offset (or an in-flight ease toward one) across would aim
+        // the camera at whatever was in that direction on the OLD map.
+        panOffsetX = 0f;
+        panOffsetY = 0f;
+        panResetting = false;
     }
 
     /** Whether a sprite whose top-left is at (spriteX, spriteY) is standing
@@ -667,9 +800,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         float visibleH = viewH / zoom;
 
         // Built from the same ROUNDED goose position render() draws at, so
-        // camera and sprite always round together: no 1px shimmer while walking.
-        cameraX = Math.round(goose.getX()) + GameMap.TILE_SIZE / 2 - (int) (visibleW / 2f);
-        cameraY = Math.round(goose.getY()) + GameMap.TILE_SIZE / 2 - (int) (visibleH / 2f);
+        // camera and sprite always round together: no 1px shimmer while
+        // walking. panOffset (see onTouchEvent's two-finger drag handling)
+        // shifts the camera away from dead-center on the goose - e.g. to
+        // look ahead before walking somewhere - and the clamp below, same
+        // as always, keeps the result from ever showing past the map edge,
+        // so a pan can't be dragged out into empty space either.
+        cameraX = Math.round(goose.getX() + panOffsetX) + GameMap.TILE_SIZE / 2 - (int) (visibleW / 2f);
+        cameraY = Math.round(goose.getY() + panOffsetY) + GameMap.TILE_SIZE / 2 - (int) (visibleH / 2f);
 
         int maxCamX = Math.max(0, (int) (map.getWidthPx() - visibleW));
         int maxCamY = Math.max(0, (int) (map.getHeightPx() - visibleH));
