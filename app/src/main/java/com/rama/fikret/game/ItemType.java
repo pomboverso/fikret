@@ -15,7 +15,7 @@ public enum ItemType {
     WALL_CAVE(9, R.drawable.wall_cave, true),
     WALL_VOLCAN(10, R.drawable.wall_volcan, true),
     WALL_NUCLEAR(11, R.drawable.wall_nuclear, true),
-    WALL_ARTIC(12, R.drawable.wall_artic, true),
+    WALL_ARCTIC(12, R.drawable.wall_artic, true),
     HOLE_DOWN_NEST(13, R.drawable.hole_down, false),
     FLOWER_FLOOR_PINK(14, R.drawable.flower_floor_pink, false),
     FLOWER_FLOOR_BLUE(15, R.drawable.flower_floor_blue, false),

@@ -61,9 +61,9 @@ public final class Maps {
 
     public static final int FOREST_NEST = FOREST + NEST_OFFSET;
     public static final int CAVE_NEST = CAVE + NEST_OFFSET;
-    public static final int VOLCAN_NEST = VOLCANO + NEST_OFFSET;
+    public static final int VOLCANO_NEST = VOLCANO + NEST_OFFSET;
 
-    public static final int ARTIC_NEST = ARCTIC + NEST_OFFSET;
+    public static final int ARCTIC_NEST = ARCTIC + NEST_OFFSET;
     public static final int BUBBLEGUM_LAND_NEST = BUBBLEGUM_LAND + NEST_OFFSET;
     public static final int SPACE_NEST = SPACE + NEST_OFFSET;
 
@@ -318,9 +318,9 @@ public final class Maps {
                 return forestNest();
             case CAVE_NEST:
                 return caveNest();
-            case VOLCAN_NEST:
+            case VOLCANO_NEST:
                 return volcanoNest();
-            case ARTIC_NEST:
+            case ARCTIC_NEST:
                 return arcticNest();
             case BUBBLEGUM_LAND_NEST:
                 return bubblegumLandNest();
@@ -746,59 +746,57 @@ public final class Maps {
             Arrays.fill(tiles[y], 75);
         }
 
-        drawPond(tiles, 0, 0, SNOW, POND_3, WATER, DEEP_WATER);
-        drawPond(tiles, 23, 23, SNOW, POND_3, ICE);
+        int[][] ARCTIC_WALLS = {
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, // 0
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 1
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 2
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 3
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 4
+                {1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1}, // 5
+                {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 6
+                {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 7
+                {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 9
+                {1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, // 8
+                {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 10
+                {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 11
+                {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 12
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 13
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1}, // 14
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 15
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 16
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 17
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 18
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 19
+                {1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1}, // 20
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}, // 21
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}, // 22
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1}, // 23
+                {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}, // 24
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}, // 25
+                {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}, // 26
+                {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1}, // 27
+                {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 28
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}  // 29
+        };
 
-        drawItemLine(tiles, wall_arctic, 0, 6, 5, 6, 75);
-        drawItemLine(tiles, wall_arctic, 7, 6, 13, 6, 75);
-        drawItemLine(tiles, wall_arctic, 15, 6, 21, 6, 75);
-        drawItemLine(tiles, wall_arctic, 23, 6, 29, 6, 75);
-        drawItemLine(tiles, wall_arctic, 0, 13, 7, 13, 75);
-        drawItemLine(tiles, wall_arctic, 9, 13, 17, 13, 75);
-        drawItemLine(tiles, wall_arctic, 19, 13, 25, 13, 75);
-        drawItemLine(tiles, wall_arctic, 27, 13, 29, 13, 75);
-        drawItemLine(tiles, wall_arctic, 0, 20, 4, 20, 75);
-        drawItemLine(tiles, wall_arctic, 6, 20, 12, 20, 75);
-        drawItemLine(tiles, wall_arctic, 14, 20, 20, 20, 75);
-        drawItemLine(tiles, wall_arctic, 22, 20, 29, 20, 75);
-        drawItemLine(tiles, wall_arctic, 0, 26, 6, 26, 75);
-        drawItemLine(tiles, wall_arctic, 8, 26, 14, 26, 75);
-        drawItemLine(tiles, wall_arctic, 16, 26, 22, 26, 75);
-        drawItemLine(tiles, wall_arctic, 24, 26, 29, 26, 75);
-        drawItemLine(tiles, wall_arctic, 6, 0, 6, 4, 75);
-        drawItemLine(tiles, wall_arctic, 6, 6, 6, 11, 75);
-        drawItemLine(tiles, wall_arctic, 6, 13, 6, 18, 75);
-        drawItemLine(tiles, wall_arctic, 6, 20, 6, 24, 75);
-        drawItemLine(tiles, wall_arctic, 6, 26, 6, 29, 75);
-        drawItemLine(tiles, wall_arctic, 12, 0, 12, 2, 75);
-        drawItemLine(tiles, wall_arctic, 12, 4, 12, 11, 75);
-        drawItemLine(tiles, wall_arctic, 12, 13, 12, 17, 75);
-        drawItemLine(tiles, wall_arctic, 12, 20, 12, 24, 75);
-        drawItemLine(tiles, wall_arctic, 12, 26, 12, 29, 75);
-        drawItemLine(tiles, wall_arctic, 18, 0, 18, 5, 75);
-        drawItemLine(tiles, wall_arctic, 18, 7, 18, 11, 75);
-        drawItemLine(tiles, wall_arctic, 18, 13, 18, 18, 75);
-        drawItemLine(tiles, wall_arctic, 18, 20, 18, 24, 75);
-        drawItemLine(tiles, wall_arctic, 18, 26, 18, 29, 75);
-        drawItemLine(tiles, wall_arctic, 24, 0, 24, 3, 75);
-        drawItemLine(tiles, wall_arctic, 24, 5, 24, 11, 75);
-        drawItemLine(tiles, wall_arctic, 24, 13, 24, 16, 75);
-        drawItemLine(tiles, wall_arctic, 24, 18, 24, 24, 75);
-        drawItemLine(tiles, wall_arctic, 24, 26, 24, 29, 75);
-        drawItemLine(tiles, wall_arctic, 2, 3, 4, 3, 75);
-        drawItemLine(tiles, wall_arctic, 9, 2, 9, 5, 75);
-        drawItemLine(tiles, wall_arctic, 3, 9, 5, 9, 75);
-        drawItemLine(tiles, wall_arctic, 8, 15, 8, 18, 75);
-        drawItemLine(tiles, wall_arctic, 3, 22, 5, 22, 75);
-        drawItemLine(tiles, wall_arctic, 9, 23, 9, 25, 75);
-        drawItemLine(tiles, wall_arctic, 14, 2, 16, 2, 75);
-        drawItemLine(tiles, wall_arctic, 14, 8, 17, 8, 75);
-        drawItemLine(tiles, wall_arctic, 15, 15, 17, 15, 75);
-        drawItemLine(tiles, wall_arctic, 14, 22, 16, 22, 75);
-        drawItemLine(tiles, wall_arctic, 20, 9, 23, 9, 75);
-        drawItemLine(tiles, wall_arctic, 20, 16, 23, 16, 75);
-        drawItemLine(tiles, wall_arctic, 20, 23, 23, 23, 75);
-        drawItemLine(tiles, wall_arctic, 26, 24, 28, 24, 75);
+        drawWalls(
+                tiles,
+                0,
+                0,
+                ARCTIC_WALLS,
+                wall_space,
+                75
+        );
+
+        drawPond(tiles, 1, 1, SNOW, POND_3, WATER, DEEP_WATER);
+        drawPond(tiles, 2, 23, SNOW, POND_6, ICE);
+
+        tiles[24][26] += hole_down;
+
+//        randomizedItems(tiles, gems, 30, 1, 2, 28, 2, 28, 75);
+//        randomizedItems(tiles, gem, 40, 1, 2, 28, 2, 28, 75);
+//        randomizedItems(tiles, space_gems, 30, 1, 2, 28, 2, 28, 75);
+//        randomizedItems(tiles, space_gem, 40, 1, 2, 28, 2, 28, 75);
 
         return new Stage(tiles, 2, 2);
     }
