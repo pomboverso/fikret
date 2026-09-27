@@ -633,7 +633,7 @@ public final class Maps {
 
         tiles[24][26] += hole_down;
 
-        return new Stage(tiles, 2, 2);
+        return new Stage(tiles, 2, 2, true);
     }
 
     private static Stage bubblegum_land() {

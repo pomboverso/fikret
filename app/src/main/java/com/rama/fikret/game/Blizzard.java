@@ -32,8 +32,8 @@ import com.rama.fikret.R;
 public class Blizzard {
     // Pixels/second, screen space - Y > X so the snow reads as mostly
     // falling, with only a slight sideways drift from the wind.
-    private static final float SPEED_X = 30f;
-    private static final float SPEED_Y = 90f;
+    private static final float SPEED_X = 200f;
+    private static final float SPEED_Y = 100f;
 
     private final Bitmap bitmap;
     private final int tileSize;
