@@ -103,6 +103,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     // steps onto it - rather than every frame it happens to still be
     // standing there.
     private int holeGooseRow, holeGooseCol;
+    // True from the moment a dive fires until the goose fully leaves the
+    // water (see checkDiveTransition()/Goose.isSwimming()) - not just until
+    // it steps off one specific tagged cell. These ponds' deep water is
+    // only a couple of tiles wide, so a plain "wasn't on one a moment ago"
+    // check kept re-arming (and re-firing) from ordinary swimming/step
+    // jitter right at that tiny patch's edge. Requiring dry land first is
+    // the only boundary that isn't itself another edge to flicker across.
+    private boolean diveLocked;
     private final EnumMap<TileType, SpriteSheet> tileSheets = new EnumMap<TileType, SpriteSheet>(TileType.class);
     private final EnumMap<ItemType, Bitmap> itemBitmaps = new EnumMap<ItemType, Bitmap>(ItemType.class);
     private final Paint backgroundPaint = new Paint();
@@ -176,7 +184,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     public GameView(Context context) {
-        this(context, Maps.ARCTIC);
+        this(context, Maps.BEACH);
     }
 
     public GameView(Context context, int stageId) {
@@ -607,12 +615,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     /** Fires the moment the goose lands on a new cell (see holeGooseRow/Col
-     *  doc) that holds a HOLE_DOWN, HOLE_UP or HOLE_DOWN_NEST item:
-     *  HOLE_DOWN advances to the next stage id, HOLE_UP goes back to the
-     *  previous one (or, from inside a nest, back to that nest's parent
-     *  stage), and HOLE_DOWN_NEST drops into that stage's nest. If the
-     *  target stage doesn't exist (e.g. HOLE_UP on the very first stage,
-     *  or HOLE_DOWN_NEST on a stage with no nest defined) Maps.get()
+     *  doc) that holds a HOLE_DOWN, HOLE_UP, HOLE_DOWN_NEST, or one of the
+     *  DIVE_TO_* marker items: HOLE_DOWN advances to the next stage id,
+     *  HOLE_UP goes back to the previous one (or, from inside a nest, back
+     *  to that nest's parent stage), HOLE_DOWN_NEST drops into that
+     *  stage's nest, and each DIVE_TO_* item warps straight to a fixed
+     *  stage (see Maps.beach()/arctic()/beachCave() for where they're
+     *  placed) - only while the goose has actually unlocked
+     *  Ability.DIVE_DEEP_WATER, otherwise stepping on one is a no-op. If
+     *  the target stage doesn't exist (e.g. HOLE_UP on the very first
+     *  stage, or HOLE_DOWN_NEST on a stage with no nest defined) Maps.get()
      *  throws and the hole is simply a no-op. */
     private void checkHoleTransition() {
         if (goose.getRow() == holeGooseRow && goose.getCol() == holeGooseCol) {
@@ -631,6 +643,46 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             changeStage(isNestStage(stageId) ? stageId - Maps.NEST_OFFSET : stageId - 1);
         } else if (cell.item == ItemType.HOLE_DOWN_NEST) {
             changeStage(stageId + Maps.NEST_OFFSET);
+        } else {
+            checkDiveTransition(cell);
+        }
+    }
+
+    private static boolean isDiveItem(ItemType item) {
+        return item == ItemType.DIVE_TO_ARCTIC
+                || item == ItemType.DIVE_TO_BEACH_CAVE
+                || item == ItemType.DIVE_TO_BEACH;
+    }
+
+    /** DIVE_TO_* items only fire while diveLocked is false - see that
+     *  field's doc for why "wasn't on one a moment ago" wasn't enough on
+     *  its own. Locks itself back up the instant it fires, so nothing
+     *  between here and changeStage() actually finishing can double-fire
+     *  it either. */
+    private void checkDiveTransition(MapCell cell) {
+        if (!goose.isSwimming()) {
+            diveLocked = false;
+        }
+        if (diveLocked || !isDiveItem(cell.item)) {
+            return;
+        }
+        diveLocked = true;
+        if (cell.item == ItemType.DIVE_TO_ARCTIC) {
+            diveTo(Maps.ARCTIC);
+        } else if (cell.item == ItemType.DIVE_TO_BEACH_CAVE) {
+            diveTo(Maps.BEACH_CAVE);
+        } else {
+            diveTo(Maps.BEACH);
+        }
+    }
+
+    /** Backs a DIVE_TO_* marker item (see checkHoleTransition()) - a no-op
+     *  until the goose has actually unlocked Ability.DIVE_DEEP_WATER, since
+     *  these markers sit right on deep-water tiles a goose can already
+     *  swim onto (see isOverLiquid()) well before earning that ability. */
+    private void diveTo(int targetStageId) {
+        if (PrefsManager.getInstance(getContext()).hasAbility(Ability.DIVE_DEEP_WATER)) {
+            changeStage(targetStageId);
         }
     }
 
@@ -707,6 +759,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         holeGooseRow = goose.getRow();
         holeGooseCol = goose.getCol();
+        // Whatever put the goose here - a dive, a hole, a nest - it
+        // shouldn't immediately double as the start of a new dive too;
+        // see diveLocked's doc and checkDiveTransition(), which is what
+        // actually clears this once the goose reaches dry land.
+        diveLocked = true;
         // A new stage always opens goose-centered - carrying a leftover
         // pan offset (or an in-flight ease toward one) across would aim
         // the camera at whatever was in that direction on the OLD map.

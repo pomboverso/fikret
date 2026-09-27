@@ -34,6 +34,9 @@ public final class Maps {
     static int lava_stones_03 = 26000000;
     static int lilypond_01 = 27000000;
     static int lilypond_02 = 28000000;
+    static int dive_to_arctic = 29000000;
+    static int dive_to_beach_cave = 30000000;
+    static int dive_to_beach = 31000000;
 
     static final int GRASS = 1;
     static final int WATER = 2;
@@ -62,6 +65,7 @@ public final class Maps {
     public static final int BUBBLEGUM_LAND = 6;
     public static final int SPACE = 7;
     public static final int NIGHTMARE = 8;
+    public static final int BEACH_CAVE = 9;
 
     public static final int NEST_OFFSET = 100;
 
@@ -137,6 +141,11 @@ public final class Maps {
             {1, 2, 2, 2, 2, 2, 3, 0, 0, 0, 1, 2, 2, 2, 3},
     };
 
+    private static final int[][] POND_8 = {
+            {7, 9},
+            {1, 3},
+    };
+
     private static final int[][] NEST_WALLS = {
             {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
             {1, 0, 0, 1, 1, 0, 1, 0, 0, 1},
@@ -173,6 +182,8 @@ public final class Maps {
                 return space();
             case NIGHTMARE:
                 return nightmare();
+            case BEACH_CAVE:
+                return beachCave();
             case FOREST_NEST:
                 return forestNest();
             case CAVE_NEST:
@@ -287,8 +298,6 @@ public final class Maps {
         return count;
     }
 
-    /** One item type to scatter, and how it should be spaced/limited - see
-     *  randomizedItemGroup(). */
     private static final class ItemPlacement {
         final int item;
         final int maxCount;
@@ -314,33 +323,6 @@ public final class Maps {
         return false;
     }
 
-    /**
-     * Scatters one or more item types across the same region/allowed-tile
-     * pool, built with a SINGLE scan of the tile grid no matter how many
-     * item types are given. That's the whole point of this over the old
-     * approach of calling a single-item scatter once per type: each of
-     * those calls re-scanned the entire region from scratch just to
-     * rebuild an allowed-tile candidate list that, for every type after
-     * the first, was 99% identical to the one before it.
-     *
-     * Semantics are unchanged from the old "chain of separate calls with
-     * the same region/allowedTiles" pattern used throughout this file:
-     * every item type still gets its own independent shuffle and its own
-     * minDistance bookkeeping (so, e.g., flowers can still cluster right
-     * up against a plant - minDistance only ever compares a type's
-     * placements against its OWN other placements, never against a
-     * different type), but once ANY type actually lands on a cell, that
-     * cell is removed from the shared pool for good - the same "can't
-     * double up on one tile" effect the old per-type calls got for free
-     * by re-scanning tiles whose value had since changed underneath them
-     * (adding an item changes a cell's numeric value, so it naturally
-     * stopped matching the allowedTiles list on the next call's rescan).
-     *
-     * Item types are filled in the order given; if the region is small or
-     * crowded, an earlier type gets first pick of the pool and a later
-     * one may come up short of its maxCount - exactly like calling them
-     * back-to-back on a shrinking pool always would.
-     */
     private static void randomizedItemGroup(
             int[][] tiles,
             int startY, int endY,
@@ -358,11 +340,6 @@ public final class Maps {
         }
 
         for (ItemPlacement placement : placements) {
-            // Reshuffled fresh for every type (cheap - this is just the
-            // handful of cells still left in the pool, not the whole
-            // region) so each type's spatial spread is independently
-            // random, not biased toward whatever order the shared scan
-            // happened to leave things in.
             Collections.shuffle(pool);
             ArrayList<int[]> placedForThisItem = new ArrayList<>();
 
@@ -386,9 +363,15 @@ public final class Maps {
                 if (!tooClose) {
                     tiles[y][x] += placement.item;
                     placedForThisItem.add(pos);
-                    it.remove(); // gone for good - later types in this group can't reuse it
+                    it.remove();
                 }
             }
+        }
+    }
+
+    private static void markDiveWarp(int[][] tiles, int warpItem, int[]... cells) {
+        for (int[] cell : cells) {
+            tiles[cell[0]][cell[1]] += warpItem;
         }
     }
 
@@ -404,14 +387,19 @@ public final class Maps {
         drawPond(tiles, 3, 18, WATER, POND_5, GRASS, DEEP_WATER);
         drawPond(tiles, 15, 13, WATER, POND_2, GRASS);
         drawPond(tiles, 17, 23, WATER, POND_3, GRASS);
-        drawPond(tiles, 24, 0, WATER, POND_4, SAND);
+        drawPond(tiles, 24, 0, WATER, POND_4, GRASS);
+
+        markDiveWarp(tiles, dive_to_beach_cave,
+                new int[]{12, 8}, new int[]{12, 9},
+                new int[]{13, 8}, new int[]{13, 9});
+        markDiveWarp(tiles, dive_to_arctic,
+                new int[]{6, 20}, new int[]{6, 21},
+                new int[]{7, 20}, new int[]{7, 21},
+                new int[]{8, 20}, new int[]{8, 21},
+                new int[]{9, 20}, new int[]{9, 21});
 
         tiles[27][2] += hole_down;
         tiles[26][2] += bird;
-
-        randomizedItemGroup(tiles, 2, 28, 2, 28,
-                new int[]{25031, 25032, 25033, 25034, 25035, 25036, 25037, 25038, 25039},
-                place(plant, 3, 2));
 
         randomizedItemGroup(tiles, 2, 28, 2, 28,
                 new int[]{25011, 25012, 25013, 25014, 25015, 25016, 25017, 25018, 25019},
@@ -698,6 +686,12 @@ public final class Maps {
         drawPond(tiles, 1, 1, SNOW, POND_3, WATER, DEEP_WATER);
         drawPond(tiles, 2, 23, SNOW, POND_6, ICE);
 
+        // Same POND_3 shape/offset as beach()'s small pond - see
+        // GameView.checkHoleTransition()/diveTo().
+        markDiveWarp(tiles, dive_to_beach,
+                new int[]{3, 3}, new int[]{3, 4},
+                new int[]{4, 3}, new int[]{4, 4});
+
         tiles[24][26] += hole_down;
 
         return new Stage(tiles, 2, 2, true);
@@ -798,6 +792,38 @@ public final class Maps {
         drawPond(tiles, 11, 11, BLOOD_LAKE, POND_7, VOLCANIC_SOIL);
         tiles[1][2] += hole_up;
         tiles[15][23] += bird;
+
+        return new Stage(tiles, 2, 2);
+    }
+
+    private static Stage beachCave() {
+        int[][] tiles = new int[10][10];
+        int base_tile = 35;
+        for (int y = 0; y < 10; y++) {
+            Arrays.fill(tiles[y], base_tile);
+        }
+
+        drawWalls(
+                tiles,
+                0,
+                0,
+                NEST_WALLS,
+                wall_forest,
+                base_tile
+        );
+
+        drawPond(tiles, 1, 1, SAND, POND_8, DEEP_WATER);
+
+        drawPond(tiles, 5, 5, SAND, POND_6, GRASS);
+
+        tiles[1][1] += dive_to_beach;
+        tiles[1][2] += dive_to_beach;
+        tiles[2][1] += dive_to_beach;
+        tiles[2][2] += dive_to_beach;
+
+        randomizedItemGroup(tiles, 1, 9, 1, 9, new int[]{base_tile, 35},
+                place(plant, 8, 2)
+        );
 
         return new Stage(tiles, 2, 2);
     }
