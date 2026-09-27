@@ -3,6 +3,7 @@ package com.rama.fikret.game;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 
 public final class Maps {
     static int stone = 1000000;
@@ -286,60 +287,109 @@ public final class Maps {
         return count;
     }
 
-    private static int randomizedItems(int[][] tiles, int item, int maxCount, int minDistance, int startY, int endY, int startX, int endX, int... allowedTiles) {
-        ArrayList<int[]> candidates = new ArrayList<>();
-        ArrayList<int[]> placedPositions = new ArrayList<>();
+    /** One item type to scatter, and how it should be spaced/limited - see
+     *  randomizedItemGroup(). */
+    private static final class ItemPlacement {
+        final int item;
+        final int maxCount;
+        final int minDistance;
 
+        ItemPlacement(int item, int maxCount, int minDistance) {
+            this.item = item;
+            this.maxCount = maxCount;
+            this.minDistance = minDistance;
+        }
+    }
+
+    private static ItemPlacement place(int item, int maxCount, int minDistance) {
+        return new ItemPlacement(item, maxCount, minDistance);
+    }
+
+    private static boolean contains(int[] values, int value) {
+        for (int v : values) {
+            if (v == value) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Scatters one or more item types across the same region/allowed-tile
+     * pool, built with a SINGLE scan of the tile grid no matter how many
+     * item types are given. That's the whole point of this over the old
+     * approach of calling a single-item scatter once per type: each of
+     * those calls re-scanned the entire region from scratch just to
+     * rebuild an allowed-tile candidate list that, for every type after
+     * the first, was 99% identical to the one before it.
+     *
+     * Semantics are unchanged from the old "chain of separate calls with
+     * the same region/allowedTiles" pattern used throughout this file:
+     * every item type still gets its own independent shuffle and its own
+     * minDistance bookkeeping (so, e.g., flowers can still cluster right
+     * up against a plant - minDistance only ever compares a type's
+     * placements against its OWN other placements, never against a
+     * different type), but once ANY type actually lands on a cell, that
+     * cell is removed from the shared pool for good - the same "can't
+     * double up on one tile" effect the old per-type calls got for free
+     * by re-scanning tiles whose value had since changed underneath them
+     * (adding an item changes a cell's numeric value, so it naturally
+     * stopped matching the allowedTiles list on the next call's rescan).
+     *
+     * Item types are filled in the order given; if the region is small or
+     * crowded, an earlier type gets first pick of the pool and a later
+     * one may come up short of its maxCount - exactly like calling them
+     * back-to-back on a shrinking pool always would.
+     */
+    private static void randomizedItemGroup(
+            int[][] tiles,
+            int startY, int endY,
+            int startX, int endX,
+            int[] allowedTiles,
+            ItemPlacement... placements
+    ) {
+        ArrayList<int[]> pool = new ArrayList<>();
         for (int y = startY; y < endY; y++) {
             for (int x = startX; x < endX; x++) {
-
-                boolean allowed = false;
-
-                for (int tile : allowedTiles) {
-                    if (tiles[y][x] == tile) {
-                        allowed = true;
-                        break;
-                    }
-                }
-
-                if (allowed) {
-                    candidates.add(new int[]{y, x});
+                if (contains(allowedTiles, tiles[y][x])) {
+                    pool.add(new int[]{y, x});
                 }
             }
         }
 
-        Collections.shuffle(candidates);
+        for (ItemPlacement placement : placements) {
+            // Reshuffled fresh for every type (cheap - this is just the
+            // handful of cells still left in the pool, not the whole
+            // region) so each type's spatial spread is independently
+            // random, not biased toward whatever order the shared scan
+            // happened to leave things in.
+            Collections.shuffle(pool);
+            ArrayList<int[]> placedForThisItem = new ArrayList<>();
 
-        for (int[] pos : candidates) {
+            Iterator<int[]> it = pool.iterator();
+            while (it.hasNext() && placedForThisItem.size() < placement.maxCount) {
+                int[] pos = it.next();
+                int y = pos[0];
+                int x = pos[1];
 
-            int y = pos[0];
-            int x = pos[1];
-
-            boolean tooClose = false;
-
-            if (minDistance > 0) {
-                for (int[] placed : placedPositions) {
-
-                    int distance = Math.max(Math.abs(y - placed[0]), Math.abs(x - placed[1]));
-
-                    if (distance < minDistance) {
-                        tooClose = true;
-                        break;
+                boolean tooClose = false;
+                if (placement.minDistance > 0) {
+                    for (int[] placed : placedForThisItem) {
+                        int distance = Math.max(Math.abs(y - placed[0]), Math.abs(x - placed[1]));
+                        if (distance < placement.minDistance) {
+                            tooClose = true;
+                            break;
+                        }
                     }
                 }
-            }
 
-            if (!tooClose) {
-                tiles[y][x] += item;
-                placedPositions.add(new int[]{y, x});
-            }
-
-            if (placedPositions.size() >= maxCount) {
-                break;
+                if (!tooClose) {
+                    tiles[y][x] += placement.item;
+                    placedForThisItem.add(pos);
+                    it.remove(); // gone for good - later types in this group can't reuse it
+                }
             }
         }
-
-        return placedPositions.size();
     }
 
     private static Stage beach() {
@@ -359,14 +409,21 @@ public final class Maps {
         tiles[27][2] += hole_down;
         tiles[26][2] += bird;
 
-        randomizedItems(tiles, plant, 3, 2, 2, 28, 2, 28, 25031, 25032, 25033, 25034, 25035, 25036, 25037, 25038, 25039);
-        randomizedItems(tiles, wall_forest, 30, 2, 2, 28, 2, 28, 25011, 25012, 25013, 25014, 25015, 25016, 25017, 25018, 25019);
-        randomizedItems(tiles, flower_floor_blue, 50, 1, 2, 28, 2, 28, 25011, 25012, 25013, 25014, 25015, 25016, 25017, 25018, 25019);
-        randomizedItems(tiles, flower_floor_yellow, 10, 1, 2, 28, 2, 28, 25011, 25012, 25013, 25014, 25015, 25016, 25017, 25018, 25019);
+        randomizedItemGroup(tiles, 2, 28, 2, 28,
+                new int[]{25031, 25032, 25033, 25034, 25035, 25036, 25037, 25038, 25039},
+                place(plant, 3, 2));
 
-        randomizedItems(tiles, flower_floor_pink, 10, 3, 1, 29, 1, 29, 25, 25061, 25062, 25063, 25064, 25065, 25066, 25067, 25068, 25069);
-        randomizedItems(tiles, lilypond_01, 20, 3, 1, 29, 1, 29, 25, 25061, 25062, 25063, 25064, 25065, 25066, 25067, 25068, 25069);
-        randomizedItems(tiles, lilypond_02, 20, 3, 1, 29, 1, 29, 25, 25061, 25062, 25063, 25064, 25065, 25066, 25067, 25068, 25069);
+        randomizedItemGroup(tiles, 2, 28, 2, 28,
+                new int[]{25011, 25012, 25013, 25014, 25015, 25016, 25017, 25018, 25019},
+                place(wall_forest, 30, 2),
+                place(flower_floor_blue, 50, 1),
+                place(flower_floor_yellow, 10, 1));
+
+        randomizedItemGroup(tiles, 1, 29, 1, 29,
+                new int[]{25, 25061, 25062, 25063, 25064, 25065, 25066, 25067, 25068, 25069},
+                place(flower_floor_pink, 10, 3),
+                place(lilypond_01, 20, 3),
+                place(lilypond_02, 20, 3));
 
         return new Stage(tiles, 2, 2);
     }
@@ -426,12 +483,18 @@ public final class Maps {
                 15
         );
 
-        randomizedItems(tiles, -DEEP_GRASS * 10 + GRASS * 10, 90, 1, 2, 28, 2, 28, 55);
-        randomizedItems(tiles, plant, 10, 2, 2, 28, 2, 28, 55, 15);
-        randomizedItems(tiles, flower_floor_yellow, 10, 2, 2, 28, 2, 28, 55, 15);
-        randomizedItems(tiles, flower_floor_pink, 10, 2, 2, 28, 2, 28, 55, 15);
-        randomizedItems(tiles, flower_floor_blue, 10, 2, 2, 28, 2, 28, 55, 15);
-        randomizedItems(tiles, gem, 7, 2, 2, 28, 2, 28, 55041, 55042, 55043, 55044, 55046, 55047, 55048, 55049, 45);
+        randomizedItemGroup(tiles, 2, 28, 2, 28, new int[]{55},
+                place(-DEEP_GRASS * 10 + GRASS * 10, 90, 1));
+
+        randomizedItemGroup(tiles, 2, 28, 2, 28, new int[]{55, 15},
+                place(plant, 10, 2),
+                place(flower_floor_yellow, 10, 2),
+                place(flower_floor_pink, 10, 2),
+                place(flower_floor_blue, 10, 2));
+
+        randomizedItemGroup(tiles, 2, 28, 2, 28,
+                new int[]{55041, 55042, 55043, 55044, 55046, 55047, 55048, 55049, 45},
+                place(gem, 7, 2));
 
         return new Stage(tiles, 2, 2);
     }
@@ -491,8 +554,9 @@ public final class Maps {
         tiles[10][5] += hole_down_nest;
         tiles[20][15] += hole_down;
 
-        randomizedItems(tiles, gem, 30, 1, 2, 28, 2, 28, 45);
-        randomizedItems(tiles, gems, 20, 1, 2, 28, 2, 28, 45);
+        randomizedItemGroup(tiles, 2, 28, 2, 28, new int[]{45},
+                place(gem, 30, 1),
+                place(gems, 20, 1));
 
         return new Stage(tiles, 2, 2);
     }
@@ -556,12 +620,15 @@ public final class Maps {
         tiles[3][16] += hole_down;
         tiles[26][26] += hole_down_nest;
 
-        randomizedItems(tiles, lava_stones_01, 50, 2, 2, 28, 2, 28, 105);
-        randomizedItems(tiles, lava_stones_02, 50, 2, 2, 28, 2, 28, 105);
-        randomizedItems(tiles, lava_stones_03, 50, 2, 2, 28, 2, 28, 105);
+        randomizedItemGroup(tiles, 2, 28, 2, 28, new int[]{105},
+                place(lava_stones_01, 50, 2),
+                place(lava_stones_02, 50, 2),
+                place(lava_stones_03, 50, 2));
 
-        randomizedItems(tiles, gem, 10, 1, 2, 28, 2, 28, 105091, 105092, 105093, 105094, 105095, 105096, 105097, 105098, 105099);
-        randomizedItems(tiles, gems, 5, 1, 2, 28, 2, 28, 105091, 105092, 105093, 105094, 105095, 105096, 105097, 105098, 105099);
+        randomizedItemGroup(tiles, 2, 28, 2, 28,
+                new int[]{105091, 105092, 105093, 105094, 105095, 105096, 105097, 105098, 105099},
+                place(gem, 10, 1),
+                place(gems, 5, 1));
 
         return new Stage(tiles, 2, 2);
     }
@@ -713,8 +780,9 @@ public final class Maps {
         tiles[13][16] += hole_down_nest;
         tiles[26][25] += hole_down;
 
-        randomizedItems(tiles, space_gem, 50, 2, 2, 28, 2, 28, 155);
-        randomizedItems(tiles, space_gems, 30, 2, 2, 28, 2, 28, 155);
+        randomizedItemGroup(tiles, 2, 28, 2, 28, new int[]{155},
+                place(space_gem, 50, 2),
+                place(space_gems, 30, 2));
 
         return new Stage(tiles, 2, 2);
     }
@@ -755,10 +823,13 @@ public final class Maps {
         tiles[2][2] += hole_up;
         tiles[6][6] += bird;
 
-        randomizedItems(tiles, -DEEP_GRASS * 10 + GRASS * 10, 5, 1, 1, 9, 1, 9, base_tile);
-        randomizedItems(tiles, flower_floor_pink, 8, 2, 1, 9, 1, 9, base_tile, 15);
-        randomizedItems(tiles, flower_floor_blue, 5, 2, 1, 9, 1, 9, base_tile, 15);
-        randomizedItems(tiles, flower_floor_yellow, 1, 2, 1, 9, 1, 9, base_tile, 15);
+        randomizedItemGroup(tiles, 1, 9, 1, 9, new int[]{base_tile},
+                place(-DEEP_GRASS * 10 + GRASS * 10, 5, 1));
+
+        randomizedItemGroup(tiles, 1, 9, 1, 9, new int[]{base_tile, 15},
+                place(flower_floor_pink, 8, 2),
+                place(flower_floor_blue, 5, 2),
+                place(flower_floor_yellow, 1, 2));
 
         return new Stage(tiles, 2, 2);
     }
@@ -783,8 +854,9 @@ public final class Maps {
         tiles[2][2] += hole_up;
         tiles[6][6] += bird;
 
-        randomizedItems(tiles, gem, 5, 2, 1, 9, 1, 9, base_tile);
-        randomizedItems(tiles, gems, 3, 2, 1, 9, 1, 9, base_tile);
+        randomizedItemGroup(tiles, 1, 9, 1, 9, new int[]{base_tile},
+                place(gem, 5, 2),
+                place(gems, 3, 2));
 
         return new Stage(tiles, 2, 2);
     }
@@ -809,9 +881,10 @@ public final class Maps {
         tiles[2][2] += hole_up;
         tiles[6][6] += bird;
 
-        randomizedItems(tiles, lava_stones_01, 5, 2, 1, 9, 1, 9, 105);
-        randomizedItems(tiles, lava_stones_02, 5, 2, 1, 9, 1, 9, 105);
-        randomizedItems(tiles, lava_stones_03, 5, 2, 1, 9, 1, 9, 105);
+        randomizedItemGroup(tiles, 1, 9, 1, 9, new int[]{base_tile},
+                place(lava_stones_01, 5, 2),
+                place(lava_stones_02, 5, 2),
+                place(lava_stones_03, 5, 2));
 
         return new Stage(tiles, 2, 2);
     }
