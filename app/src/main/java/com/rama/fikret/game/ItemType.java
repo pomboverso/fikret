@@ -32,11 +32,6 @@ public enum ItemType {
     LAVA_STONES_03(26, R.drawable.lava_stone_03, false),
     LILYPOND_01(27, R.drawable.lilypad_01, false),
     LILYPOND_02(28, R.drawable.lilypad_02, false),
-    // Invisible markers (no drawableRes, same as BIRD above) placed on top
-    // of specific deep-water cells - see Maps.beach()/arctic()/beachCave()
-    // and GameView.checkHoleTransition()/diveTo(). They only ever act while
-    // the goose has unlocked Ability.DIVE_DEEP_WATER; until then stepping
-    // on one is indistinguishable from stepping on plain deep water.
     DIVE_TO_ARCTIC(29, 0, false),
     DIVE_TO_BEACH_CAVE(30, 0, false),
     DIVE_TO_BEACH(31, 0, false);

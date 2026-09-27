@@ -43,8 +43,6 @@ public class Goose {
                     facing = dx < 0 ? Direction.LEFT : Direction.RIGHT;
                 }
 
-                // dx/dy can both be non-zero: that's a diagonal step (one
-                // tile over AND one tile up/down), see GameMap.canStep().
                 if (map.canStep(row, col, dx, dy)) {
                     fromRow = row;
                     fromCol = col;
@@ -77,10 +75,6 @@ public class Goose {
         this.resting = resting;
     }
 
-    /** Swimming = standing in liquid (water, lava...). Unlike resting the
-     *  goose can still move; it just uses the tucked-legs pose (row 0)
-     *  instead of the walk/idle poses. GameView sets this every frame from
-     *  the tile under the goose. */
     public void setSwimming(boolean swimming) {
         this.swimming = swimming;
     }

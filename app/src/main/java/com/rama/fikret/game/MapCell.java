@@ -1,27 +1,5 @@
 package com.rama.fikret.game;
 
-/**
- * Decodes one raw value from the map creation array. Format is 8 digits,
- * read left to right as EEDDCBBA (values with fewer digits are padded with
- * leading zeros first, so plain old short codes still work):
- *
- * <pre>
- * E (2 digits) - item, see ItemType. 00 = none.
- * D (2 digits) - background tile, see TileType. 00 = no background layer.
- * C (1 digit)  - background tile's numpad position (1-9, see TilePosition).
- * B (2 digits) - (foreground) tile, see TileType.
- * A (1 digit)  - tile's numpad position (1-9, see TilePosition).
- * </pre>
- *
- * The background layer is drawn first, the tile drawn on top of it, then
- * the item on top of both - so a corner/edge piece of the foreground tile
- * (e.g. a water shoreline) can let the background show through wherever
- * its art doesn't fully cover the cell.
- *
- * Example: {@code 00015029} -&gt; no item, grass background (middle),
- * water tile (top-right corner).
- * Example: {@code 01000015} -&gt; a stone sitting on plain grass.
- */
 public class MapCell {
     public final ItemType item;
     public final TileType backgroundTile;
@@ -44,9 +22,6 @@ public class MapCell {
         this.position = sanitizePosition(a);
     }
 
-    /** Numpad positions only mean something in 1-9; treat 0 (or anything
-     *  stray) as the plain center tile rather than letting a bad digit
-     *  produce a wrapped-around/negative atlas lookup. */
     private static int sanitizePosition(int p) {
         return (p < 1 || p > 9) ? 5 : p;
     }
@@ -61,11 +36,6 @@ public class MapCell {
         return sb.toString();
     }
 
-    /** True if a creature standing on this cell is standing in liquid
-     *  (water, lava, ...) and should swim. The foreground tile is what's
-     *  actually on top; only if the cell has no foreground tile (00) does
-     *  the background layer show through and count. A land foreground over
-     *  a liquid background is land. */
     public boolean isLiquid() {
         TileType top = tile != TileType.NONE ? tile : backgroundTile;
         return top.liquid;

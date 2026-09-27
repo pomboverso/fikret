@@ -6,27 +6,9 @@ import android.graphics.Rect;
 
 import com.rama.fikret.R;
 
-/**
- * A small companion. Spawns standing still wherever ItemType.BIRD appears
- * in the map (see GameView, which scans for it once when a stage loads).
- * Once the goose steps onto its tile it starts following, trailing exactly
- * one tile behind the goose from then on for the rest of the stage.
- *
- * Follow logic: GameView calls moveTowards(...) with the tile the goose
- * just left every time the goose takes a step. Since the bird is always
- * either sitting on the goose's previous tile or walking into it, that
- * target is guaranteed to be a single step away - no pathfinding needed.
- *
- * Shares the goose's sprite layout: 2 direction columns (left/right) x 4
- * rows (rest, idle, walk A, walk B) - see Goose for what each row means.
- * The bird swims (row 0, legs tucked) whenever it is standing in liquid -
- * see setSwimming(), which GameView drives from the tile under the bird,
- * whether it is still idle or already following the goose.
- */
 public class Bird {
     private static final int ATLAS_COLUMNS = 2;
     private static final int ATLAS_ROWS = 4;
-    // Matches Goose's STEP_DURATION_MS so the two stay in lockstep.
     private static final long STEP_DURATION_MS = 200;
     private static final long WALK_FRAME_DURATION_MS = 80;
 
@@ -60,9 +42,6 @@ public class Bird {
         return following;
     }
 
-    /** Swimming = standing in liquid: draws the tucked-legs pose (row 0)
-     *  instead of idle/walk. Independent of following - an idle bird
-     *  sitting in a pond swims too. */
     public void setSwimming(boolean swimming) {
         this.swimming = swimming;
     }

@@ -94,8 +94,6 @@
             </FrameLayout>
         </LinearLayout>
 
-        <!-- Row 2: abilities. Empty box / magic / candle / diamond skin / thunder / dive / empty box.
-             Hidden together with row 3 when the HUD is collapsed. -->
         <LinearLayout
             android:id="@+id/hud_row_abilities"
             style="@style/HorizontalList"
@@ -168,7 +166,6 @@
                 style="@style/HudButton" />
         </LinearLayout>
 
-        <!-- Row 3: hp / def / atk / mana / lv / coins displays. -->
         <LinearLayout
             android:id="@+id/hud_row_stats"
             style="@style/HorizontalList"

@@ -37,7 +37,7 @@ public class PrefsManager {
     }
 
     private List<String> splitCsv(String value) {
-        List<String> result = new ArrayList<String>();
+        List<String> result = new ArrayList<>();
         if (value == null || value.length() == 0) return result;
         String[] parts = value.split(",");
         for (String part : parts) {

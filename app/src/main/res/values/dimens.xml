@@ -8,7 +8,6 @@
     <dimen name="text">16sp</dimen>
     <dimen name="small">12sp</dimen>
 
-    <!-- HUD - first draft numbers, tune once we've tested small phones -->
     <dimen name="hud_box_size">44dp</dimen>
     <dimen name="hud_box_icon_size">26dp</dimen>
     <dimen name="hud_display_height">36dp</dimen>
