@@ -3,19 +3,21 @@ package com.rama.fikret.activities;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.Gravity;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 
 import com.rama.fikret.game.GameView;
 import com.rama.fikret.game.Maps;
 import com.rama.fikret.widgets.HudView;
 
 /**
- * Hosts the game surface fullscreen, with the HUD (see HudView) docked to
- * the bottom on top of it. GameView still owns the loop, the map and the
- * goose - the HUD is just an overlay that fires callbacks into this
+ * Hosts the game surface with the HUD (see HudView) docked below it - the
+ * two are stacked, not overlapping, so the HUD never has to be composited
+ * on top of the SurfaceView's own surface (which older Android versions/
+ * emulators can fail to do, showing black - see GameView) and the goose is
+ * never drawn underneath the HUD in the first place. GameView still owns
+ * the loop, the map and the goose - the HUD just fires callbacks into this
  * activity (see the OnActionListener below).
  *
  * Pass which stage to load via EXTRA_STAGE, e.g.:
@@ -39,16 +41,16 @@ public class GameActivity extends Activity {
 
         int stageId = getIntent().getIntExtra(EXTRA_STAGE, Maps.ARCTIC);
         gameView = new GameView(this, stageId);
-
-        FrameLayout root = new FrameLayout(this);
-        root.addView(gameView, new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
-
         hudView = new HudView(this);
-        FrameLayout.LayoutParams hudParams = new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM);
-        root.addView(hudView, hudParams);
         hudView.setOnActionListener(hudListener);
+
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        // GameView takes all the space the HUD doesn't need, above it.
+        root.addView(gameView, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
+        root.addView(hudView, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
         // checkBirdRescues()/onBirdRescued() run on GameThread, off the UI
         // thread (see GameView's comment there) - runOnUiThread() is what

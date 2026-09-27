@@ -6,7 +6,6 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.os.Build;
 import android.view.KeyEvent;
@@ -183,12 +182,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     public GameView(Context context, int stageId) {
         super(context);
         getHolder().addCallback(this);
-        // Needed now that the HUD sits in the same window as a sibling
-        // View on top of this SurfaceView (see GameActivity) - without an
-        // explicit translucent format, some older Android versions fail to
-        // punch a proper hole for the surface and just show black instead
-        // of the game underneath the overlay.
-        getHolder().setFormat(PixelFormat.TRANSLUCENT);
         setFocusable(true);
         setFocusableInTouchMode(true);
 
