@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.os.Build;
 import android.view.KeyEvent;
@@ -162,6 +163,19 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     // that gesture is a pinch/pan, and must not also drive the joystick.
     private boolean pinching;
 
+    // Fired off the UI thread (see update()/onBirdRescued()) - whoever sets
+    // this must hop back to the UI thread itself (runOnUiThread/View.post())
+    // before touching any View with it.
+    private OnAbilityUnlockedListener abilityUnlockedListener;
+
+    public interface OnAbilityUnlockedListener {
+        void onAbilityUnlocked(Ability ability);
+    }
+
+    public void setOnAbilityUnlockedListener(OnAbilityUnlockedListener listener) {
+        this.abilityUnlockedListener = listener;
+    }
+
     public GameView(Context context) {
         this(context, Maps.ARCTIC);
     }
@@ -169,6 +183,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     public GameView(Context context, int stageId) {
         super(context);
         getHolder().addCallback(this);
+        // Needed now that the HUD sits in the same window as a sibling
+        // View on top of this SurfaceView (see GameActivity) - without an
+        // explicit translucent format, some older Android versions fail to
+        // punch a proper hole for the surface and just show black instead
+        // of the game underneath the overlay.
+        getHolder().setFormat(PixelFormat.TRANSLUCENT);
         setFocusable(true);
         setFocusableInTouchMode(true);
 
@@ -760,6 +780,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         Ability ability = Ability.forStage(stageId);
         if (ability != null) {
             prefs.unlockAbility(ability);
+            if (abilityUnlockedListener != null) {
+                abilityUnlockedListener.onAbilityUnlocked(ability);
+            }
         }
     }
 

@@ -140,4 +140,78 @@
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">@dimen/space_between_elements</item>
     </style>
+
+    <!-- HUD -->
+
+    <!-- A square action box in the top rows (menu/sleep/sonar/.../expand arrow,
+         and the ability row). Width is 0dp + weight so N of these always
+         split the screen width evenly, on any screen size. -->
+    <style name="HudButton">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">@dimen/hud_box_size</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_marginLeft">@dimen/space_between_elements</item>
+        <item name="android:layout_marginStart">@dimen/space_between_elements</item>
+        <item name="android:background">@color/hud_box_background</item>
+    </style>
+
+    <!-- Same as HudButton but for the first box in a row, which shouldn't
+         get a leading margin (the row's own padding already provides one). -->
+    <style name="HudButtonFirst" parent="HudButton">
+        <item name="android:layout_marginLeft">0dp</item>
+        <item name="android:layout_marginStart">0dp</item>
+    </style>
+
+    <style name="HudButtonIcon">
+        <item name="android:layout_width">@dimen/hud_box_icon_size</item>
+        <item name="android:layout_height">@dimen/hud_box_icon_size</item>
+        <item name="android:layout_gravity">center</item>
+        <item name="android:scaleType">fitCenter</item>
+    </style>
+
+    <!-- Line-art icons (menu / expand arrow) that should pick up the
+         theme's foreground/text color, unlike the full-color ability art.
+         Actual tinting is applied in HudView via setColorFilter(), since
+         the android:tint attribute on <ImageView> only works from API 21 -
+         this style just keeps them visually grouped/documented together. -->
+    <style name="HudButtonIcon_Themed" parent="HudButtonIcon" />
+
+    <!-- One stat column in the bottom row: label on top, display box below. -->
+    <style name="HudColumn">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:gravity">center_horizontal</item>
+        <item name="android:layout_marginLeft">@dimen/space_between_elements</item>
+        <item name="android:layout_marginStart">@dimen/space_between_elements</item>
+    </style>
+
+    <style name="HudColumnFirst" parent="HudColumn">
+        <item name="android:layout_marginLeft">0dp</item>
+        <item name="android:layout_marginStart">0dp</item>
+    </style>
+
+    <style name="HudDisplayLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/text</item>
+        <item name="android:textSize">@dimen/hud_label_text_size</item>
+        <item name="android:layout_marginBottom">2dp</item>
+    </style>
+
+    <style name="HudDisplayBox">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">@dimen/hud_display_height</item>
+        <item name="android:background">@color/hud_display_background</item>
+        <item name="android:gravity">center</item>
+    </style>
+
+    <style name="HudDisplayValue">
+        <item name="android:gravity">center</item>
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:textColor">@color/hud_display_text</item>
+        <item name="android:textSize">@dimen/hud_display_text_size</item>
+    </style>
 </resources>

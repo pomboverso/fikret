@@ -26,4 +26,10 @@
     <!-- Links -->
     <color name="link">#89DCEC</color>
 
+    <!-- HUD -->
+    <color name="hud_background">#222A37</color>
+    <color name="hud_box_background">#324769</color>
+    <color name="hud_display_background">#001811</color>
+    <color name="hud_display_text">#A6E190</color>
+
 </resources>
