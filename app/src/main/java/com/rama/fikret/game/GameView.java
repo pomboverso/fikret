@@ -109,6 +109,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private final Rect reusableSrc = new Rect();
     private final Rect reusableDst = new Rect();
     private final SwipeJoystick joystick;
+    private final Blizzard blizzard;
 
     private int cameraX, cameraY;
 
@@ -173,6 +174,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         backgroundPaint.setColor(Color.BLACK);
         joystick = new SwipeJoystick(getResources().getDisplayMetrics().density);
+        blizzard = new Blizzard(getResources());
 
         if (Build.VERSION.SDK_INT >= 8) {
             pinchZoomDetector = new PinchZoomDetector(context, new PinchZoomDetector.Listener() {
@@ -547,6 +549,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         updateBirds(deltaMs);
         updatePanReset(deltaMs);
         updateCamera();
+        if (stage.hasBlizzard) {
+            blizzard.update(deltaMs);
+        }
     }
 
     /** Kicks off the pan-reset ease (see panResetting/PAN_RESET_DURATION_MS)
@@ -856,8 +861,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         canvas.restore();
 
-        // Screen-space overlay: drawn after restore() so the joystick isn't
-        // scaled by the zoom or scrolled by the camera.
+        // Screen-space overlays: drawn after restore() so neither is
+        // scaled by the zoom or scrolled by the camera. Blizzard goes
+        // first so the joystick still draws on top of the snow, same
+        // stacking as everything in world space (weather over terrain,
+        // UI over weather).
+        if (stage.hasBlizzard) {
+            blizzard.draw(canvas, canvas.getWidth(), canvas.getHeight());
+        }
         joystick.draw(canvas);
     }
 
