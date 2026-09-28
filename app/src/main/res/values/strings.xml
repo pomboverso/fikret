@@ -10,4 +10,26 @@
     <string name="app_claims_trackers_desc">No Trackers</string>
 
     <string name="license_gpl3" translatable="false">GPL 3.0</string>
+
+    <string name="hud_label_hp">HP</string>
+    <string name="hud_label_def">DEF</string>
+    <string name="hud_label_atk">ATK</string>
+    <string name="hud_label_mana">MANA</string>
+    <string name="hud_label_lv">LV</string>
+    <string name="hud_label_coins">COINS</string>
+    <string name="hud_stat_placeholder">--</string>
+
+    <string name="hud_desc_menu">Main menu</string>
+    <string name="hud_desc_expand">Expand HUD</string>
+    <string name="hud_desc_collapse">Collapse HUD</string>
+    <string name="hud_desc_sleep">Sleep</string>
+    <string name="hud_desc_sonar">Sonar</string>
+    <string name="hud_desc_heal">Heal</string>
+    <string name="hud_desc_teleport">Teleport</string>
+    <string name="hud_desc_teleport_home">Teleport home</string>
+    <string name="hud_desc_magic">Magic</string>
+    <string name="hud_desc_candle">Candle</string>
+    <string name="hud_desc_diamond_skin">Diamond skin</string>
+    <string name="hud_desc_thunder">Thunder</string>
+    <string name="hud_desc_dive">Dive</string>
 </resources>

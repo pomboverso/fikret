@@ -1,18 +1,21 @@
 package com.rama.fikret.activities;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.LinearLayout;
 
 import com.rama.fikret.game.GameView;
+import com.rama.fikret.game.Maps;
+import com.rama.fikret.widgets.HudView;
 
-/**
- * Hosts the game surface fullscreen. Nothing else lives here on purpose -
- * GameView owns the loop, the map and the goose.
- */
 public class GameActivity extends Activity {
+    public static final String EXTRA_STAGE = "stage";
+
     private GameView gameView;
+    private HudView hudView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -20,8 +23,77 @@ public class GameActivity extends Activity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        gameView = new GameView(this);
-        setContentView(gameView);
+
+        int stageId = getIntent().getIntExtra(EXTRA_STAGE, Maps.BEACH);
+        gameView = new GameView(this, stageId);
+        hudView = new HudView(this);
+        hudView.setOnActionListener(hudListener);
+
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.addView(gameView, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
+        root.addView(hudView, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        gameView.setOnAbilityUnlockedListener(ability -> runOnUiThread(() -> hudView.refreshAbilities()));
+
+        setContentView(root);
         gameView.requestFocus();
     }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        hudView.refreshAbilities();
+    }
+
+    private final HudView.OnActionListener hudListener = new HudView.OnActionListener() {
+        @Override
+        public void onMenu() {
+            startActivity(new Intent(GameActivity.this, Main.class));
+            finish();
+        }
+
+        @Override
+        public void onSleep() {
+        }
+
+        @Override
+        public void onSonar() {
+        }
+
+        @Override
+        public void onHeal() {
+        }
+
+        @Override
+        public void onTeleport() {
+        }
+
+        @Override
+        public void onTeleportHome() {
+        }
+
+        @Override
+        public void onMagic() {
+        }
+
+        @Override
+        public void onCandle() {
+        }
+
+        @Override
+        public void onDiamondSkin() {
+        }
+
+        @Override
+        public void onThunder() {
+        }
+
+        @Override
+        public void onDive() {
+        }
+    };
 }
+

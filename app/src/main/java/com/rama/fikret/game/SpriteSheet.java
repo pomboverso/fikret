@@ -5,15 +5,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 
-/**
- * A bitmap cut into a fixed grid of equally-sized frames.
- *
- * Frame size is computed from the decoded bitmap's own dimensions divided
- * by the known column/row count, instead of being hardcoded in pixels.
- * Vector drawables get rasterized into different-sized PNGs per screen
- * density at build time (since minSdk is below 21), so this keeps tile
- * slicing correct no matter which density bucket ends up loaded.
- */
 public class SpriteSheet {
     private final Bitmap bitmap;
     private final int frameWidth;
@@ -23,6 +14,9 @@ public class SpriteSheet {
         BitmapFactory.Options opts = new BitmapFactory.Options();
         opts.inScaled = false;
         this.bitmap = BitmapFactory.decodeResource(res, resId, opts);
+        if (this.bitmap == null) {
+            throw new IllegalStateException("Could not decode drawable resource id " + resId);
+        }
         this.frameWidth = bitmap.getWidth() / columns;
         this.frameHeight = bitmap.getHeight() / rows;
     }
@@ -37,3 +31,5 @@ public class SpriteSheet {
         return bitmap;
     }
 }
+
+

@@ -140,4 +140,65 @@
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">@dimen/space_between_elements</item>
     </style>
+
+    <style name="HudButton">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">@dimen/hud_box_size</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_marginLeft">@dimen/space_between_elements</item>
+        <item name="android:layout_marginStart">@dimen/space_between_elements</item>
+        <item name="android:background">@color/hud_box_background</item>
+    </style>
+
+    <style name="HudButtonFirst" parent="HudButton">
+        <item name="android:layout_marginLeft">0dp</item>
+        <item name="android:layout_marginStart">0dp</item>
+    </style>
+
+    <style name="HudButtonIcon">
+        <item name="android:layout_width">@dimen/hud_box_icon_size</item>
+        <item name="android:layout_height">@dimen/hud_box_icon_size</item>
+        <item name="android:layout_gravity">center</item>
+        <item name="android:scaleType">fitCenter</item>
+    </style>
+
+    <style name="HudButtonIcon_Themed" parent="HudButtonIcon" />
+
+    <style name="HudColumn">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:gravity">center_horizontal</item>
+        <item name="android:layout_marginLeft">@dimen/space_between_elements</item>
+        <item name="android:layout_marginStart">@dimen/space_between_elements</item>
+    </style>
+
+    <style name="HudColumnFirst" parent="HudColumn">
+        <item name="android:layout_marginLeft">0dp</item>
+        <item name="android:layout_marginStart">0dp</item>
+    </style>
+
+    <style name="HudDisplayLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/text</item>
+        <item name="android:textSize">@dimen/hud_label_text_size</item>
+        <item name="android:layout_marginBottom">2dp</item>
+    </style>
+
+    <style name="HudDisplayBox">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">@dimen/hud_display_height</item>
+        <item name="android:background">@color/hud_display_background</item>
+        <item name="android:gravity">center</item>
+    </style>
+
+    <style name="HudDisplayValue">
+        <item name="android:gravity">center</item>
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:textColor">@color/hud_display_text</item>
+        <item name="android:textSize">@dimen/hud_display_text_size</item>
+    </style>
 </resources>

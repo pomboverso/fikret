@@ -1,18 +1,6 @@
 package com.rama.fikret.game;
 
-/**
- * A parsed map: a grid of {@link MapCell}s built from your raw int[][]
- * map-creation array.
- *
- * cells[row][col] - row 0 is the top row of the map, row increases
- * downward, col increases to the right (standard screen/array orientation).
- */
 public class GameMap {
-
-    /** Logical tile size used for world-space layout and on-screen size.
-     *  This is independent of the actual pixel size of the source art -
-     *  SpriteSheet figures out the real source frame size from the bitmap
-     *  itself, so this can stay 64 even if the art changes resolution. */
     public static final int TILE_SIZE = 64;
 
     private final MapCell[][] cells;
@@ -42,6 +30,37 @@ public class GameMap {
 
     public boolean isInBounds(int row, int col) {
         return row >= 0 && row < rows && col >= 0 && col < cols;
+    }
+
+    public boolean isPassable(int row, int col) {
+        if (!isInBounds(row, col)) {
+            return false;
+        }
+        return !cells[row][col].item.blocksMovement;
+    }
+
+    public boolean canStep(int row, int col, int dx, int dy) {
+        if (dx == 0 && dy == 0) {
+            return false;
+        }
+        if (!isPassable(row + dy, col + dx)) {
+            return false;
+        }
+        if (dx != 0 && dy != 0) {
+            boolean horizontalSideOpen = isPassable(row, col + dx);
+            boolean verticalSideOpen = isPassable(row + dy, col);
+            if (!horizontalSideOpen && !verticalSideOpen) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean isLiquidAt(float worldX, float worldY) {
+        int col = (int) Math.floor(worldX / TILE_SIZE);
+        int row = (int) Math.floor(worldY / TILE_SIZE);
+        MapCell cell = getCell(row, col);
+        return cell != null && cell.isLiquid();
     }
 
     public int getRows() {

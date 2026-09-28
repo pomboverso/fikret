@@ -3,10 +3,6 @@ package com.rama.fikret.game;
 import android.graphics.Canvas;
 import android.view.SurfaceHolder;
 
-/**
- * Classic SurfaceView game loop: locks the canvas, lets GameView update
- * and render, then posts the frame, aiming for TARGET_FPS.
- */
 public class GameThread extends Thread {
     private static final int TARGET_FPS = 60;
     private static final long FRAME_TIME_MS = 1000 / TARGET_FPS;
