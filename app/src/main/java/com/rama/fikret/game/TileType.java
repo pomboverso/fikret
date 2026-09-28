@@ -1,38 +1,48 @@
 package com.rama.fikret.game;
 
-import com.rama.fikret.R;
-
 public enum TileType {
-    NONE(0, 0, false),
-    GRASS(1, R.drawable.grass, false),
-    WATER(2, R.drawable.water, true),
-    SAND(3, R.drawable.sand, false),
-    SOIL(4, R.drawable.soil, false),
-    DEEP_GRASS(5, R.drawable.deep_grass, false),
-    DEEP_WATER(6, R.drawable.deep_water, true),
-    SNOW(7, R.drawable.snow, false),
-    ICE(8, R.drawable.ice, false),
-    VOLCANIC_SOIL(9, R.drawable.volcanic_soil, false),
-    LAVA(10, R.drawable.magma, true),
-    ACID_SOIL(11, R.drawable.acid_soil, false),
-    ACID_LAKE(12, R.drawable.acid_lake, true),
-    BUBBLEGUM(13, R.drawable.bubblegum, false),
-    BUBBLEGUM_LAKE(14, R.drawable.bubblegum_lake, true),
-    SPACE_PURPLE_SOIL(15, R.drawable.space_soil, false),
-    SPACE_LAKE(16, R.drawable.space_lake, true),
-    NIGHTMARE_BLOOD_LAKE(17, R.drawable.blood_lake, true);
+    NONE(0, false),
+    GRASS(1, false),
+    WATER(2, true),
+    SAND(3, false),
+    SOIL(4, false),
+    DEEP_GRASS(5, false),
+    DEEP_WATER(6, true),
+    SNOW(7, false),
+    ICE(8, false),
+    VOLCANIC_SOIL(9, false),
+    LAVA(10, true),
+    ACID_SOIL(11, false),
+    ACID_LAKE(12, true),
+    BUBBLEGUM(13, false),
+    BUBBLEGUM_LAKE(14, true),
+    SPACE_PURPLE_SOIL(15, false),
+    SPACE_LAKE(16, true),
+    NIGHTMARE_BLOOD_LAKE(17, true);
 
-    public static final int ATLAS_COLUMNS = 3;
-    public static final int ATLAS_ROWS = 3;
+    public static final int BLOCK_SIZE = 3;
+    public static final int TYPES_PER_COLUMN = 10;
+    public static final int TYPE_COLUMNS = 2;
+
+    public static final int SHEET_COLUMNS = TYPE_COLUMNS * BLOCK_SIZE;
+    public static final int SHEET_ROWS = TYPES_PER_COLUMN * BLOCK_SIZE;
 
     public final int id;
-    public final int atlasRes;
     public final boolean liquid;
+    public final int blockCol;
+    public final int blockRow;
 
-    TileType(int id, int atlasRes, boolean liquid) {
+    TileType(int id, boolean liquid) {
         this.id = id;
-        this.atlasRes = atlasRes;
         this.liquid = liquid;
+        if (id <= 0) {
+            this.blockCol = -1;
+            this.blockRow = -1;
+        } else {
+            int index = id - 1;
+            this.blockCol = (index / TYPES_PER_COLUMN) * BLOCK_SIZE;
+            this.blockRow = (index % TYPES_PER_COLUMN) * BLOCK_SIZE;
+        }
     }
 
     public static TileType fromId(int id) {

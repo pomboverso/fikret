@@ -15,8 +15,9 @@
     <string name="hud_label_def">DEF</string>
     <string name="hud_label_atk">ATK</string>
     <string name="hud_label_mana">MANA</string>
-    <string name="hud_label_lv">LV</string>
+    <string name="hud_label_lv">LEVEL</string>
     <string name="hud_label_coins">COINS</string>
+    <string name="hud_label_exp">EXP</string>
     <string name="hud_stat_placeholder">--</string>
 
     <string name="hud_desc_menu">Main menu</string>

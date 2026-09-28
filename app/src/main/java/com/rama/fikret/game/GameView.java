@@ -13,6 +13,7 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import com.rama.fikret.R;
 import com.rama.fikret.managers.PrefsManager;
 
 import java.util.ArrayList;
@@ -35,7 +36,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private final Map<Integer, int[]> lastPositionByStage = new HashMap<>();
     private int holeGooseRow, holeGooseCol;
     private boolean diveLocked;
-    private final EnumMap<TileType, SpriteSheet> tileSheets = new EnumMap<>(TileType.class);
+    private SpriteSheet tileSheet;
     private final EnumMap<ItemType, Bitmap> itemBitmaps = new EnumMap<>(ItemType.class);
     private final Paint backgroundPaint = new Paint();
     private final Rect reusableSrc = new Rect();
@@ -101,11 +102,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     private void loadTileSheets() {
-        for (TileType type : TileType.values()) {
-            if (type == TileType.NONE) {
-                continue;
-            }
-            tileSheets.put(type, new SpriteSheet(getResources(), type.atlasRes, TileType.ATLAS_COLUMNS, TileType.ATLAS_ROWS));
+        if (tileSheet == null) {
+            tileSheet = new SpriteSheet(getResources(), R.drawable.tiles, TileType.SHEET_COLUMNS, TileType.SHEET_ROWS);
         }
     }
 
@@ -664,15 +662,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (type == TileType.NONE) {
             return;
         }
-        SpriteSheet sheet = tileSheets.get(type);
-        if (sheet == null) {
+        if (tileSheet == null) {
             return;
         }
 
-        reusableSrc.set(sheet.frameRect(TilePosition.col(position), TilePosition.row(position)));
+        reusableSrc.set(tileSheet.frameRect(
+                type.blockCol + TilePosition.col(position),
+                type.blockRow + TilePosition.row(position)));
         int screenX = col * tileSize - cameraX;
         int screenY = row * tileSize - cameraY;
         reusableDst.set(screenX, screenY, screenX + tileSize, screenY + tileSize);
-        canvas.drawBitmap(sheet.getBitmap(), reusableSrc, reusableDst, null);
+        canvas.drawBitmap(tileSheet.getBitmap(), reusableSrc, reusableDst, null);
     }
 }

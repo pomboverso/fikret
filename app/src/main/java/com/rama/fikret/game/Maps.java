@@ -690,7 +690,6 @@ public final class Maps {
                 new int[]{3, 3}, new int[]{3, 4},
                 new int[]{4, 3}, new int[]{4, 4});
 
-
         drawPond(tiles, 10, 10, SNOW, POND_8, ICE);
         drawPond(tiles, 10, 16, SNOW, POND_8, ICE);
         drawPond(tiles, 13, 13, SNOW, POND_8, ICE);

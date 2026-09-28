@@ -5,8 +5,8 @@
         android:id="@+id/hud_root"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:background="@color/hud_background"
+        android:orientation="vertical"
         android:padding="@dimen/space_between_elements">
 
         <LinearLayout
@@ -23,8 +23,8 @@
                 <ImageView
                     android:id="@+id/hud_icon_menu"
                     style="@style/HudButtonIcon_Themed"
-                    android:src="@drawable/px_menu"
-                    android:contentDescription="@string/hud_desc_menu" />
+                    android:contentDescription="@string/hud_desc_menu"
+                    android:src="@drawable/px_menu" />
             </FrameLayout>
 
             <FrameLayout
@@ -34,19 +34,8 @@
                 <ImageView
                     android:id="@+id/hud_icon_sleep"
                     style="@style/HudButtonIcon"
-                    android:src="@drawable/icon_sleep"
-                    android:contentDescription="@string/hud_desc_sleep" />
-            </FrameLayout>
-
-            <FrameLayout
-                android:id="@+id/hud_btn_sonar"
-                style="@style/HudButton">
-
-                <ImageView
-                    android:id="@+id/hud_icon_sonar"
-                    style="@style/HudButtonIcon"
-                    android:src="@drawable/icon_sonar"
-                    android:contentDescription="@string/hud_desc_sonar" />
+                    android:contentDescription="@string/hud_desc_sleep"
+                    android:src="@drawable/icon_sleep" />
             </FrameLayout>
 
             <FrameLayout
@@ -56,8 +45,19 @@
                 <ImageView
                     android:id="@+id/hud_icon_heal"
                     style="@style/HudButtonIcon"
-                    android:src="@drawable/icon_healing"
-                    android:contentDescription="@string/hud_desc_heal" />
+                    android:contentDescription="@string/hud_desc_heal"
+                    android:src="@drawable/icon_healing" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/hud_btn_sonar"
+                style="@style/HudButton">
+
+                <ImageView
+                    android:id="@+id/hud_icon_sonar"
+                    style="@style/HudButtonIcon"
+                    android:contentDescription="@string/hud_desc_sonar"
+                    android:src="@drawable/icon_sonar" />
             </FrameLayout>
 
             <FrameLayout
@@ -67,8 +67,8 @@
                 <ImageView
                     android:id="@+id/hud_icon_teleport"
                     style="@style/HudButtonIcon"
-                    android:src="@drawable/icon_teleport"
-                    android:contentDescription="@string/hud_desc_teleport" />
+                    android:contentDescription="@string/hud_desc_teleport"
+                    android:src="@drawable/icon_teleport" />
             </FrameLayout>
 
             <FrameLayout
@@ -78,8 +78,8 @@
                 <ImageView
                     android:id="@+id/hud_icon_teleport_home"
                     style="@style/HudButtonIcon"
-                    android:src="@drawable/icon_teleport_home"
-                    android:contentDescription="@string/hud_desc_teleport_home" />
+                    android:contentDescription="@string/hud_desc_teleport_home"
+                    android:src="@drawable/icon_teleport_home" />
             </FrameLayout>
 
             <FrameLayout
@@ -89,8 +89,8 @@
                 <ImageView
                     android:id="@+id/hud_icon_expand"
                     style="@style/HudButtonIcon_Themed"
-                    android:src="@drawable/px_chevron_up"
-                    android:contentDescription="@string/hud_desc_collapse" />
+                    android:contentDescription="@string/hud_desc_collapse"
+                    android:src="@drawable/px_chevron_up" />
             </FrameLayout>
         </LinearLayout>
 
@@ -113,8 +113,8 @@
                 <ImageView
                     android:id="@+id/hud_icon_magic"
                     style="@style/HudButtonIcon"
-                    android:src="@drawable/icon_magic"
-                    android:contentDescription="@string/hud_desc_magic" />
+                    android:contentDescription="@string/hud_desc_magic"
+                    android:src="@drawable/icon_magic" />
             </FrameLayout>
 
             <FrameLayout
@@ -124,8 +124,8 @@
                 <ImageView
                     android:id="@+id/hud_icon_candle"
                     style="@style/HudButtonIcon"
-                    android:src="@drawable/icon_light"
-                    android:contentDescription="@string/hud_desc_candle" />
+                    android:contentDescription="@string/hud_desc_candle"
+                    android:src="@drawable/icon_light" />
             </FrameLayout>
 
             <FrameLayout
@@ -135,8 +135,8 @@
                 <ImageView
                     android:id="@+id/hud_icon_diamond_skin"
                     style="@style/HudButtonIcon"
-                    android:src="@drawable/icon_diamond"
-                    android:contentDescription="@string/hud_desc_diamond_skin" />
+                    android:contentDescription="@string/hud_desc_diamond_skin"
+                    android:src="@drawable/icon_diamond" />
             </FrameLayout>
 
             <FrameLayout
@@ -146,8 +146,8 @@
                 <ImageView
                     android:id="@+id/hud_icon_thunder"
                     style="@style/HudButtonIcon"
-                    android:src="@drawable/icon_thunder"
-                    android:contentDescription="@string/hud_desc_thunder" />
+                    android:contentDescription="@string/hud_desc_thunder"
+                    android:src="@drawable/icon_thunder" />
             </FrameLayout>
 
             <FrameLayout
@@ -157,8 +157,8 @@
                 <ImageView
                     android:id="@+id/hud_icon_dive"
                     style="@style/HudButtonIcon"
-                    android:src="@drawable/icon_dive"
-                    android:contentDescription="@string/hud_desc_dive" />
+                    android:contentDescription="@string/hud_desc_dive"
+                    android:src="@drawable/icon_dive" />
             </FrameLayout>
 
             <FrameLayout
@@ -172,7 +172,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_between_elements"
-            android:weightSum="6">
+            android:weightSum="7">
 
             <LinearLayout style="@style/HudColumnFirst">
 
@@ -229,6 +229,21 @@
 
                     <TextView
                         android:id="@+id/hud_value_mana"
+                        style="@style/HudDisplayValue"
+                        android:text="@string/hud_stat_placeholder" />
+                </FrameLayout>
+            </LinearLayout>
+
+            <LinearLayout style="@style/HudColumn">
+
+                <TextView
+                    style="@style/HudDisplayLabel"
+                    android:text="@string/hud_label_exp" />
+
+                <FrameLayout style="@style/HudDisplayBox">
+
+                    <TextView
+                        android:id="@+id/hud_value_exp"
                         style="@style/HudDisplayValue"
                         android:text="@string/hud_stat_placeholder" />
                 </FrameLayout>
