@@ -15,7 +15,7 @@ public enum ItemType {
     WALL_CAVE(9, R.drawable.wall_cave, true),
     WALL_VOLCAN(10, R.drawable.wall_volcan, true),
     WALL_NUCLEAR(11, R.drawable.wall_nuclear, true),
-    WALL_ARCTIC(12, R.drawable.wall_artic, true),
+    WALL_OLD(12, R.drawable.wall_artic, true),
     HOLE_DOWN_NEST(13, R.drawable.hole_down, false),
     FLOWER_FLOOR_PINK(14, R.drawable.flower_floor_pink, false),
     FLOWER_FLOOR_BLUE(15, R.drawable.flower_floor_blue, false),
@@ -26,7 +26,7 @@ public enum ItemType {
     GEMS(20, R.drawable.gem_group, false),
     SPACE_GEMS(21, R.drawable.space_gem_group, false),
     SPACE_GEM(22, R.drawable.space_gem, false),
-    WALL_SPACE(23, R.drawable.wall_space, true),
+    WALL_ARCTIC(23, R.drawable.wall_space, true),
     LAVA_STONES_01(24, R.drawable.lava_stone_01, false),
     LAVA_STONES_02(25, R.drawable.lava_stone_02, false),
     LAVA_STONES_03(26, R.drawable.lava_stone_03, false),
@@ -34,7 +34,8 @@ public enum ItemType {
     LILYPOND_02(28, R.drawable.lilypad_02, false),
     DIVE_TO_ARCTIC(29, 0, false),
     DIVE_TO_BEACH_CAVE(30, 0, false),
-    DIVE_TO_BEACH(31, 0, false);
+    DIVE_TO_BEACH(31, 0, false),
+    WALL_SPACE(32, R.drawable.alien_wall, true);
 
     public final int id;
     public final int drawableRes;
