@@ -6,25 +6,19 @@ import java.util.Collections;
 import java.util.Iterator;
 
 public final class Maps {
-    static int stone = 1000000;
     static int hole_down = 2000000;
     static int hole_up = 3000000;
     static int bird = 4000000;
     static int plant = 5000000;
-    static int beach_plant = 6000000;
     static int gem = 7000000;
     static int wall_forest = 8000000;
     static int wall_cave = 9000000;
     static int wall_volcano = 10000000;
-    static int wall_nuclear = 11000000;
     static int wall_old = 12000000;
     static int hole_down_nest = 13000000;
     static int flower_floor_pink = 14000000;
     static int flower_floor_blue = 15000000;
     static int flower_floor_yellow = 16000000;
-    static int flower_pink = 17000000;
-    static int flower_orange = 18000000;
-    static int nautilus = 19000000;
     static int gems = 20000000;
     static int space_gems = 21000000;
     static int space_gem = 22000000;
@@ -694,12 +688,6 @@ public final class Maps {
                 new int[]{3, 3}, new int[]{3, 4},
                 new int[]{4, 3}, new int[]{4, 4});
 
-        drawPond(tiles, 10, 10, SNOW, POND_8, ICE);
-        drawPond(tiles, 10, 16, SNOW, POND_8, ICE);
-        drawPond(tiles, 13, 13, SNOW, POND_8, ICE);
-        drawPond(tiles, 16, 10, SNOW, POND_8, ICE);
-        drawPond(tiles, 16, 16, SNOW, POND_8, ICE);
-
         drawPond(tiles, 24, 25, SNOW, POND_1, ICE);
         drawPond(tiles, 2, 14, SNOW, POND_3, ICE);
         drawPond(tiles, 10, 3, SNOW, POND_5, ICE);
@@ -708,6 +696,27 @@ public final class Maps {
         drawPond(tiles, 15, 23, SNOW, POND_3, ICE);
         drawPond(tiles, 5, 22, SNOW, POND_4, ICE);
 
+        drawPond(tiles, 13, 13, SNOW, POND_8, ICE);
+
+        tiles[10][10] += alien_stone_1;
+        tiles[11][10] += alien_stone_2;
+        tiles[10][11] += alien_stone_3;
+        tiles[11][11] += alien_stone_4;
+
+        tiles[10][16] += alien_stone_1;
+        tiles[11][16] += alien_stone_2;
+        tiles[10][17] += alien_stone_3;
+        tiles[11][17] += alien_stone_4;
+
+        tiles[16][10] += alien_stone_1;
+        tiles[17][10] += alien_stone_2;
+        tiles[16][11] += alien_stone_3;
+        tiles[17][11] += alien_stone_4;
+
+        tiles[16][16] += alien_stone_1;
+        tiles[17][16] += alien_stone_2;
+        tiles[16][17] += alien_stone_3;
+        tiles[17][17] += alien_stone_4;
 
         tiles[26][26] += hole_down;
 
@@ -753,14 +762,14 @@ public final class Maps {
                 {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}  // 29
         };
 
-        drawWalls(
-                tiles,
-                0,
-                0,
-                BUBBLEGUM_WALLS,
-                wall_nuclear,
-                145
-        );
+//        drawWalls(
+//                tiles,
+//                0,
+//                0,
+//                BUBBLEGUM_WALLS,
+//                wall_nuclear,
+//                145
+//        );
 
         drawPond(tiles, 1, 1, BUBBLEGUM_LAKE, POND_6, BUBBLEGUM);
         drawPond(tiles, 1, 24, BUBBLEGUM_LAKE, POND_6, BUBBLEGUM);
@@ -1003,14 +1012,14 @@ public final class Maps {
             Arrays.fill(tiles[y], base_tile);
         }
 
-        drawWalls(
-                tiles,
-                0,
-                0,
-                NEST_WALLS,
-                stone,
-                base_tile
-        );
+//        drawWalls(
+//                tiles,
+//                0,
+//                0,
+//                NEST_WALLS,
+//                wall_arctic,
+//                base_tile
+//        );
 
         drawPond(tiles, 5, 5, BUBBLEGUM_LAKE, POND_6, BUBBLEGUM_LAND);
         tiles[2][2] += hole_up;
