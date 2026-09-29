@@ -31,9 +31,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private final List<Bird> idleBirds = new ArrayList<>();
     private final Random random = new Random();
     private int[] startPosition;
-    private boolean diamondSkinActive;
+    private boolean canSwimNonWater; // diamond skin: passive, on as soon as it's unlocked
     private int holeGooseRow, holeGooseCol;
-    private boolean diveLocked;
     private SpriteSheet tileSheet;
     private SpriteSheet itemSheet;
     private final Paint backgroundPaint = new Paint();
@@ -110,9 +109,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
         this.stageId = stageId;
         map = new GameMap(stage.tiles);
+        refreshPassiveAbilities();
         loadTileSheets();
         loadItemSheet();
         findIdleBirdSpawns();
+    }
+
+    private void refreshPassiveAbilities() {
+        canSwimNonWater = PrefsManager.getInstance(getContext()).hasAbility(Ability.SWIM_NON_WATER);
     }
 
     private void loadTileSheets() {
@@ -148,7 +152,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (goose == null) {
             int row = stage.spawnRow;
             int col = stage.spawnCol;
-            if (startPosition != null && map.isWalkable(startPosition[0], startPosition[1], diamondSkinActive)) {
+            if (startPosition != null && map.isWalkable(startPosition[0], startPosition[1], canSwimNonWater)) {
                 row = startPosition[0];
                 col = startPosition[1];
             }
@@ -380,7 +384,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
         wasMoving = nowMoving;
 
-        goose.update(deltaMs, dx, dy, map, diamondSkinActive);
+        goose.update(deltaMs, dx, dy, map, canSwimNonWater);
         goose.setSwimming(isOverLiquid(goose.getX(), goose.getY()));
         checkHoleTransition();
         checkBirdRescues();
@@ -433,38 +437,18 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             changeStage(isNestStage(stageId) ? stageId - Maps.NEST_OFFSET : stageId - 1);
         } else if (cell.item == ItemType.HOLE_DOWN_NEST) {
             changeStage(stageId + Maps.NEST_OFFSET);
-        } else {
-            checkDiveTransition(cell);
         }
     }
 
-    private static boolean isDiveItem(ItemType item) {
-        return item == ItemType.DIVE_TO_ARCTIC
-                || item == ItemType.DIVE_TO_BEACH_CAVE
-                || item == ItemType.DIVE_TO_BEACH;
-    }
-
-    private void checkDiveTransition(MapCell cell) {
-        if (!goose.isSwimming()) {
-            diveLocked = false;
+    private static int diveTarget(ItemType item) {
+        if (item == ItemType.DIVE_TO_ARCTIC) {
+            return Maps.ARCTIC;
+        } else if (item == ItemType.DIVE_TO_BEACH_CAVE) {
+            return Maps.BEACH_CAVE;
+        } else if (item == ItemType.DIVE_TO_BEACH) {
+            return Maps.BEACH;
         }
-        if (diveLocked || !isDiveItem(cell.item)) {
-            return;
-        }
-        diveLocked = true;
-        if (cell.item == ItemType.DIVE_TO_ARCTIC) {
-            diveTo(Maps.ARCTIC);
-        } else if (cell.item == ItemType.DIVE_TO_BEACH_CAVE) {
-            diveTo(Maps.BEACH_CAVE);
-        } else {
-            diveTo(Maps.BEACH);
-        }
-    }
-
-    private void diveTo(int targetStageId) {
-        if (PrefsManager.getInstance(getContext()).hasAbility(Ability.DIVE_DEEP_WATER)) {
-            changeStage(targetStageId);
-        }
+        return -1;
     }
 
     private static boolean isNestStage(int stageId) {
@@ -501,7 +485,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         int spawnCol = stage.spawnCol;
         if (restoreSavedPosition) {
             int[] savedPos = prefs.getStagePosition(newStageId);
-            if (savedPos != null && map.isWalkable(savedPos[0], savedPos[1], diamondSkinActive)) {
+            if (savedPos != null && map.isWalkable(savedPos[0], savedPos[1], canSwimNonWater)) {
                 spawnRow = savedPos[0];
                 spawnCol = savedPos[1];
             }
@@ -515,7 +499,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         holeGooseRow = goose.getRow();
         holeGooseCol = goose.getCol();
-        diveLocked = true;
         resetPan();
     }
 
@@ -554,7 +537,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             if (goose == null) {
                 return false;
             }
-            int[] spot = map.randomFreeCell(random, diamondSkinActive, goose.getRow(), goose.getCol());
+            int[] spot = map.randomFreeCell(random, canSwimNonWater, goose.getRow(), goose.getCol());
             if (spot == null) {
                 return false;
             }
@@ -582,35 +565,23 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     /**
-     * Toggles the diamond skin (swim in lava, acid, etc.) and returns the new state.
-     * It can't be switched off while standing in a non-water liquid.
      */
-    public boolean toggleDiamondSkin() {
-        boolean unlocked = PrefsManager.getInstance(getContext()).hasAbility(Ability.SWIM_NON_WATER);
-        synchronized (getHolder()) {
-            if (!unlocked) {
-                diamondSkinActive = false;
-            } else if (!diamondSkinActive) {
-                diamondSkinActive = true;
-            } else if (!isStandingInNonWaterLiquid()) {
-                diamondSkinActive = false;
-            }
-            return diamondSkinActive;
-        }
-    }
-
-    public boolean isDiamondSkinActive() {
-        synchronized (getHolder()) {
-            return diamondSkinActive;
-        }
-    }
-
-    private boolean isStandingInNonWaterLiquid() {
-        if (goose == null) {
+    public boolean dive() {
+        if (!PrefsManager.getInstance(getContext()).hasAbility(Ability.DIVE_DEEP_WATER)) {
             return false;
         }
-        MapCell cell = map.getCell(goose.getRow(), goose.getCol());
-        return cell != null && cell.isNonWaterLiquid();
+        synchronized (getHolder()) {
+            if (goose == null) {
+                return false;
+            }
+            MapCell cell = map.getCell(goose.getRow(), goose.getCol());
+            int target = cell == null ? -1 : diveTarget(cell.item);
+            if (target < 0) {
+                return false;
+            }
+            changeStage(target);
+            return true;
+        }
     }
 
     private boolean isOverLiquid(float spriteX, float spriteY) {
@@ -650,6 +621,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         Ability ability = Ability.forStage(stageId);
         if (ability != null) {
             prefs.unlockAbility(ability);
+            refreshPassiveAbilities();
             if (abilityUnlockedListener != null) {
                 abilityUnlockedListener.onAbilityUnlocked(ability);
             }

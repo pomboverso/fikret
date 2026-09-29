@@ -6,9 +6,7 @@ import android.os.Bundle;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.LinearLayout;
-import android.widget.Toast;
 
-import com.rama.fikret.R;
 import com.rama.fikret.game.GameView;
 import com.rama.fikret.game.Maps;
 import com.rama.fikret.managers.PrefsManager;
@@ -98,21 +96,12 @@ public class GameActivity extends Activity {
         }
 
         @Override
-        public void onDiamondSkin() {
-            boolean wasActive = gameView.isDiamondSkinActive();
-            boolean active = gameView.toggleDiamondSkin();
-            hudView.setDiamondSkinActive(active);
-            if (wasActive && active) {
-                Toast.makeText(GameActivity.this, R.string.diamond_skin_locked_in, Toast.LENGTH_SHORT).show();
-            }
-        }
-
-        @Override
         public void onThunder() {
         }
 
         @Override
         public void onDive() {
+            gameView.dive();
         }
     };
 }

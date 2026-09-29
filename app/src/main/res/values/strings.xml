@@ -33,5 +33,4 @@
     <string name="hud_desc_diamond_skin">Diamond skin</string>
     <string name="hud_desc_thunder">Thunder</string>
     <string name="hud_desc_dive">Dive</string>
-    <string name="diamond_skin_locked_in">Can\'t take off the diamond skin while swimming in it</string>
 </resources>

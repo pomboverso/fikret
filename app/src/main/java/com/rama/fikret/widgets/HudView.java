@@ -35,8 +35,6 @@ public class HudView extends LinearLayout {
 
         void onCandle();
 
-        void onDiamondSkin();
-
         void onThunder();
 
         void onDive();
@@ -93,7 +91,6 @@ public class HudView extends LinearLayout {
         FontManager.apply(this, FontManager.getJersey25(context));
 
         refreshAbilities();
-        setDiamondSkinActive(false);
         applyExpanded(prefs.isHudExpanded());
     }
 
@@ -186,9 +183,6 @@ public class HudView extends LinearLayout {
         btnCandle.setOnClickListener(v -> {
             if (listener != null) listener.onCandle();
         });
-        btnDiamondSkin.setOnClickListener(v -> {
-            if (listener != null) listener.onDiamondSkin();
-        });
         btnThunder.setOnClickListener(v -> {
             if (listener != null) listener.onThunder();
         });
@@ -209,14 +203,15 @@ public class HudView extends LinearLayout {
 
         applyAbility(Ability.SHOOT_MAGIC, btnMagic, iconMagic);
         applyAbility(Ability.SEE_IN_DARK, btnCandle, iconCandle);
-        applyAbility(Ability.SWIM_NON_WATER, btnDiamondSkin, iconDiamondSkin);
+        applyPassiveAbility(Ability.SWIM_NON_WATER, btnDiamondSkin, iconDiamondSkin);
         applyAbility(Ability.THUNDER_ATTACK, btnThunder, iconThunder);
         applyAbility(Ability.DIVE_DEEP_WATER, btnDive, iconDive);
     }
 
-    /** The diamond skin is a toggle: full-strength icon when on, dimmed when off. */
-    public void setDiamondSkinActive(boolean active) {
-        iconDiamondSkin.setAlpha(active ? 1f : 0.4f);
+    private void applyPassiveAbility(Ability ability, View button, ImageView icon) {
+        icon.setVisibility(prefs.hasAbility(ability) ? VISIBLE : INVISIBLE);
+        button.setEnabled(false);
+        button.setClickable(false);
     }
 
     private void applyAbility(Ability ability, View button, ImageView icon) {
