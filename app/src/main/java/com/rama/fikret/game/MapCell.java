@@ -36,9 +36,18 @@ public class MapCell {
         return sb.toString();
     }
 
+    private TileType topTile() {
+        return tile != TileType.NONE ? tile : backgroundTile;
+    }
+
     public boolean isLiquid() {
-        TileType top = tile != TileType.NONE ? tile : backgroundTile;
-        return top.liquid;
+        return topTile().liquid;
+    }
+
+    /** Lava, acid, etc. Swimmable only with the diamond skin. */
+    public boolean isNonWaterLiquid() {
+        TileType top = topTile();
+        return top.liquid && !top.isWater();
     }
 
     public boolean hasBackground() {

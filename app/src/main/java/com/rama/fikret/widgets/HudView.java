@@ -93,6 +93,7 @@ public class HudView extends LinearLayout {
         FontManager.apply(this, FontManager.getJersey25(context));
 
         refreshAbilities();
+        setDiamondSkinActive(false);
         applyExpanded(prefs.isHudExpanded());
     }
 
@@ -211,6 +212,11 @@ public class HudView extends LinearLayout {
         applyAbility(Ability.SWIM_NON_WATER, btnDiamondSkin, iconDiamondSkin);
         applyAbility(Ability.THUNDER_ATTACK, btnThunder, iconThunder);
         applyAbility(Ability.DIVE_DEEP_WATER, btnDive, iconDive);
+    }
+
+    /** The diamond skin is a toggle: full-strength icon when on, dimmed when off. */
+    public void setDiamondSkinActive(boolean active) {
+        iconDiamondSkin.setAlpha(active ? 1f : 0.4f);
     }
 
     private void applyAbility(Ability ability, View button, ImageView icon) {

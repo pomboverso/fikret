@@ -6,9 +6,12 @@ import android.os.Bundle;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
+import com.rama.fikret.R;
 import com.rama.fikret.game.GameView;
 import com.rama.fikret.game.Maps;
+import com.rama.fikret.managers.PrefsManager;
 import com.rama.fikret.widgets.HudView;
 
 public class GameActivity extends Activity {
@@ -24,8 +27,17 @@ public class GameActivity extends Activity {
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
-        int stageId = getIntent().getIntExtra(EXTRA_STAGE, Maps.BEACH);
-        gameView = new GameView(this, stageId);
+        int stageId;
+        int[] startPosition = null;
+        if (getIntent().hasExtra(EXTRA_STAGE)) {
+            stageId = getIntent().getIntExtra(EXTRA_STAGE, Maps.BEACH);
+        } else {
+            // Resume where the player last entered a map.
+            PrefsManager prefs = PrefsManager.getInstance(this);
+            stageId = prefs.getCurrentStage(Maps.BEACH);
+            startPosition = prefs.getArrivalPosition();
+        }
+        gameView = new GameView(this, stageId, startPosition);
         hudView = new HudView(this);
         hudView.setOnActionListener(hudListener);
 
@@ -69,10 +81,12 @@ public class GameActivity extends Activity {
 
         @Override
         public void onTeleport() {
+            gameView.teleportRandom();
         }
 
         @Override
         public void onTeleportHome() {
+            gameView.teleportHome();
         }
 
         @Override
@@ -85,6 +99,12 @@ public class GameActivity extends Activity {
 
         @Override
         public void onDiamondSkin() {
+            boolean wasActive = gameView.isDiamondSkinActive();
+            boolean active = gameView.toggleDiamondSkin();
+            hudView.setDiamondSkinActive(active);
+            if (wasActive && active) {
+                Toast.makeText(GameActivity.this, R.string.diamond_skin_locked_in, Toast.LENGTH_SHORT).show();
+            }
         }
 
         @Override

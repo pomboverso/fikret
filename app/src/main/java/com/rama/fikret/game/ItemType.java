@@ -32,6 +32,8 @@ public enum ItemType {
     LILYPOND_01(27, 3, 1, false),
     LILYPOND_02(28, 3, 2, false),
     WALL_SPACE(32, 3, 3, true),
+    WALL_BUBBLEGUM(37, 3, 4, true),
+    BUBBLEGUM_WAVE(38, 3, 5, false),
 
     // share a cell with another item
     HOLE_DOWN_NEST(13, 0, 0, false),

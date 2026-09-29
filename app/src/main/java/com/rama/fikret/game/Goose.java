@@ -33,7 +33,7 @@ public class Goose {
         this.col = this.fromCol = startCol;
     }
 
-    public void update(long deltaMs, int dx, int dy, GameMap map) {
+    public void update(long deltaMs, int dx, int dy, GameMap map, boolean canSwimNonWater) {
         if (!moving) {
             if (resting) {
                 return;
@@ -43,7 +43,7 @@ public class Goose {
                     facing = dx < 0 ? Direction.LEFT : Direction.RIGHT;
                 }
 
-                if (map.canStep(row, col, dx, dy)) {
+                if (map.canStep(row, col, dx, dy, canSwimNonWater)) {
                     fromRow = row;
                     fromCol = col;
                     row = row + dy;
@@ -69,6 +69,14 @@ public class Goose {
         } else {
             walkAnimTimer = 0;
         }
+    }
+
+    /** Instantly moves the goose to a tile, cancelling any step in progress. */
+    public void teleportTo(int newRow, int newCol) {
+        row = fromRow = newRow;
+        col = fromCol = newCol;
+        stepProgress = 1f;
+        moving = false;
     }
 
     public void setResting(boolean resting) {

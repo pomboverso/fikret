@@ -13,6 +13,9 @@ public class PrefsManager {
     private static final String KEY_BIRD_RESCUED = "bird:rescued";
     private static final String KEY_ABILITY_UNLOCKED = "ability:unlocked";
     private static final String KEY_HUD_EXPANDED = "hud:expanded";
+    private static final String KEY_CURRENT_STAGE = "stage:current";
+    private static final String KEY_ARRIVAL = "stage:arrival";
+    private static final String KEY_STAGE_POSITION = "stage:position";
     private static PrefsManager instance;
     private final SharedPreferences prefs;
 
@@ -84,6 +87,50 @@ public class PrefsManager {
 
     public void unlockAbility(Ability ability) {
         setBoolean(key(KEY_ABILITY_UNLOCKED, ability.name()), true);
+    }
+
+    /**
+     * Records a map change in one write: the position the player left the old map at,
+     * the new current map, and the tile they arrived on. This is the only place map
+     * progress is saved, so it happens only when a new map is entered.
+     */
+    public void saveStageEntry(int leftStageId, int leftRow, int leftCol,
+                               int newStageId, int arrivalRow, int arrivalCol) {
+        prefs.edit()
+                .putString(key(KEY_STAGE_POSITION, String.valueOf(leftStageId)), pair(leftRow, leftCol))
+                .putInt(KEY_CURRENT_STAGE, newStageId)
+                .putString(KEY_ARRIVAL, pair(arrivalRow, arrivalCol))
+                .apply();
+    }
+
+    /** The map the player was last in, or defaultStageId if none has been saved. */
+    public int getCurrentStage(int defaultStageId) {
+        return prefs.getInt(KEY_CURRENT_STAGE, defaultStageId);
+    }
+
+    /** The tile the player arrived on in the current map, or null if none is saved. */
+    public int[] getArrivalPosition() {
+        return parsePair(prefs.getString(KEY_ARRIVAL, null));
+    }
+
+    /** Where the player last left the given map, or null if never left. */
+    public int[] getStagePosition(int stageId) {
+        return parsePair(prefs.getString(key(KEY_STAGE_POSITION, String.valueOf(stageId)), null));
+    }
+
+    private static String pair(int row, int col) {
+        return row + "," + col;
+    }
+
+    private static int[] parsePair(String value) {
+        if (value == null) return null;
+        String[] parts = value.split(",");
+        if (parts.length != 2) return null;
+        try {
+            return new int[]{Integer.parseInt(parts[0]), Integer.parseInt(parts[1])};
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     public boolean isHudExpanded() {

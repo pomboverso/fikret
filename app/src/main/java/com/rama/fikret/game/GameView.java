@@ -15,10 +15,9 @@ import com.rama.fikret.R;
 import com.rama.fikret.managers.PrefsManager;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+import java.util.Random;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
@@ -30,7 +29,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private final List<Bird> followingBirds = new ArrayList<>();
     private final List<int[]> chaseTargets = new ArrayList<>();
     private final List<Bird> idleBirds = new ArrayList<>();
-    private final Map<Integer, int[]> lastPositionByStage = new HashMap<>();
+    private final Random random = new Random();
+    private int[] startPosition;
+    private boolean diamondSkinActive;
     private int holeGooseRow, holeGooseCol;
     private boolean diveLocked;
     private SpriteSheet tileSheet;
@@ -72,6 +73,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     public GameView(Context context, int stageId) {
+        this(context, stageId, null);
+    }
+
+    /**
+     * @param startPosition {row, col} to start on (a saved position), or null to use the
+     *                      map's spawn point. Ignored if that tile can't be stood on.
+     */
+    public GameView(Context context, int stageId, int[] startPosition) {
         super(context);
         getHolder().addCallback(this);
         setFocusable(true);
@@ -90,8 +99,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             });
         }
 
+        this.startPosition = startPosition;
+        try {
+            stage = Maps.get(stageId);
+        } catch (IllegalArgumentException unknownStage) {
+            // A saved stage id that no longer exists: start over from the beach.
+            stageId = Maps.BEACH;
+            stage = Maps.get(stageId);
+            this.startPosition = null;
+        }
         this.stageId = stageId;
-        stage = Maps.get(stageId);
         map = new GameMap(stage.tiles);
         loadTileSheets();
         loadItemSheet();
@@ -129,7 +146,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         if (goose == null) {
-            goose = new Goose(getResources(), stage.spawnRow, stage.spawnCol);
+            int row = stage.spawnRow;
+            int col = stage.spawnCol;
+            if (startPosition != null && map.isWalkable(startPosition[0], startPosition[1], diamondSkinActive)) {
+                row = startPosition[0];
+                col = startPosition[1];
+            }
+            goose = new Goose(getResources(), row, col);
             restoreRescuedBirds();
         }
         holeGooseRow = goose.getRow();
@@ -357,7 +380,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
         wasMoving = nowMoving;
 
-        goose.update(deltaMs, dx, dy, map);
+        goose.update(deltaMs, dx, dy, map, diamondSkinActive);
         goose.setSwimming(isOverLiquid(goose.getX(), goose.getY()));
         checkHoleTransition();
         checkBirdRescues();
@@ -449,6 +472,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     private void changeStage(int newStageId) {
+        changeStage(newStageId, true);
+    }
+
+    /**
+     * @param restoreSavedPosition true to put the goose back where it last left the new
+     *                             map; false to always use the map's spawn point.
+     */
+    private void changeStage(int newStageId, boolean restoreSavedPosition) {
         Stage newStage;
         try {
             newStage = Maps.get(newStageId);
@@ -456,7 +487,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             return;
         }
 
-        lastPositionByStage.put(stageId, new int[]{goose.getRow(), goose.getCol()});
+        PrefsManager prefs = PrefsManager.getInstance(getContext());
+        int leftStageId = stageId;
+        int leftRow = goose.getRow();
+        int leftCol = goose.getCol();
 
         stageId = newStageId;
         stage = newStage;
@@ -465,29 +499,118 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         int spawnRow = stage.spawnRow;
         int spawnCol = stage.spawnCol;
-        int[] savedPos = lastPositionByStage.get(newStageId);
-        if (savedPos != null && map.isPassable(savedPos[0], savedPos[1])) {
-            spawnRow = savedPos[0];
-            spawnCol = savedPos[1];
+        if (restoreSavedPosition) {
+            int[] savedPos = prefs.getStagePosition(newStageId);
+            if (savedPos != null && map.isWalkable(savedPos[0], savedPos[1], diamondSkinActive)) {
+                spawnRow = savedPos[0];
+                spawnCol = savedPos[1];
+            }
         }
+
+        // The one and only save point: entering a new map.
+        prefs.saveStageEntry(leftStageId, leftRow, leftCol, newStageId, spawnRow, spawnCol);
 
         goose = new Goose(getResources(), spawnRow, spawnCol);
-
-        for (int i = 0; i < followingBirds.size(); i++) {
-            Bird carried = new Bird(getResources(), spawnRow, spawnCol);
-            carried.startFollowing();
-            followingBirds.set(i, carried);
-            int[] chaseTarget = chaseTargets.get(i);
-            chaseTarget[0] = spawnRow;
-            chaseTarget[1] = spawnCol;
-        }
+        relocateFollowers(spawnRow, spawnCol);
 
         holeGooseRow = goose.getRow();
         holeGooseCol = goose.getCol();
         diveLocked = true;
+        resetPan();
+    }
+
+    private void relocateFollowers(int row, int col) {
+        for (int i = 0; i < followingBirds.size(); i++) {
+            followingBirds.get(i).teleportTo(row, col);
+            int[] chaseTarget = chaseTargets.get(i);
+            chaseTarget[0] = row;
+            chaseTarget[1] = col;
+        }
+    }
+
+    private void resetPan() {
         panOffsetX = 0f;
         panOffsetY = 0f;
         panResetting = false;
+    }
+
+    private void moveGooseTo(int row, int col) {
+        goose.teleportTo(row, col);
+        relocateFollowers(row, col);
+        holeGooseRow = row;
+        holeGooseCol = col;
+        resetPan();
+    }
+
+    // ---- HUD abilities. Called from the UI thread, so they take the same lock the game
+    // ---- thread holds while updating/rendering (see GameThread).
+
+    /** Teleports to a random tile with no item on it. Returns false if nothing happened. */
+    public boolean teleportRandom() {
+        if (!PrefsManager.getInstance(getContext()).hasAbility(Ability.RANDOM_TELEPORT)) {
+            return false;
+        }
+        synchronized (getHolder()) {
+            if (goose == null) {
+                return false;
+            }
+            int[] spot = map.randomFreeCell(random, diamondSkinActive, goose.getRow(), goose.getCol());
+            if (spot == null) {
+                return false;
+            }
+            moveGooseTo(spot[0], spot[1]);
+            return true;
+        }
+    }
+
+    /** Teleports to the beach's spawn point (home). Returns false if nothing happened. */
+    public boolean teleportHome() {
+        if (!PrefsManager.getInstance(getContext()).hasAbility(Ability.TELEPORT_HOME)) {
+            return false;
+        }
+        synchronized (getHolder()) {
+            if (goose == null) {
+                return false;
+            }
+            if (stageId == Maps.BEACH) {
+                moveGooseTo(stage.spawnRow, stage.spawnCol);
+            } else {
+                changeStage(Maps.BEACH, false);
+            }
+            return true;
+        }
+    }
+
+    /**
+     * Toggles the diamond skin (swim in lava, acid, etc.) and returns the new state.
+     * It can't be switched off while standing in a non-water liquid.
+     */
+    public boolean toggleDiamondSkin() {
+        boolean unlocked = PrefsManager.getInstance(getContext()).hasAbility(Ability.SWIM_NON_WATER);
+        synchronized (getHolder()) {
+            if (!unlocked) {
+                diamondSkinActive = false;
+            } else if (!diamondSkinActive) {
+                diamondSkinActive = true;
+            } else if (!isStandingInNonWaterLiquid()) {
+                diamondSkinActive = false;
+            }
+            return diamondSkinActive;
+        }
+    }
+
+    public boolean isDiamondSkinActive() {
+        synchronized (getHolder()) {
+            return diamondSkinActive;
+        }
+    }
+
+    private boolean isStandingInNonWaterLiquid() {
+        if (goose == null) {
+            return false;
+        }
+        MapCell cell = map.getCell(goose.getRow(), goose.getCol());
+        return cell != null && cell.isNonWaterLiquid();
     }
 
     private boolean isOverLiquid(float spriteX, float spriteY) {
