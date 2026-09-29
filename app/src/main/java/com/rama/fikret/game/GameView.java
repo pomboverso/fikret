@@ -1,8 +1,6 @@
 package com.rama.fikret.game;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -17,7 +15,6 @@ import com.rama.fikret.R;
 import com.rama.fikret.managers.PrefsManager;
 
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -37,7 +34,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private int holeGooseRow, holeGooseCol;
     private boolean diveLocked;
     private SpriteSheet tileSheet;
-    private final EnumMap<ItemType, Bitmap> itemBitmaps = new EnumMap<>(ItemType.class);
+    private SpriteSheet itemSheet;
     private final Paint backgroundPaint = new Paint();
     private final Rect reusableSrc = new Rect();
     private final Rect reusableDst = new Rect();
@@ -97,7 +94,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         stage = Maps.get(stageId);
         map = new GameMap(stage.tiles);
         loadTileSheets();
-        loadItemBitmaps();
+        loadItemSheet();
         findIdleBirdSpawns();
     }
 
@@ -107,15 +104,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
-    private void loadItemBitmaps() {
-        BitmapFactory.Options opts = new BitmapFactory.Options();
-        opts.inScaled = false;
-        for (ItemType type : ItemType.values()) {
-            if (type == ItemType.NONE || type == ItemType.BIRD || type.drawableRes == 0) {
-                continue;
-            }
-            Bitmap bitmap = BitmapFactory.decodeResource(getResources(), type.drawableRes, opts);
-            itemBitmaps.put(type, bitmap);
+    private void loadItemSheet() {
+        if (itemSheet == null) {
+            itemSheet = ItemSheet.get(getResources());
         }
     }
 
@@ -647,14 +638,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
         drawTileLayer(canvas, cell.tile, cell.position, row, col, tileSize);
 
-        if (cell.hasItem() && cell.item != ItemType.BIRD) {
-            Bitmap itemBitmap = itemBitmaps.get(cell.item);
-            if (itemBitmap != null) {
-                int screenX = col * tileSize - cameraX;
-                int screenY = row * tileSize - cameraY;
-                reusableDst.set(screenX, screenY, screenX + tileSize, screenY + tileSize);
-                canvas.drawBitmap(itemBitmap, null, reusableDst, null);
-            }
+        if (cell.hasItem() && cell.item.hasSprite() && itemSheet != null) {
+            int screenX = col * tileSize - cameraX;
+            int screenY = row * tileSize - cameraY;
+            reusableSrc.set(itemSheet.frameRect(cell.item.spriteCol, cell.item.spriteRow));
+            reusableDst.set(screenX, screenY, screenX + tileSize, screenY + tileSize);
+            canvas.drawBitmap(itemSheet.getBitmap(), reusableSrc, reusableDst, null);
         }
     }
 

@@ -38,6 +38,10 @@ public final class Maps {
     static int dive_to_beach_cave = 30000000;
     static int dive_to_beach = 31000000;
     static int wall_space = 32000000;
+    static int alien_stone_1 = 33000000;
+    static int alien_stone_2 = 34000000;
+    static int alien_stone_3 = 35000000;
+    static int alien_stone_4 = 36000000;
 
     static final int GRASS = 1;
     static final int WATER = 2;

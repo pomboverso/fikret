@@ -12,6 +12,7 @@ import android.widget.TextView;
 
 import com.rama.fikret.R;
 import com.rama.fikret.game.Ability;
+import com.rama.fikret.game.ItemIcon;
 import com.rama.fikret.managers.FontManager;
 import com.rama.fikret.managers.PrefsManager;
 
@@ -103,6 +104,24 @@ public class HudView extends LinearLayout {
         expandIcon.setColorFilter(filter);
     }
 
+    private void bindIcons() {
+        setIcon(R.id.hud_icon_sleep, ItemIcon.SLEEP);
+        setIcon(R.id.hud_icon_heal, ItemIcon.HEALING);
+        setIcon(R.id.hud_icon_sonar, ItemIcon.SONAR);
+        setIcon(R.id.hud_icon_teleport, ItemIcon.TELEPORT);
+        setIcon(R.id.hud_icon_teleport_home, ItemIcon.TELEPORT_HOME);
+        setIcon(R.id.hud_icon_magic, ItemIcon.STAR);
+        setIcon(R.id.hud_icon_candle, ItemIcon.CANDLE);
+        setIcon(R.id.hud_icon_diamond_skin, ItemIcon.DIAMOND);
+        setIcon(R.id.hud_icon_thunder, ItemIcon.THUNDER);
+        setIcon(R.id.hud_icon_dive, ItemIcon.DIVE);
+    }
+
+    private void setIcon(int viewId, ItemIcon icon) {
+        ImageView view = findViewById(viewId);
+        view.setImageDrawable(icon.drawable(getResources()));
+    }
+
     private void bindViews() {
         rowAbilities = findViewById(R.id.hud_row_abilities);
         rowStats = findViewById(R.id.hud_row_stats);
@@ -128,6 +147,8 @@ public class HudView extends LinearLayout {
         iconThunder = findViewById(R.id.hud_icon_thunder);
         btnDive = findViewById(R.id.hud_btn_dive);
         iconDive = findViewById(R.id.hud_icon_dive);
+
+        bindIcons();
 
         valueHp = findViewById(R.id.hud_value_hp);
         valueDef = findViewById(R.id.hud_value_def);

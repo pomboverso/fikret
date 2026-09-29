@@ -1,50 +1,64 @@
 package com.rama.fikret.game;
 
-import com.rama.fikret.R;
-
 public enum ItemType {
-    NONE(0, 0, false),
-    STONE(1, R.drawable.stone, true),
-    HOLE_DOWN(2, R.drawable.hole_down, false),
-    HOLE_UP(3, R.drawable.hole_up, false),
-    BIRD(4, 0, false),
-    PLANT(5, R.drawable.plant, false),
-    BEACH_PLANT(6, R.drawable.beach_plant, false),
-    GEM(7, R.drawable.gem, false),
-    WALL_FOREST(8, R.drawable.wall_forest, true),
-    WALL_CAVE(9, R.drawable.wall_cave, true),
-    WALL_VOLCAN(10, R.drawable.wall_volcan, true),
-    WALL_NUCLEAR(11, R.drawable.wall_nuclear, true),
-    WALL_OLD(12, R.drawable.wall_artic, true),
-    HOLE_DOWN_NEST(13, R.drawable.hole_down, false),
-    FLOWER_FLOOR_PINK(14, R.drawable.flower_floor_pink, false),
-    FLOWER_FLOOR_BLUE(15, R.drawable.flower_floor_blue, false),
-    FLOWER_FLOOR_YELLOW(16, R.drawable.flower_floor_yellow, false),
-    FLOWER_PINK(17, R.drawable.flower_pink, false),
-    FLOWER_ORANGE(18, R.drawable.flower_orange, false),
-    NAUTILUS(19, R.drawable.nautilus, false),
-    GEMS(20, R.drawable.gem_group, false),
-    SPACE_GEMS(21, R.drawable.space_gem_group, false),
-    SPACE_GEM(22, R.drawable.space_gem, false),
-    WALL_ARCTIC(23, R.drawable.wall_space, true),
-    LAVA_STONES_01(24, R.drawable.lava_stone_01, false),
-    LAVA_STONES_02(25, R.drawable.lava_stone_02, false),
-    LAVA_STONES_03(26, R.drawable.lava_stone_03, false),
-    LILYPOND_01(27, R.drawable.lilypad_01, false),
-    LILYPOND_02(28, R.drawable.lilypad_02, false),
-    DIVE_TO_ARCTIC(29, 0, false),
-    DIVE_TO_BEACH_CAVE(30, 0, false),
-    DIVE_TO_BEACH(31, 0, false),
-    WALL_SPACE(32, R.drawable.alien_wall, true);
+    NONE(0, -1, -1, false),
+
+    // column 0
+    HOLE_DOWN(2, 0, 0, false),
+    HOLE_UP(3, 0, 1, false),
+    PLANT(5, 0, 2, false),
+    GEM(7, 0, 3, false),
+    WALL_FOREST(8, 0, 4, true),
+    WALL_CAVE(9, 0, 5, true),
+    WALL_VOLCAN(10, 0, 6, true),
+    FLOWER_FLOOR_PINK(14, 0, 7, false),
+    ALIEN_STONE_1(33, 0, 8, true),
+    ALIEN_STONE_2(34, 0, 9, true),
+
+    // column 1
+    FLOWER_FLOOR_BLUE(15, 1, 0, false),
+    FLOWER_FLOOR_YELLOW(16, 1, 1, false),
+    GEMS(20, 1, 2, false),
+    SPACE_GEMS(21, 1, 3, false),
+    SPACE_GEM(22, 1, 4, false),
+    WALL_ARCTIC(23, 1, 5, true),
+    LAVA_STONES_01(24, 1, 6, false),
+    LAVA_STONES_02(25, 1, 7, false),
+    ALIEN_STONE_3(35, 1, 8, true),
+    ALIEN_STONE_4(36, 1, 9, true),
+
+    // column 3
+    LAVA_STONES_03(26, 3, 0, false),
+    LILYPOND_01(27, 3, 1, false),
+    LILYPOND_02(28, 3, 2, false),
+    WALL_SPACE(32, 3, 3, true),
+
+    // share a cell with another item
+    HOLE_DOWN_NEST(13, 0, 0, false),
+
+    // logic-only, never drawn
+    BIRD(4, -1, -1, false),
+    DIVE_TO_ARCTIC(29, -1, -1, false),
+    DIVE_TO_BEACH_CAVE(30, -1, -1, false),
+    DIVE_TO_BEACH(31, -1, -1, false);
+
+    public static final int SHEET_COLUMNS = 4;
+    public static final int SHEET_ROWS = 10;
 
     public final int id;
-    public final int drawableRes;
+    public final int spriteCol;
+    public final int spriteRow;
     public final boolean blocksMovement;
 
-    ItemType(int id, int drawableRes, boolean blocksMovement) {
+    ItemType(int id, int spriteCol, int spriteRow, boolean blocksMovement) {
         this.id = id;
-        this.drawableRes = drawableRes;
+        this.spriteCol = spriteCol;
+        this.spriteRow = spriteRow;
         this.blocksMovement = blocksMovement;
+    }
+
+    public boolean hasSprite() {
+        return spriteCol >= 0 && spriteRow >= 0;
     }
 
     public static ItemType fromId(int id) {
