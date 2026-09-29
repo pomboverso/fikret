@@ -895,7 +895,7 @@ public final class Maps {
 
         markDiveWarp(tiles, dive_to_beach,
                 new int[]{1, 1}, new int[]{1, 2},
-                new int[]{2, 1}, new int[]{2, 3});
+                new int[]{2, 1}, new int[]{2, 2});
 
         randomizedItemGroup(tiles, 1, 9, 1, 9, new int[]{base_tile, 35},
                 place(plant, 8, 2)

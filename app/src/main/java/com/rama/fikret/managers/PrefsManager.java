@@ -100,7 +100,20 @@ public class PrefsManager {
                 .putString(key(KEY_STAGE_POSITION, String.valueOf(leftStageId)), pair(leftRow, leftCol))
                 .putInt(KEY_CURRENT_STAGE, newStageId)
                 .putString(KEY_ARRIVAL, pair(arrivalRow, arrivalCol))
-                .apply();
+                .commit();
+    }
+
+    public void saveTeleportHome(int homeStageId, int arrivalRow, int arrivalCol) {
+        SharedPreferences.Editor editor = prefs.edit();
+        String positionPrefix = KEY_STAGE_POSITION + ":";
+        for (String key : prefs.getAll().keySet()) {
+            if (key.startsWith(positionPrefix)) {
+                editor.remove(key);
+            }
+        }
+        editor.putInt(KEY_CURRENT_STAGE, homeStageId)
+                .putString(KEY_ARRIVAL, pair(arrivalRow, arrivalCol))
+                .commit();
     }
 
     /** The map the player was last in, or defaultStageId if none has been saved. */

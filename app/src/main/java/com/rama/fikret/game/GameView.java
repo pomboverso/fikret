@@ -456,14 +456,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     private void changeStage(int newStageId) {
-        changeStage(newStageId, true);
+        changeStage(newStageId, false);
     }
 
     /**
-     * @param restoreSavedPosition true to put the goose back where it last left the new
-     *                             map; false to always use the map's spawn point.
+     * @param resetWorld true for teleport home: use the map's spawn point, don't remember
+     *                   where the previous map was left, and forget every saved position so
+     *                   the way back through the world starts fresh at each map's hole up.
      */
-    private void changeStage(int newStageId, boolean restoreSavedPosition) {
+    private void changeStage(int newStageId, boolean resetWorld) {
         Stage newStage;
         try {
             newStage = Maps.get(newStageId);
@@ -483,7 +484,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         int spawnRow = stage.spawnRow;
         int spawnCol = stage.spawnCol;
-        if (restoreSavedPosition) {
+        if (!resetWorld) {
             int[] savedPos = prefs.getStagePosition(newStageId);
             if (savedPos != null && map.isWalkable(savedPos[0], savedPos[1], canSwimNonWater)) {
                 spawnRow = savedPos[0];
@@ -492,7 +493,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
 
         // The one and only save point: entering a new map.
-        prefs.saveStageEntry(leftStageId, leftRow, leftCol, newStageId, spawnRow, spawnCol);
+        if (resetWorld) {
+            prefs.saveTeleportHome(newStageId, spawnRow, spawnCol);
+        } else {
+            prefs.saveStageEntry(leftStageId, leftRow, leftCol, newStageId, spawnRow, spawnCol);
+        }
 
         goose = new Goose(getResources(), spawnRow, spawnCol);
         relocateFollowers(spawnRow, spawnCol);
@@ -558,7 +563,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             if (stageId == Maps.BEACH) {
                 moveGooseTo(stage.spawnRow, stage.spawnCol);
             } else {
-                changeStage(Maps.BEACH, false);
+                changeStage(Maps.BEACH, true);
             }
             return true;
         }
