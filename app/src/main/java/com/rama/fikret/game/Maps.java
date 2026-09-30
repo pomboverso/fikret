@@ -1004,7 +1004,7 @@ public final class Maps {
                 0,
                 0,
                 NEST_WALLS,
-                wall_old,
+                wall_arctic,
                 base_tile
         );
 
