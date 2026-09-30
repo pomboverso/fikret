@@ -16,6 +16,7 @@ public class PrefsManager {
     private static final String KEY_CURRENT_STAGE = "stage:current";
     private static final String KEY_ARRIVAL = "stage:arrival";
     private static final String KEY_STAGE_POSITION = "stage:position";
+    private static final String KEY_SONAR_REVEALED = "sonar:revealed";
     private static PrefsManager instance;
     private final SharedPreferences prefs;
 
@@ -129,6 +130,18 @@ public class PrefsManager {
     /** Where the player last left the given map, or null if never left. */
     public int[] getStagePosition(int stageId) {
         return parsePair(prefs.getString(key(KEY_STAGE_POSITION, String.valueOf(stageId)), null));
+    }
+
+    public boolean isSonarRevealed(int stageId, int row, int col) {
+        return prefs.getBoolean(sonarKey(stageId, row, col), false);
+    }
+
+    public void setSonarRevealed(int stageId, int row, int col) {
+        prefs.edit().putBoolean(sonarKey(stageId, row, col), true).commit();
+    }
+
+    private static String sonarKey(int stageId, int row, int col) {
+        return KEY_SONAR_REVEALED + ":" + stageId + ":" + row + "," + col;
     }
 
     private static String pair(int row, int col) {

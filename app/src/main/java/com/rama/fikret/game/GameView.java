@@ -31,11 +31,23 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private final List<Bird> idleBirds = new ArrayList<>();
     private final Random random = new Random();
     private int[] startPosition;
-    private boolean canSwimNonWater; // diamond skin: passive, on as soon as it's unlocked
     private int holeGooseRow, holeGooseCol;
     private SpriteSheet tileSheet;
     private SpriteSheet itemSheet;
     private final Paint backgroundPaint = new Paint();
+
+    private static final float SONAR_SPEED = 1.5f;
+    private static final long SONAR_PING_MS = 600;
+    private static final float SONAR_STROKE = 3f;
+    private static final float SONAR_ECHO_GAP = 1f;
+    private static final int SONAR_RINGS = 1;
+    private final Paint sonarPaint = new Paint();
+    private final List<SonarReveal> sonarPendingReveals = new ArrayList<>();
+    private boolean sonarActive;
+    private float sonarX;
+    private float sonarY;
+    private float sonarMaxRadius;
+    private long sonarElapsedMs;
     private final Rect reusableSrc = new Rect();
     private final Rect reusableDst = new Rect();
     private final SwipeJoystick joystick;
@@ -43,6 +55,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private int cameraX, cameraY;
     private static final float MIN_ZOOM = 1f;
     private static final float MAX_ZOOM = 4f;
+    private float zoomRaw = 2f;
     private float zoom = 2f;
     private PinchZoomDetector pinchZoomDetector;
     private float panOffsetX, panOffsetY;
@@ -75,10 +88,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         this(context, stageId, null);
     }
 
-    /**
-     * @param startPosition {row, col} to start on (a saved position), or null to use the
-     *                      map's spawn point. Ignored if that tile can't be stood on.
-     */
     public GameView(Context context, int stageId, int[] startPosition) {
         super(context);
         getHolder().addCallback(this);
@@ -86,6 +95,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         setFocusableInTouchMode(true);
 
         backgroundPaint.setColor(Color.BLACK);
+        sonarPaint.setStyle(Paint.Style.STROKE);
+        sonarPaint.setAntiAlias(true);
+        sonarPaint.setColor(0xFF7FE8FF);
         joystick = new SwipeJoystick(getResources().getDisplayMetrics().density);
         blizzard = new Blizzard(getResources());
 
@@ -93,7 +105,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             pinchZoomDetector = new PinchZoomDetector(context, new PinchZoomDetector.Listener() {
                 @Override
                 public void onZoom(float scaleFactor, float focusX, float focusY) {
-                    setZoom(zoom * scaleFactor);
+                    setZoom(zoomRaw * scaleFactor);
                 }
             });
         }
@@ -102,13 +114,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         try {
             stage = Maps.get(stageId);
         } catch (IllegalArgumentException unknownStage) {
-            // A saved stage id that no longer exists: start over from the beach.
             stageId = Maps.BEACH;
             stage = Maps.get(stageId);
             this.startPosition = null;
         }
         this.stageId = stageId;
         map = new GameMap(stage.tiles);
+        applyRevealedItems();
         refreshPassiveAbilities();
         loadTileSheets();
         loadItemSheet();
@@ -144,7 +156,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     private void setZoom(float newZoom) {
-        zoom = Math.max(MIN_ZOOM, Math.min(newZoom, MAX_ZOOM));
+        zoomRaw = Math.max(MIN_ZOOM, Math.min(newZoom, MAX_ZOOM));
+        zoom = Math.round(zoomRaw);
     }
 
     @Override
@@ -388,6 +401,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         goose.setSwimming(isOverLiquid(goose.getX(), goose.getY()));
         checkHoleTransition();
         checkBirdRescues();
+        updateSonar(deltaMs);
         updateBirds(deltaMs);
         updatePanReset(deltaMs);
         updateCamera();
@@ -459,11 +473,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         changeStage(newStageId, false);
     }
 
-    /**
-     * @param resetWorld true for teleport home: use the map's spawn point, don't remember
-     *                   where the previous map was left, and forget every saved position so
-     *                   the way back through the world starts fresh at each map's hole up.
-     */
     private void changeStage(int newStageId, boolean resetWorld) {
         Stage newStage;
         try {
@@ -480,6 +489,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         stageId = newStageId;
         stage = newStage;
         map = new GameMap(stage.tiles);
+        applyRevealedItems();
+        resetSonar();
         findIdleBirdSpawns();
 
         int spawnRow = stage.spawnRow;
@@ -492,7 +503,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
 
-        // The one and only save point: entering a new map.
         if (resetWorld) {
             prefs.saveTeleportHome(newStageId, spawnRow, spawnCol);
         } else {
@@ -505,6 +515,21 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         holeGooseRow = goose.getRow();
         holeGooseCol = goose.getCol();
         resetPan();
+    }
+
+    private void applyRevealedItems() {
+        PrefsManager prefs = PrefsManager.getInstance(getContext());
+        for (int i = 0; i < stage.sonarReveals.size(); i++) {
+            SonarReveal reveal = stage.sonarReveals.get(i);
+            if (prefs.isSonarRevealed(stageId, reveal.row, reveal.col)) {
+                map.addItem(reveal.row, reveal.col, reveal.item);
+            }
+        }
+    }
+
+    private void resetSonar() {
+        sonarActive = false;
+        sonarPendingReveals.clear();
     }
 
     private void relocateFollowers(int row, int col) {
@@ -530,10 +555,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         resetPan();
     }
 
-    // ---- HUD abilities. Called from the UI thread, so they take the same lock the game
-    // ---- thread holds while updating/rendering (see GameThread).
-
-    /** Teleports to a random tile with no item on it. Returns false if nothing happened. */
     public boolean teleportRandom() {
         if (!PrefsManager.getInstance(getContext()).hasAbility(Ability.RANDOM_TELEPORT)) {
             return false;
@@ -551,7 +572,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
-    /** Teleports to the beach's spawn point (home). Returns false if nothing happened. */
     public boolean teleportHome() {
         if (!PrefsManager.getInstance(getContext()).hasAbility(Ability.TELEPORT_HOME)) {
             return false;
@@ -569,8 +589,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
-    /**
-     */
     public boolean dive() {
         if (!PrefsManager.getInstance(getContext()).hasAbility(Ability.DIVE_DEEP_WATER)) {
             return false;
@@ -586,6 +604,60 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
             changeStage(target);
             return true;
+        }
+    }
+
+    public boolean sonar() {
+        if (!PrefsManager.getInstance(getContext()).hasAbility(Ability.SONAR)) {
+            return false;
+        }
+        synchronized (getHolder()) {
+            if (goose == null || sonarActive) {
+                return false;
+            }
+            float half = GameMap.TILE_SIZE / 2f;
+            sonarX = goose.getX() + half;
+            sonarY = goose.getY() + half;
+            float farX = Math.max(sonarX, map.getWidthPx() - sonarX);
+            float farY = Math.max(sonarY, map.getHeightPx() - sonarY);
+            sonarMaxRadius = (float) Math.sqrt(farX * farX + farY * farY);
+
+            sonarPendingReveals.clear();
+            for (int i = 0; i < stage.sonarReveals.size(); i++) {
+                SonarReveal reveal = stage.sonarReveals.get(i);
+                MapCell cell = map.getCell(reveal.row, reveal.col);
+                if (cell != null && !cell.hasItem() && reveal.zoneContains(goose.getRow(), goose.getCol())) {
+                    sonarPendingReveals.add(reveal);
+                }
+            }
+            sonarElapsedMs = 0;
+            sonarActive = true;
+            return true;
+        }
+    }
+
+    private void updateSonar(long deltaMs) {
+        if (!sonarActive) {
+            return;
+        }
+        sonarElapsedMs += deltaMs;
+        float radius = sonarElapsedMs * SONAR_SPEED;
+
+        float half = GameMap.TILE_SIZE / 2f;
+        for (Iterator<SonarReveal> it = sonarPendingReveals.iterator(); it.hasNext(); ) {
+            SonarReveal reveal = it.next();
+            float dx = reveal.col * GameMap.TILE_SIZE + half - sonarX;
+            float dy = reveal.row * GameMap.TILE_SIZE + half - sonarY;
+            if (Math.sqrt(dx * dx + dy * dy) <= radius) {
+                if (map.addItem(reveal.row, reveal.col, reveal.item)) {
+                    PrefsManager.getInstance(getContext()).setSonarRevealed(stageId, reveal.row, reveal.col);
+                }
+                it.remove();
+            }
+        }
+
+        if (sonarElapsedMs >= sonarMaxRadius / SONAR_SPEED + SONAR_PING_MS) {
+            resetSonar();
         }
     }
 
@@ -701,6 +773,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         drawBirds(canvas, idleBirds, tileSize);
         drawBirds(canvas, followingBirds, tileSize);
+        drawSonar(canvas, visibleW, visibleH);
 
         if (goose != null) {
             int screenX = Math.round(goose.getX()) - cameraX;
@@ -715,6 +788,60 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             blizzard.draw(canvas, canvas.getWidth(), canvas.getHeight());
         }
         joystick.draw(canvas);
+    }
+
+    private void drawSonar(Canvas canvas, float visibleW, float visibleH) {
+        if (!sonarActive) {
+            return;
+        }
+        float cx = sonarX - cameraX;
+        float cy = sonarY - cameraY;
+        float radius = sonarElapsedMs * SONAR_SPEED;
+
+        if (radius <= sonarMaxRadius) {
+            float fade = 1f - radius / sonarMaxRadius;
+            for (int i = 0; i < SONAR_RINGS; i++) {
+                float r = radius - i * SONAR_ECHO_GAP;
+                if (r <= 0f) {
+                    break;
+                }
+                float stroke = SONAR_STROKE / (1f + i * 0.5f);
+                if (!ringOnScreen(cx, cy, r, stroke, visibleW, visibleH)) {
+                    continue;
+                }
+                sonarPaint.setAlpha((int) (220f * (0.3f + 0.7f * fade) / (1f + i * 1.5f)));
+                sonarPaint.setStrokeWidth(stroke);
+                canvas.drawCircle(cx, cy, r, sonarPaint);
+            }
+        }
+
+        float half = GameMap.TILE_SIZE / 2f;
+        for (int i = 0; i < idleBirds.size(); i++) {
+            Bird bird = idleBirds.get(i);
+            float bx = bird.getX() + half;
+            float by = bird.getY() + half;
+            float dx = bx - sonarX;
+            float dy = by - sonarY;
+            float pingStart = (float) Math.sqrt(dx * dx + dy * dy) / SONAR_SPEED;
+            float t = sonarElapsedMs - pingStart;
+            if (t < 0f || t >= SONAR_PING_MS) {
+                continue;
+            }
+            float phase = t / SONAR_PING_MS;
+            sonarPaint.setAlpha((int) (255f * (1f - phase)));
+            sonarPaint.setStrokeWidth(SONAR_STROKE);
+            canvas.drawCircle(bx - cameraX, by - cameraY, GameMap.TILE_SIZE * (0.3f + 0.6f * phase), sonarPaint);
+        }
+    }
+
+    private static boolean ringOnScreen(float cx, float cy, float r, float stroke, float w, float h) {
+        float nearX = cx < 0f ? -cx : (cx > w ? cx - w : 0f);
+        float nearY = cy < 0f ? -cy : (cy > h ? cy - h : 0f);
+        float farX = Math.max(Math.abs(cx), Math.abs(cx - w));
+        float farY = Math.max(Math.abs(cy), Math.abs(cy - h));
+        double near = Math.sqrt(nearX * nearX + nearY * nearY);
+        double far = Math.sqrt(farX * farX + farY * farY);
+        return r + stroke >= near && r - stroke <= far;
     }
 
     private void drawBirds(Canvas canvas, List<Bird> birds, int tileSize) {

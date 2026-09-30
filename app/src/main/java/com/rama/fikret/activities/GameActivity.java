@@ -71,6 +71,7 @@ public class GameActivity extends Activity {
 
         @Override
         public void onSonar() {
+            gameView.sonar();
         }
 
         @Override

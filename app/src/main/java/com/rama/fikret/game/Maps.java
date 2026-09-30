@@ -722,7 +722,8 @@ public final class Maps {
 
         tiles[26][26] += hole_down;
 
-        return new Stage(tiles, 2, 2, true);
+        return new Stage(tiles, 2, 2, true)
+                .withSonarReveal(new SonarReveal(13, 13, ItemType.HOLE_DOWN_NEST, 10, 10, 17, 17));
     }
 
     private static Stage bubblegum_land() {
