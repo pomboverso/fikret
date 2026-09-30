@@ -31,6 +31,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private final List<Bird> idleBirds = new ArrayList<>();
     private final Random random = new Random();
     private int[] startPosition;
+    private boolean canSwimNonWater;
     private int holeGooseRow, holeGooseCol;
     private SpriteSheet tileSheet;
     private SpriteSheet itemSheet;
