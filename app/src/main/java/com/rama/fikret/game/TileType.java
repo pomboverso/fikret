@@ -45,10 +45,6 @@ public enum TileType {
         }
     }
 
-    /**
-     * Plain water (shallow or deep). Every other liquid (lava, acid, bubblegum,
-     * space, blood) can only be entered with the diamond skin active.
-     */
     public boolean isWater() {
         return this == WATER || this == DEEP_WATER;
     }

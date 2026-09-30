@@ -55,10 +55,6 @@ public class GameMap {
         return !cells[row][col].item.blocksMovement;
     }
 
-    /**
-     * A tile the goose may stand on / enter: not blocked by an item and, unless
-     * the diamond skin is active, not a non-water liquid (lava, acid, ...).
-     */
     public boolean isWalkable(int row, int col, boolean canSwimNonWater) {
         if (!isPassable(row, col)) {
             return false;
@@ -83,13 +79,6 @@ public class GameMap {
         return true;
     }
 
-    /**
-     * Picks a random tile that has no item on it (so never a hole, wall, plant, bird
-     * spawn, dive warp...) and that the goose is allowed to be on. The tile
-     * (avoidRow, avoidCol) is excluded so a teleport always visibly moves.
-     *
-     * @return {row, col}, or null when there is no such tile
-     */
     public int[] randomFreeCell(Random random, boolean canSwimNonWater, int avoidRow, int avoidCol) {
         List<int[]> candidates = new ArrayList<>();
         for (int r = 0; r < rows; r++) {

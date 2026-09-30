@@ -44,7 +44,6 @@ public class MapCell {
         return topTile().liquid;
     }
 
-    /** Lava, acid, etc. Swimmable only with the diamond skin. */
     public boolean isNonWaterLiquid() {
         TileType top = topTile();
         return top.liquid && !top.isWater();

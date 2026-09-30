@@ -50,7 +50,6 @@ public class Bird {
         return swimming;
     }
 
-    /** Instantly moves the bird to a tile, dropping any pending step. */
     public void teleportTo(int newRow, int newCol) {
         row = fromRow = newRow;
         col = fromCol = newCol;

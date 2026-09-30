@@ -90,11 +90,6 @@ public class PrefsManager {
         setBoolean(key(KEY_ABILITY_UNLOCKED, ability.name()), true);
     }
 
-    /**
-     * Records a map change in one write: the position the player left the old map at,
-     * the new current map, and the tile they arrived on. This is the only place map
-     * progress is saved, so it happens only when a new map is entered.
-     */
     public void saveStageEntry(int leftStageId, int leftRow, int leftCol,
                                int newStageId, int arrivalRow, int arrivalCol) {
         prefs.edit()
@@ -117,17 +112,14 @@ public class PrefsManager {
                 .commit();
     }
 
-    /** The map the player was last in, or defaultStageId if none has been saved. */
     public int getCurrentStage(int defaultStageId) {
         return prefs.getInt(KEY_CURRENT_STAGE, defaultStageId);
     }
 
-    /** The tile the player arrived on in the current map, or null if none is saved. */
     public int[] getArrivalPosition() {
         return parsePair(prefs.getString(KEY_ARRIVAL, null));
     }
 
-    /** Where the player last left the given map, or null if never left. */
     public int[] getStagePosition(int stageId) {
         return parsePair(prefs.getString(key(KEY_STAGE_POSITION, String.valueOf(stageId)), null));
     }

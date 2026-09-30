@@ -6,7 +6,6 @@ import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 
-/** HUD icons, stored in column 2 of the items sprite (top to bottom, in this order). */
 public enum ItemIcon {
     SLEEP(0),
     SONAR(1),
@@ -27,7 +26,6 @@ public enum ItemIcon {
         this.row = row;
     }
 
-    /** Returns a standalone drawable cropped from the items sprite, ready for ImageView. */
     public Drawable drawable(Resources res) {
         SpriteSheet sheet = ItemSheet.get(res);
         Rect r = sheet.frameRect(SPRITE_COLUMN, row);

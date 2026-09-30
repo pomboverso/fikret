@@ -74,7 +74,6 @@ public class Goose {
         }
     }
 
-    /** Instantly moves the goose to a tile, cancelling any step in progress. */
     public void teleportTo(int newRow, int newCol) {
         row = fromRow = newRow;
         col = fromCol = newCol;
