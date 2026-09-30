@@ -7,8 +7,8 @@ import android.graphics.Rect;
 import com.rama.fikret.R;
 
 public class Goose {
-    private static final int ATLAS_COLUMNS = 2;
     private static final int ATLAS_ROWS = 5;
+    private static final int TELEPORT_COLUMN_OFFSET = 2;
     private static final long STEP_DURATION_MS = 200;
     private static final long WALK_FRAME_DURATION_MS = 80;
     private static final int FRAME_SWIMMING_A = 0;
@@ -17,6 +17,7 @@ public class Goose {
     private static final int FRAME_WALK_A = 3;
     private static final int FRAME_WALK_B = 4;
     private final SpriteSheet spriteSheet;
+    private final boolean hasTeleportPose;
     private int fromRow, fromCol;
     private int row, col;
     private float stepProgress = 1f;
@@ -24,11 +25,13 @@ public class Goose {
     private boolean moving = false;
     private boolean resting = false;
     private boolean swimming = false;
+    private boolean teleporting = false;
     private boolean walkToggle = false;
     private long walkAnimTimer = 0;
 
     public Goose(Resources res, int startRow, int startCol) {
-        this.spriteSheet = new SpriteSheet(res, R.drawable.goose, ATLAS_COLUMNS, ATLAS_ROWS);
+        this.spriteSheet = SpriteSheet.withSquareCells(res, R.drawable.goose, ATLAS_ROWS);
+        this.hasTeleportPose = spriteSheet.getColumns() >= TELEPORT_COLUMN_OFFSET + 2;
         this.row = this.fromRow = startRow;
         this.col = this.fromCol = startCol;
     }
@@ -87,6 +90,14 @@ public class Goose {
         this.swimming = swimming;
     }
 
+    public void setTeleporting(boolean teleporting) {
+        this.teleporting = teleporting;
+    }
+
+    public boolean isTeleporting() {
+        return teleporting;
+    }
+
     public boolean isSwimming() {
         return swimming;
     }
@@ -97,7 +108,8 @@ public class Goose {
                 : swimming
                 ? (walkToggle ? FRAME_SWIMMING_A : FRAME_SWIMMING_B)
                 : (moving ? (walkToggle ? FRAME_WALK_A : FRAME_WALK_B) : FRAME_IDLE);
-        Rect src = spriteSheet.frameRect(facing.column, frame);
+        int column = facing.column + (teleporting && hasTeleportPose ? TELEPORT_COLUMN_OFFSET : 0);
+        Rect src = spriteSheet.frameRect(column, frame);
         canvas.drawBitmap(spriteSheet.getBitmap(), src, dst, null);
     }
 

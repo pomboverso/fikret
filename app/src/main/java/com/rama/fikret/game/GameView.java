@@ -42,6 +42,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private static final float SONAR_STROKE = 3f;
     private static final float SONAR_ECHO_GAP = 1f;
     private static final int SONAR_RINGS = 1;
+    private static final long TELEPORT_PHASE_MS = 200;
+    private enum TeleportKind { RANDOM, HOME }
+    private TeleportKind teleportKind;
+    private boolean teleportArrived;
+    private long teleportTimerMs;
     private final Paint sonarPaint = new Paint();
     private final List<SonarReveal> sonarPendingReveals = new ArrayList<>();
     private boolean sonarActive;
@@ -307,6 +312,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
+    public boolean handleKeyEvent(KeyEvent event) {
+        if (event.getAction() == KeyEvent.ACTION_DOWN) {
+            return onKeyDown(event.getKeyCode(), event);
+        } else if (event.getAction() == KeyEvent.ACTION_UP) {
+            return onKeyUp(event.getKeyCode(), event);
+        }
+        return false;
+    }
+
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         switch (keyCode) {
@@ -389,8 +403,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (goose == null) {
             return;
         }
-        int dx = resolvedDx();
-        int dy = resolvedDy();
+        int dx = isTeleporting() ? 0 : resolvedDx();
+        int dy = isTeleporting() ? 0 : resolvedDy();
 
         boolean nowMoving = dx != 0 || dy != 0;
         if (nowMoving && !wasMoving) {
@@ -402,6 +416,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         goose.setSwimming(isOverLiquid(goose.getX(), goose.getY()));
         checkHoleTransition();
         checkBirdRescues();
+        updateTeleport(deltaMs);
         updateSonar(deltaMs);
         updateBirds(deltaMs);
         updatePanReset(deltaMs);
@@ -561,14 +576,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             return false;
         }
         synchronized (getHolder()) {
-            if (goose == null) {
+            if (goose == null || isTeleporting()) {
                 return false;
             }
-            int[] spot = map.randomFreeCell(random, canSwimNonWater, goose.getRow(), goose.getCol());
-            if (spot == null) {
+            if (map.randomFreeCell(random, canSwimNonWater, goose.getRow(), goose.getCol()) == null) {
                 return false;
             }
-            moveGooseTo(spot[0], spot[1]);
+            startTeleport(TeleportKind.RANDOM);
             return true;
         }
     }
@@ -578,15 +592,56 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             return false;
         }
         synchronized (getHolder()) {
-            if (goose == null) {
+            if (goose == null || isTeleporting()) {
                 return false;
             }
-            if (stageId == Maps.BEACH) {
-                moveGooseTo(stage.spawnRow, stage.spawnCol);
-            } else {
-                changeStage(Maps.BEACH, true);
-            }
+            startTeleport(TeleportKind.HOME);
             return true;
+        }
+    }
+
+    private boolean isTeleporting() {
+        return teleportKind != null;
+    }
+
+    private void startTeleport(TeleportKind kind) {
+        teleportKind = kind;
+        teleportArrived = false;
+        teleportTimerMs = 0;
+        goose.setTeleporting(true);
+    }
+
+    private void updateTeleport(long deltaMs) {
+        if (!isTeleporting()) {
+            return;
+        }
+        teleportTimerMs += deltaMs;
+        if (!teleportArrived) {
+            if (teleportTimerMs < TELEPORT_PHASE_MS) {
+                return;
+            }
+            performTeleport();
+            teleportArrived = true;
+            teleportTimerMs = 0;
+            goose.setTeleporting(true);
+            return;
+        }
+        if (teleportTimerMs >= TELEPORT_PHASE_MS) {
+            goose.setTeleporting(false);
+            teleportKind = null;
+        }
+    }
+
+    private void performTeleport() {
+        if (teleportKind == TeleportKind.RANDOM) {
+            int[] spot = map.randomFreeCell(random, canSwimNonWater, goose.getRow(), goose.getCol());
+            if (spot != null) {
+                moveGooseTo(spot[0], spot[1]);
+            }
+        } else if (stageId == Maps.BEACH) {
+            moveGooseTo(stage.spawnRow, stage.spawnCol);
+        } else {
+            changeStage(Maps.BEACH, true);
         }
     }
 
@@ -595,7 +650,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             return false;
         }
         synchronized (getHolder()) {
-            if (goose == null) {
+            if (goose == null || isTeleporting()) {
                 return false;
             }
             MapCell cell = map.getCell(goose.getRow(), goose.getCol());
