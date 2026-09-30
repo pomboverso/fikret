@@ -43,6 +43,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private static final float SONAR_ECHO_GAP = 1f;
     private static final int SONAR_RINGS = 1;
     private static final long TELEPORT_PHASE_MS = 200;
+    private static final long CAMERA_GLIDE_MIN_MS = 250;
+    private static final long CAMERA_GLIDE_MAX_MS = 600;
+    private static final float CAMERA_GLIDE_SPEED = 4f;   // world units per ms; longer jumps take longer, within the limits above
     private enum TeleportKind { RANDOM, HOME }
     private TeleportKind teleportKind;
     private boolean teleportArrived;
@@ -59,6 +62,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private final SwipeJoystick joystick;
     private final Blizzard blizzard;
     private int cameraX, cameraY;
+    private boolean glidePending;
+    private boolean cameraGliding;
+    private int glideFromX, glideFromY;
+    private long glideElapsedMs, glideDurationMs;
     private static final float MIN_ZOOM = 1f;
     private static final float MAX_ZOOM = 4f;
     private float zoomRaw = 2f;
@@ -420,7 +427,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         updateSonar(deltaMs);
         updateBirds(deltaMs);
         updatePanReset(deltaMs);
-        updateCamera();
+        updateCamera(deltaMs);
         if (stage.hasBlizzard) {
             blizzard.update(deltaMs);
         }
@@ -507,6 +514,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         map = new GameMap(stage.tiles);
         applyRevealedItems();
         resetSonar();
+        cancelCameraGlide();
         findIdleBirdSpawns();
 
         int spawnRow = stage.spawnRow;
@@ -636,9 +644,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (teleportKind == TeleportKind.RANDOM) {
             int[] spot = map.randomFreeCell(random, canSwimNonWater, goose.getRow(), goose.getCol());
             if (spot != null) {
+                beginCameraGlide();
                 moveGooseTo(spot[0], spot[1]);
             }
         } else if (stageId == Maps.BEACH) {
+            beginCameraGlide();
             moveGooseTo(stage.spawnRow, stage.spawnCol);
         } else {
             changeStage(Maps.BEACH, true);
@@ -783,7 +793,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
-    private void updateCamera() {
+    private void updateCamera(long deltaMs) {
         int viewW = getWidth();
         int viewH = getHeight();
         if (viewW == 0 || viewH == 0) {
@@ -798,6 +808,49 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         int maxCamY = Math.max(0, (int) (map.getHeightPx() - visibleH));
         cameraX = clamp(cameraX, 0, maxCamX);
         cameraY = clamp(cameraY, 0, maxCamY);
+
+        applyCameraGlide(deltaMs);
+    }
+
+    private void applyCameraGlide(long deltaMs) {
+        if (glidePending) {
+            glidePending = false;
+            float dx = cameraX - glideFromX;
+            float dy = cameraY - glideFromY;
+            float distance = (float) Math.sqrt(dx * dx + dy * dy);
+            if (distance < 1f) {
+                return;
+            }
+            glideDurationMs = (long) Math.max(CAMERA_GLIDE_MIN_MS,
+                    Math.min(CAMERA_GLIDE_MAX_MS, distance / CAMERA_GLIDE_SPEED));
+            glideElapsedMs = 0;
+            cameraGliding = true;
+            cameraX = glideFromX;
+            cameraY = glideFromY;
+            return;
+        }
+        if (!cameraGliding) {
+            return;
+        }
+        glideElapsedMs += deltaMs;
+        float t = Math.min(1f, glideElapsedMs / (float) glideDurationMs);
+        float eased = t * t * (3f - 2f * t); // smoothstep
+        cameraX = glideFromX + Math.round((cameraX - glideFromX) * eased);
+        cameraY = glideFromY + Math.round((cameraY - glideFromY) * eased);
+        if (t >= 1f) {
+            cameraGliding = false;
+        }
+    }
+
+    private void beginCameraGlide() {
+        glidePending = true;
+        glideFromX = cameraX;
+        glideFromY = cameraY;
+    }
+
+    private void cancelCameraGlide() {
+        glidePending = false;
+        cameraGliding = false;
     }
 
     private static int clamp(int value, int min, int max) {
