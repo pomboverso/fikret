@@ -28,6 +28,26 @@ public class GameMap {
         }
     }
 
+    public int[] randomDryCellAway(Random random, int fromRow, int fromCol, int minDistance) {
+        List<int[]> candidates = new ArrayList<>();
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                MapCell cell = cells[r][c];
+                if (cell.hasItem() || cell.isLiquid()) {
+                    continue;
+                }
+                if (Math.max(Math.abs(r - fromRow), Math.abs(c - fromCol)) < minDistance) {
+                    continue;
+                }
+                candidates.add(new int[]{r, c});
+            }
+        }
+        if (candidates.isEmpty()) {
+            return null;
+        }
+        return candidates.get(random.nextInt(candidates.size()));
+    }
+
     public boolean addItem(int row, int col, ItemType item) {
         if (!isInBounds(row, col) || cells[row][col].hasItem()) {
             return false;

@@ -48,6 +48,7 @@ public class GameActivity extends Activity {
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
         gameView.setOnAbilityUnlockedListener(ability -> runOnUiThread(() -> hudView.refreshAbilities()));
+        gameView.setHpListener((hp, maxHp) -> runOnUiThread(() -> hudView.setHp(String.valueOf(hp))));
 
         setContentView(root);
         gameView.requestFocus();

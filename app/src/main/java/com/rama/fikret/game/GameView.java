@@ -50,6 +50,55 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private TeleportKind teleportKind;
     private boolean teleportArrived;
     private long teleportTimerMs;
+    private static final int ENEMY_SHEET_COLUMNS = 6;
+    private static final int ENEMY_AGGRO_TILES = 7;
+    private static final int ENEMY_MIN_SPAWN_DISTANCE = 8;
+    private static final float TOUCH_DISTANCE = 40f;
+    private static final long BULLET_INTERVAL_MS = 600;
+    private static final int BULLET_RANGE_TILES = 6;
+    private static final float BULLET_SPEED = 0.8f;
+    private static final int BULLET_DAMAGE = 10;
+    private static final float BULLET_HIT_DISTANCE = 22f;
+    private static final long LIGHTNING_INTERVAL_MS = 2500;
+    private static final int LIGHTNING_RANGE_TILES = 8;
+    private static final int LIGHTNING_DAMAGE = 30;
+    private static final long LIGHTNING_FLASH_MS = 180;
+    private static final long TAP_MAX_MS = 300;
+    private static final float TAP_SLOP_DP = 14f;
+    private static final float TAP_TARGET_RADIUS = 56f;   // world units around an enemy's centre that count as tapping it
+    private static final long EXPLOSION_MS = 350;
+    private static final float EXPLOSION_RADIUS = 56f;
+    private static final float[] LIGHTNING_JITTER = {0f, 14f, -12f, 10f, -8f, 6f, 0f};
+
+    private static final class Explosion {
+        final float x, y;
+        long elapsedMs;
+
+        Explosion(float x, float y) {
+            this.x = x;
+            this.y = y;
+        }
+    }
+
+    public interface HpListener {
+        void onHpChanged(int hp, int maxHp);
+    }
+
+    private final PlayerStats stats = new PlayerStats();
+    private final List<Enemy> enemies = new ArrayList<>();
+    private final List<Bullet> bullets = new ArrayList<>();
+    private final List<Explosion> explosions = new ArrayList<>();
+    private final Paint effectPaint = new Paint();
+    private SpriteSheet enemySheet;
+    private boolean enemySpawning = true;
+    private boolean canShoot;
+    private boolean hasThunder;
+    private long bulletCooldownMs;
+    private long lightningCooldownMs;
+    private long lightningFlashMs;
+    private float lightningX, lightningY;
+    private int reportedHp = -1;
+    private HpListener hpListener;
     private final Paint sonarPaint = new Paint();
     private final List<SonarReveal> sonarPendingReveals = new ArrayList<>();
     private boolean sonarActive;
@@ -83,6 +132,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private volatile int numpadDx, numpadDy;
     private volatile int stickDx, stickDy;
     private boolean pinching;
+    private boolean tapCandidate;
+    private float tapDownX, tapDownY;
+    private float tapSlopPx;
     private OnAbilityUnlockedListener abilityUnlockedListener;
 
     public interface OnAbilityUnlockedListener {
@@ -108,10 +160,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         setFocusableInTouchMode(true);
 
         backgroundPaint.setColor(Color.BLACK);
+        effectPaint.setAntiAlias(true);
         sonarPaint.setStyle(Paint.Style.STROKE);
         sonarPaint.setAntiAlias(true);
         sonarPaint.setColor(0xFF7FE8FF);
-        joystick = new SwipeJoystick(getResources().getDisplayMetrics().density);
+        float density = getResources().getDisplayMetrics().density;
+        tapSlopPx = TAP_SLOP_DP * density;
+        joystick = new SwipeJoystick(density);
         blizzard = new Blizzard(getResources());
 
         if (Build.VERSION.SDK_INT >= 8) {
@@ -141,7 +196,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     private void refreshPassiveAbilities() {
-        canSwimNonWater = PrefsManager.getInstance(getContext()).hasAbility(Ability.SWIM_NON_WATER);
+        PrefsManager prefs = PrefsManager.getInstance(getContext());
+        canSwimNonWater = prefs.hasAbility(Ability.SWIM_NON_WATER);
+        canShoot = prefs.hasAbility(Ability.SHOOT_MAGIC);
+        hasThunder = prefs.hasAbility(Ability.THUNDER_ATTACK);
     }
 
     private void loadTileSheets() {
@@ -184,6 +242,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
             goose = new Goose(getResources(), row, col);
             restoreRescuedBirds();
+            spawnEnemies();
         }
         holeGooseRow = goose.getRow();
         holeGooseCol = goose.getCol();
@@ -235,9 +294,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         switch (event.getAction() & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN:
                 pinching = false;
+                tapCandidate = true;
+                tapDownX = event.getX();
+                tapDownY = event.getY();
                 joystick.begin(event.getX(), event.getY());
                 return true;
             case MotionEvent.ACTION_POINTER_DOWN:
+                tapCandidate = false;
                 pinching = true;
                 panResetting = false;
                 joystick.end();
@@ -255,13 +318,27 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     panAnchorX = avgX;
                     panAnchorY = avgY;
                 } else if (!pinching) {
+                    if (distance(event.getX(), event.getY(), tapDownX, tapDownY) > tapSlopPx) {
+                        tapCandidate = false;
+                    }
                     joystick.move(event.getX(), event.getY());
                 }
                 return true;
             case MotionEvent.ACTION_POINTER_UP:
                 return true;
             case MotionEvent.ACTION_UP:
+                boolean isTap = tapCandidate
+                        && event.getEventTime() - event.getDownTime() <= TAP_MAX_MS
+                        && distance(event.getX(), event.getY(), tapDownX, tapDownY) <= tapSlopPx;
+                tapCandidate = false;
+                pinching = false;
+                joystick.end();
+                if (isTap) {
+                    tapAt(event.getX(), event.getY());
+                }
+                return true;
             case MotionEvent.ACTION_CANCEL:
+                tapCandidate = false;
                 pinching = false;
                 joystick.end();
                 return true;
@@ -424,6 +501,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         checkHoleTransition();
         checkBirdRescues();
         updateTeleport(deltaMs);
+        updateCombat(deltaMs);
         updateSonar(deltaMs);
         updateBirds(deltaMs);
         updatePanReset(deltaMs);
@@ -535,6 +613,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         goose = new Goose(getResources(), spawnRow, spawnCol);
         relocateFollowers(spawnRow, spawnCol);
+        spawnEnemies();
 
         holeGooseRow = goose.getRow();
         holeGooseCol = goose.getCol();
@@ -727,6 +806,304 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
+    public void setHpListener(HpListener listener) {
+        synchronized (getHolder()) {
+            hpListener = listener;
+            reportedHp = -1;
+            reportHp();
+        }
+    }
+
+    public int getHp() {
+        synchronized (getHolder()) {
+            return stats.getHp();
+        }
+    }
+
+    public void setEnemySpawning(boolean enabled) {
+        synchronized (getHolder()) {
+            enemySpawning = enabled;
+            if (!enabled) {
+                clearCombat();
+            }
+        }
+    }
+
+    private void clearCombat() {
+        enemies.clear();
+        bullets.clear();
+        explosions.clear();
+        lightningFlashMs = 0;
+    }
+
+    private void spawnEnemies() {
+        clearCombat();
+        if (!enemySpawning) {
+            return;
+        }
+        EnemySpawns.Entry[] entries = EnemySpawns.forStage(stageId);
+        if (entries.length == 0) {
+            return;
+        }
+        if (enemySheet == null) {
+            enemySheet = SpriteSheet.withSquareCellsByColumns(getResources(), R.drawable.enemies, ENEMY_SHEET_COLUMNS);
+        }
+        for (int i = 0; i < entries.length; i++) {
+            for (int n = 0; n < entries[i].count; n++) {
+                for (int attempt = 0; attempt < 10; attempt++) {
+                    int[] spot = map.randomDryCellAway(random, goose.getRow(), goose.getCol(), ENEMY_MIN_SPAWN_DISTANCE);
+                    if (spot == null) {
+                        break;
+                    }
+                    if (!isEnemyAt(spot[0], spot[1])) {
+                        enemies.add(new Enemy(entries[i].type, enemySheet, spot[0], spot[1]));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean isEnemyAt(int row, int col) {
+        for (int i = 0; i < enemies.size(); i++) {
+            if (enemies.get(i).getRow() == row && enemies.get(i).getCol() == col) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void updateCombat(long deltaMs) {
+        stats.update(deltaMs);
+        goose.setStepMultiplier(stats.stepMultiplier());
+        updateEnemies(deltaMs);
+        updateAttackCooldowns(deltaMs);
+        updateBullets(deltaMs);
+        updateExplosions(deltaMs);
+        if (stats.isDead()) {
+            onPlayerDied();
+        }
+        reportHp();
+    }
+
+    private void updateEnemies(long deltaMs) {
+        float half = GameMap.TILE_SIZE / 2f;
+        float gx = goose.getX() + half;
+        float gy = goose.getY() + half;
+        float aggro = ENEMY_AGGRO_TILES * GameMap.TILE_SIZE;
+        for (int i = enemies.size() - 1; i >= 0; i--) {
+            Enemy enemy = enemies.get(i);
+            if (enemy.isGone()) {
+                enemies.remove(i);
+                continue;
+            }
+            boolean chase = distance(enemy.getCenterX(), enemy.getCenterY(), gx, gy) <= aggro;
+            enemy.update(deltaMs, map, goose.getRow(), goose.getCol(), chase, enemies);
+            if (!isTeleporting() && enemy.canTouch()
+                    && distance(enemy.getCenterX(), enemy.getCenterY(), gx, gy) < TOUCH_DISTANCE) {
+                touch(enemy);
+                if (enemy.type.explodes) {
+                    explosions.add(new Explosion(enemy.getCenterX(), enemy.getCenterY()));
+                    enemies.remove(i);
+                }
+            }
+        }
+    }
+
+    private void touch(Enemy enemy) {
+        EnemyType type = enemy.type;
+        stats.damage(type.touchDamage);
+        if (type.slowMs > 0) {
+            stats.applySlow(type.slowMs);
+        }
+        if (type.poisonMs > 0) {
+            stats.applyPoison(type.poisonMs, type.poisonDamage);
+        }
+        enemy.startTouchCooldown();
+    }
+
+    private void updateAttackCooldowns(long deltaMs) {
+        bulletCooldownMs = Math.max(0, bulletCooldownMs - deltaMs);
+        lightningCooldownMs = Math.max(0, lightningCooldownMs - deltaMs);
+        if (lightningFlashMs > 0) {
+            lightningFlashMs = Math.max(0, lightningFlashMs - deltaMs);
+        }
+    }
+
+    public boolean tapAt(float screenX, float screenY) {
+        synchronized (getHolder()) {
+            if (goose == null || isTeleporting()) {
+                return false;
+            }
+            Enemy target = enemyAt(screenX / zoom + cameraX, screenY / zoom + cameraY);
+            return target != null && attack(target);
+        }
+    }
+
+    private Enemy enemyAt(float worldX, float worldY) {
+        float best = TAP_TARGET_RADIUS;
+        Enemy tapped = null;
+        for (int i = 0; i < enemies.size(); i++) {
+            Enemy e = enemies.get(i);
+            if (e.isDead()) {
+                continue;
+            }
+            float d = distance(e.getCenterX(), e.getCenterY(), worldX, worldY);
+            if (d <= best) {
+                best = d;
+                tapped = e;
+            }
+        }
+        return tapped;
+    }
+
+    private boolean attack(Enemy target) {
+        float half = GameMap.TILE_SIZE / 2f;
+        float d = distance(target.getCenterX(), target.getCenterY(), goose.getX() + half, goose.getY() + half);
+        boolean attacked = false;
+        if (canShoot && bulletCooldownMs == 0 && d <= BULLET_RANGE_TILES * GameMap.TILE_SIZE) {
+            fireBullet(target);
+            bulletCooldownMs = BULLET_INTERVAL_MS;
+            attacked = true;
+        }
+        if (hasThunder && lightningCooldownMs == 0 && d <= LIGHTNING_RANGE_TILES * GameMap.TILE_SIZE) {
+            strike(target);
+            lightningCooldownMs = LIGHTNING_INTERVAL_MS;
+            attacked = true;
+        }
+        return attacked;
+    }
+
+    private void fireBullet(Enemy target) {
+        float half = GameMap.TILE_SIZE / 2f;
+        float gx = goose.getX() + half;
+        float gy = goose.getY() + half;
+        float dx = target.getCenterX() - gx;
+        float dy = target.getCenterY() - gy;
+        float len = (float) Math.sqrt(dx * dx + dy * dy);
+        float dirX = len == 0f ? 1f : dx / len;
+        float dirY = len == 0f ? 0f : dy / len;
+        bullets.add(new Bullet(gx, gy, dirX, dirY, BULLET_SPEED, (BULLET_RANGE_TILES + 1) * GameMap.TILE_SIZE));
+    }
+
+    private void strike(Enemy target) {
+        lightningX = target.getCenterX();
+        lightningY = target.getCenterY();
+        lightningFlashMs = LIGHTNING_FLASH_MS;
+        target.hit(LIGHTNING_DAMAGE, Enemy.HitSource.LIGHTNING);
+    }
+
+    private void updateBullets(long deltaMs) {
+        for (int i = bullets.size() - 1; i >= 0; i--) {
+            Bullet bullet = bullets.get(i);
+            bullet.update(deltaMs);
+            int row = (int) Math.floor(bullet.y / GameMap.TILE_SIZE);
+            int col = (int) Math.floor(bullet.x / GameMap.TILE_SIZE);
+            if (bullet.isSpent() || !map.isPassable(row, col)) {
+                bullets.remove(i);
+                continue;
+            }
+            for (int j = enemies.size() - 1; j >= 0; j--) {
+                Enemy enemy = enemies.get(j);
+                if (!enemy.isDead()
+                        && distance(enemy.getCenterX(), enemy.getCenterY(), bullet.x, bullet.y) <= BULLET_HIT_DISTANCE) {
+                    enemy.hit(BULLET_DAMAGE, Enemy.HitSource.BULLET);
+                    bullets.remove(i);
+                    break;
+                }
+            }
+        }
+    }
+
+    private void updateExplosions(long deltaMs) {
+        for (int i = explosions.size() - 1; i >= 0; i--) {
+            Explosion explosion = explosions.get(i);
+            explosion.elapsedMs += deltaMs;
+            if (explosion.elapsedMs >= EXPLOSION_MS) {
+                explosions.remove(i);
+            }
+        }
+    }
+
+    private void onPlayerDied() {
+        stats.revive();
+        bullets.clear();
+        if (!isTeleporting()) {
+            startTeleport(TeleportKind.HOME);
+        } else if (!teleportArrived) {
+            teleportKind = TeleportKind.HOME;
+        }
+    }
+
+    private void reportHp() {
+        int hp = stats.getHp();
+        if (hp != reportedHp) {
+            reportedHp = hp;
+            if (hpListener != null) {
+                hpListener.onHpChanged(hp, PlayerStats.MAX_HP);
+            }
+        }
+    }
+
+    private static float distance(float x1, float y1, float x2, float y2) {
+        float dx = x1 - x2;
+        float dy = y1 - y2;
+        return (float) Math.sqrt(dx * dx + dy * dy);
+    }
+
+    private void drawEnemies(Canvas canvas, int tileSize) {
+        for (int i = 0; i < enemies.size(); i++) {
+            Enemy enemy = enemies.get(i);
+            int ex = Math.round(enemy.getX()) - cameraX;
+            int ey = Math.round(enemy.getY()) - cameraY;
+            reusableDst.set(ex, ey, ex + tileSize, ey + tileSize);
+            enemy.draw(canvas, reusableDst);
+        }
+    }
+
+    private void drawCombatEffects(Canvas canvas) {
+        effectPaint.setStyle(Paint.Style.FILL);
+        effectPaint.setColor(0xFF9FEFFF);
+        effectPaint.setAlpha(255);
+        for (int i = 0; i < bullets.size(); i++) {
+            Bullet bullet = bullets.get(i);
+            canvas.drawCircle(bullet.x - cameraX, bullet.y - cameraY, 6f, effectPaint);
+        }
+
+        for (int i = 0; i < explosions.size(); i++) {
+            Explosion explosion = explosions.get(i);
+            float t = explosion.elapsedMs / (float) EXPLOSION_MS;
+            float cx = explosion.x - cameraX;
+            float cy = explosion.y - cameraY;
+            float radius = EXPLOSION_RADIUS * (0.25f + 0.75f * t);
+            effectPaint.setStyle(Paint.Style.FILL);
+            effectPaint.setColor(0xFFFF7A2F);
+            effectPaint.setAlpha((int) (110f * (1f - t)));
+            canvas.drawCircle(cx, cy, radius, effectPaint);
+            effectPaint.setStyle(Paint.Style.STROKE);
+            effectPaint.setStrokeWidth(4f);
+            effectPaint.setColor(0xFFFFD27A);
+            effectPaint.setAlpha((int) (255f * (1f - t)));
+            canvas.drawCircle(cx, cy, radius, effectPaint);
+        }
+
+        if (lightningFlashMs > 0) {
+            float fade = lightningFlashMs / (float) LIGHTNING_FLASH_MS;
+            effectPaint.setStyle(Paint.Style.STROKE);
+            effectPaint.setStrokeWidth(4f);
+            effectPaint.setColor(0xFFFFF27A);
+            effectPaint.setAlpha((int) (255f * fade));
+            int segments = LIGHTNING_JITTER.length - 1;
+            float top = lightningY - 7f * GameMap.TILE_SIZE;
+            for (int i = 0; i < segments; i++) {
+                float y1 = top + (lightningY - top) * i / segments;
+                float y2 = top + (lightningY - top) * (i + 1) / segments;
+                canvas.drawLine(lightningX + LIGHTNING_JITTER[i] - cameraX, y1 - cameraY,
+                        lightningX + LIGHTNING_JITTER[i + 1] - cameraX, y2 - cameraY, effectPaint);
+            }
+        }
+    }
+
     private boolean isOverLiquid(float spriteX, float spriteY) {
         return map.isLiquidAt(spriteX + GameMap.TILE_SIZE / 2f, spriteY + GameMap.TILE_SIZE / 2f);
     }
@@ -882,6 +1259,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         drawBirds(canvas, idleBirds, tileSize);
         drawBirds(canvas, followingBirds, tileSize);
+        drawEnemies(canvas, tileSize);
         drawSonar(canvas, visibleW, visibleH);
 
         if (goose != null) {
@@ -890,6 +1268,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             reusableDst.set(screenX, screenY, screenX + tileSize, screenY + tileSize);
             goose.draw(canvas, reusableDst);
         }
+        drawCombatEffects(canvas);
 
         canvas.restore();
 

@@ -21,6 +21,7 @@ public class Goose {
     private int fromRow, fromCol;
     private int row, col;
     private float stepProgress = 1f;
+    private float stepMultiplier = 1f;
     private Direction facing = Direction.RIGHT;
     private boolean moving = false;
     private boolean resting = false;
@@ -58,7 +59,7 @@ public class Goose {
         }
 
         if (moving) {
-            stepProgress += deltaMs / (float) STEP_DURATION_MS;
+            stepProgress += deltaMs / (STEP_DURATION_MS * stepMultiplier);
             if (stepProgress >= 1f) {
                 stepProgress = 1f;
                 moving = false;
@@ -87,6 +88,10 @@ public class Goose {
 
     public void setSwimming(boolean swimming) {
         this.swimming = swimming;
+    }
+
+    public void setStepMultiplier(float multiplier) {
+        this.stepMultiplier = multiplier;
     }
 
     public void setTeleporting(boolean teleporting) {

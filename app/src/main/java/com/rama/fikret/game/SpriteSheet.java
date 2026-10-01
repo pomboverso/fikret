@@ -8,25 +8,34 @@ import android.graphics.Rect;
 public class SpriteSheet {
     private final Bitmap bitmap;
     private final int columns;
+    private final int rows;
     private final int frameWidth;
     private final int frameHeight;
 
     public SpriteSheet(Resources res, int resId, int columns, int rows) {
-        this.bitmap = decode(res, resId);
-        this.columns = columns;
-        this.frameWidth = bitmap.getWidth() / columns;
-        this.frameHeight = bitmap.getHeight() / rows;
+        this(decode(res, resId), columns, rows);
     }
 
-    private SpriteSheet(Resources res, int resId, int rows) {
-        this.bitmap = decode(res, resId);
-        this.frameHeight = bitmap.getHeight() / rows;
-        this.columns = Math.max(1, Math.round(bitmap.getWidth() / (float) frameHeight));
+    private SpriteSheet(Bitmap bitmap, int columns, int rows) {
+        this.bitmap = bitmap;
+        this.columns = columns;
+        this.rows = rows;
         this.frameWidth = bitmap.getWidth() / columns;
+        this.frameHeight = bitmap.getHeight() / rows;
     }
 
     public static SpriteSheet withSquareCells(Resources res, int resId, int rows) {
-        return new SpriteSheet(res, resId, rows);
+        Bitmap bitmap = decode(res, resId);
+        int cell = bitmap.getHeight() / rows;
+        int columns = Math.max(1, Math.round(bitmap.getWidth() / (float) cell));
+        return new SpriteSheet(bitmap, columns, rows);
+    }
+
+    public static SpriteSheet withSquareCellsByColumns(Resources res, int resId, int columns) {
+        Bitmap bitmap = decode(res, resId);
+        int cell = bitmap.getWidth() / columns;
+        int rows = Math.max(1, Math.round(bitmap.getHeight() / (float) cell));
+        return new SpriteSheet(bitmap, columns, rows);
     }
 
     private static Bitmap decode(Resources res, int resId) {
@@ -41,6 +50,10 @@ public class SpriteSheet {
 
     public int getColumns() {
         return columns;
+    }
+
+    public int getRows() {
+        return rows;
     }
 
     public Rect frameRect(int col, int row) {
