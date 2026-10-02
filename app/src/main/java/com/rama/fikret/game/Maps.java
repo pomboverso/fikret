@@ -39,6 +39,12 @@ public final class Maps {
     static int wall_bubblegum = 37000000;
     static int bubblegum_wave = 38000000;
 
+    static int enemy_blue = 100000000;
+    static int enemy_red = 200000000;
+    static int enemy_purple = 300000000;
+    static int enemy_green = 400000000;
+    static int enemy_boss = 500000000;
+
     static final int GRASS = 1;
     static final int WATER = 2;
     static final int SAND = 3;
@@ -472,6 +478,10 @@ public final class Maps {
                 15
         );
 
+        tiles[3][9] += enemy_purple;
+        tiles[12][16] += enemy_purple;
+        tiles[19][24] += enemy_purple;
+
         randomizedItemGroup(tiles, 2, 28, 2, 28, new int[]{55},
                 place(-DEEP_GRASS * 10 + GRASS * 10, 90, 1));
 
@@ -808,7 +818,7 @@ public final class Maps {
 
         tiles[2][2] += hole_up;
         tiles[13][16] += hole_down_nest;
-        tiles[27][27] += hole_down;
+        tiles[28][27] += hole_down;
 
         int[][] SAPCE_WALLS = {
                 {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, // 0
@@ -870,6 +880,8 @@ public final class Maps {
         drawPond(tiles, 11, 11, BLOOD_LAKE, POND_7, VOLCANIC_SOIL);
         tiles[1][2] += hole_up;
         tiles[15][23] += bird;
+
+        tiles[15][23] += enemy_boss;
 
         return new Stage(tiles, 2, 2);
     }

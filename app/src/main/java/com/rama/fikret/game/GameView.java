@@ -52,20 +52,27 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private long teleportTimerMs;
     private static final int ENEMY_SHEET_COLUMNS = 6;
     private static final int ENEMY_AGGRO_TILES = 7;
-    private static final int ENEMY_MIN_SPAWN_DISTANCE = 8;
+    private static final int FIREBALLS_PER_VOLLEY = 3;
+    private static final float FIREBALL_SPREAD_DEG = 18f;   // angle between neighbouring fireballs
+    private static final float FIREBALL_SPEED = 0.28f;      // world units per ms (the goose's bullet is 0.8)
+    private static final int FIREBALL_RANGE_TILES = 10;
+    private static final int FIREBALL_DAMAGE = 10;
+    private static final float FIREBALL_HIT_DISTANCE = 26f;
+    private static final int SUMMONS_PER_CAST = 2;
+    private static final int MAX_SUMMONED_REDS = 4;         // the boss won't summon while this many reds are alive
     private static final float TOUCH_DISTANCE = 40f;
     private static final long BULLET_INTERVAL_MS = 600;
     private static final int BULLET_RANGE_TILES = 6;
     private static final float BULLET_SPEED = 0.8f;
     private static final int BULLET_DAMAGE = 10;
-    private static final float BULLET_HIT_DISTANCE = 22f;
     private static final long LIGHTNING_INTERVAL_MS = 2500;
     private static final int LIGHTNING_RANGE_TILES = 8;
     private static final int LIGHTNING_DAMAGE = 30;
+    private static final int LIGHTNING_SPLASH_DAMAGE = LIGHTNING_DAMAGE / 2;   // 50% for every enemy after the first
+    private static final int LIGHTNING_MAX_TARGETS = 10;
     private static final long LIGHTNING_FLASH_MS = 180;
     private static final long TAP_MAX_MS = 300;
     private static final float TAP_SLOP_DP = 14f;
-    private static final float TAP_TARGET_RADIUS = 56f;   // world units around an enemy's centre that count as tapping it
     private static final long EXPLOSION_MS = 350;
     private static final float EXPLOSION_RADIUS = 56f;
     private static final float[] LIGHTNING_JITTER = {0f, 14f, -12f, 10f, -8f, 6f, 0f};
@@ -87,6 +94,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private final PlayerStats stats = new PlayerStats();
     private final List<Enemy> enemies = new ArrayList<>();
     private final List<Bullet> bullets = new ArrayList<>();
+    private final List<Bullet> fireballs = new ArrayList<>();
     private final List<Explosion> explosions = new ArrayList<>();
     private final Paint effectPaint = new Paint();
     private SpriteSheet enemySheet;
@@ -96,7 +104,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private long bulletCooldownMs;
     private long lightningCooldownMs;
     private long lightningFlashMs;
-    private float lightningX, lightningY;
+    private final List<float[]> lightningTargets = new ArrayList<>();
     private int reportedHp = -1;
     private HpListener hpListener;
     private final Paint sonarPaint = new Paint();
@@ -832,8 +840,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private void clearCombat() {
         enemies.clear();
         bullets.clear();
+        fireballs.clear();
         explosions.clear();
         lightningFlashMs = 0;
+        lightningTargets.clear();
     }
 
     private void spawnEnemies() {
@@ -841,36 +851,26 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (!enemySpawning) {
             return;
         }
-        EnemySpawns.Entry[] entries = EnemySpawns.forStage(stageId);
-        if (entries.length == 0) {
-            return;
-        }
-        if (enemySheet == null) {
-            enemySheet = SpriteSheet.withSquareCellsByColumns(getResources(), R.drawable.enemies, ENEMY_SHEET_COLUMNS);
-        }
-        for (int i = 0; i < entries.length; i++) {
-            for (int n = 0; n < entries[i].count; n++) {
-                for (int attempt = 0; attempt < 10; attempt++) {
-                    int[] spot = map.randomDryCellAway(random, goose.getRow(), goose.getCol(), ENEMY_MIN_SPAWN_DISTANCE);
-                    if (spot == null) {
-                        break;
-                    }
-                    if (!isEnemyAt(spot[0], spot[1])) {
-                        enemies.add(new Enemy(entries[i].type, enemySheet, spot[0], spot[1]));
-                        break;
-                    }
+        for (int row = 0; row < map.getRows(); row++) {
+            for (int col = 0; col < map.getCols(); col++) {
+                EnemyType type = map.getCell(row, col).enemy;
+                if (type == null) {
+                    continue;
                 }
+                if (type == EnemyType.BOSS) {
+                    enemies.add(new Boss(getResources(), row, col));
+                    continue;
+                }
+                enemies.add(new Enemy(type, getEnemySheet(), row, col));
             }
         }
     }
 
-    private boolean isEnemyAt(int row, int col) {
-        for (int i = 0; i < enemies.size(); i++) {
-            if (enemies.get(i).getRow() == row && enemies.get(i).getCol() == col) {
-                return true;
-            }
+    private SpriteSheet getEnemySheet() {
+        if (enemySheet == null) {
+            enemySheet = SpriteSheet.withSquareCellsByColumns(getResources(), R.drawable.enemies, ENEMY_SHEET_COLUMNS);
         }
-        return false;
+        return enemySheet;
     }
 
     private void updateCombat(long deltaMs) {
@@ -879,6 +879,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         updateEnemies(deltaMs);
         updateAttackCooldowns(deltaMs);
         updateBullets(deltaMs);
+        updateFireballs(deltaMs);
         updateExplosions(deltaMs);
         if (stats.isDead()) {
             onPlayerDied();
@@ -899,6 +900,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
             boolean chase = distance(enemy.getCenterX(), enemy.getCenterY(), gx, gy) <= aggro;
             enemy.update(deltaMs, map, goose.getRow(), goose.getCol(), chase, enemies);
+            if (enemy instanceof Boss) {
+                updateBossAttacks((Boss) enemy, gx, gy);
+            }
             if (!isTeleporting() && enemy.canTouch()
                     && distance(enemy.getCenterX(), enemy.getCenterY(), gx, gy) < TOUCH_DISTANCE) {
                 touch(enemy);
@@ -906,6 +910,87 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     explosions.add(new Explosion(enemy.getCenterX(), enemy.getCenterY()));
                     enemies.remove(i);
                 }
+            }
+        }
+    }
+
+    private void updateBossAttacks(Boss boss, float gx, float gy) {
+        if (boss.isDead() || isTeleporting()) {
+            return;
+        }
+        if (boss.consumeSummon()) {
+            summonReds(boss);
+        }
+        if (boss.consumeVolley()) {
+            float bx = boss.getCenterX();
+            float by = boss.getCenterY();
+            double baseAngle = Math.atan2(gy - by, gx - bx);
+            double spread = Math.toRadians(FIREBALL_SPREAD_DEG);
+            for (int i = 0; i < FIREBALLS_PER_VOLLEY; i++) {
+                double angle = baseAngle + (i - (FIREBALLS_PER_VOLLEY - 1) / 2f) * spread;
+                fireballs.add(new Bullet(bx, by, (float) Math.cos(angle), (float) Math.sin(angle),
+                        FIREBALL_SPEED, FIREBALL_RANGE_TILES * GameMap.TILE_SIZE));
+            }
+        }
+    }
+
+    // Puts red monsters on free tiles next to the boss (closest ring first).
+    private void summonReds(Boss boss) {
+        int alive = 0;
+        for (int i = 0; i < enemies.size(); i++) {
+            Enemy e = enemies.get(i);
+            if (e.type == EnemyType.RED && !e.isDead()) {
+                alive++;
+            }
+        }
+        int toSpawn = Math.min(SUMMONS_PER_CAST, MAX_SUMMONED_REDS - alive);
+        for (int radius = 2; radius <= 3 && toSpawn > 0; radius++) {
+            for (int dy = -radius; dy <= radius && toSpawn > 0; dy++) {
+                for (int dx = -radius; dx <= radius && toSpawn > 0; dx++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dy)) != radius) {
+                        continue;
+                    }
+                    int r = boss.getRow() + dy;
+                    int c = boss.getCol() + dx;
+                    if (!map.isWalkable(r, c, false) || isTileTaken(r, c)) {
+                        continue;
+                    }
+                    Enemy red = new Enemy(EnemyType.RED, getEnemySheet(), r, c);
+                    red.setAlwaysChase(true);
+                    enemies.add(red);
+                    toSpawn--;
+                }
+            }
+        }
+    }
+
+    private boolean isTileTaken(int row, int col) {
+        if (goose.getRow() == row && goose.getCol() == col) {
+            return true;
+        }
+        for (int i = 0; i < enemies.size(); i++) {
+            Enemy e = enemies.get(i);
+            if (e.getRow() == row && e.getCol() == col) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void updateFireballs(long deltaMs) {
+        float half = GameMap.TILE_SIZE / 2f;
+        float gx = goose.getX() + half;
+        float gy = goose.getY() + half;
+        for (int i = fireballs.size() - 1; i >= 0; i--) {
+            Bullet fireball = fireballs.get(i);
+            fireball.update(deltaMs);
+            int row = (int) Math.floor(fireball.y / GameMap.TILE_SIZE);
+            int col = (int) Math.floor(fireball.x / GameMap.TILE_SIZE);
+            if (fireball.isSpent() || !map.isPassable(row, col)) {
+                fireballs.remove(i);
+            } else if (!isTeleporting() && distance(fireball.x, fireball.y, gx, gy) <= FIREBALL_HIT_DISTANCE) {
+                stats.damage(FIREBALL_DAMAGE);
+                fireballs.remove(i);
             }
         }
     }
@@ -941,7 +1026,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     private Enemy enemyAt(float worldX, float worldY) {
-        float best = TAP_TARGET_RADIUS;
+        float best = Float.MAX_VALUE;
         Enemy tapped = null;
         for (int i = 0; i < enemies.size(); i++) {
             Enemy e = enemies.get(i);
@@ -949,7 +1034,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 continue;
             }
             float d = distance(e.getCenterX(), e.getCenterY(), worldX, worldY);
-            if (d <= best) {
+            if (d <= e.getTapRadius() && d < best) {
                 best = d;
                 tapped = e;
             }
@@ -987,10 +1072,39 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     private void strike(Enemy target) {
-        lightningX = target.getCenterX();
-        lightningY = target.getCenterY();
         lightningFlashMs = LIGHTNING_FLASH_MS;
+        lightningTargets.clear();
+        List<Enemy> struck = new ArrayList<>();
+
         target.hit(LIGHTNING_DAMAGE, Enemy.HitSource.LIGHTNING);
+        struck.add(target);
+        lightningTargets.add(new float[]{target.getCenterX(), target.getCenterY()});
+
+        float half = GameMap.TILE_SIZE / 2f;
+        float gx = goose.getX() + half;
+        float gy = goose.getY() + half;
+        float range = LIGHTNING_RANGE_TILES * GameMap.TILE_SIZE;
+        while (struck.size() < LIGHTNING_MAX_TARGETS) {
+            Enemy next = null;
+            float best = Float.MAX_VALUE;
+            for (int i = 0; i < enemies.size(); i++) {
+                Enemy e = enemies.get(i);
+                if (e.isDead() || struck.contains(e) || distance(e.getCenterX(), e.getCenterY(), gx, gy) > range) {
+                    continue;
+                }
+                float d = distance(e.getCenterX(), e.getCenterY(), target.getCenterX(), target.getCenterY());
+                if (d < best) {
+                    best = d;
+                    next = e;
+                }
+            }
+            if (next == null) {
+                break;
+            }
+            next.hit(LIGHTNING_SPLASH_DAMAGE, Enemy.HitSource.LIGHTNING);
+            struck.add(next);
+            lightningTargets.add(new float[]{next.getCenterX(), next.getCenterY()});
+        }
     }
 
     private void updateBullets(long deltaMs) {
@@ -1006,7 +1120,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             for (int j = enemies.size() - 1; j >= 0; j--) {
                 Enemy enemy = enemies.get(j);
                 if (!enemy.isDead()
-                        && distance(enemy.getCenterX(), enemy.getCenterY(), bullet.x, bullet.y) <= BULLET_HIT_DISTANCE) {
+                        && distance(enemy.getCenterX(), enemy.getCenterY(), bullet.x, bullet.y) <= enemy.getHitRadius()) {
                     enemy.hit(BULLET_DAMAGE, Enemy.HitSource.BULLET);
                     bullets.remove(i);
                     break;
@@ -1028,6 +1142,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private void onPlayerDied() {
         stats.revive();
         bullets.clear();
+        fireballs.clear();
         if (!isTeleporting()) {
             startTeleport(TeleportKind.HOME);
         } else if (!teleportArrived) {
@@ -1070,6 +1185,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             canvas.drawCircle(bullet.x - cameraX, bullet.y - cameraY, 6f, effectPaint);
         }
 
+        for (int i = 0; i < fireballs.size(); i++) {
+            Bullet fireball = fireballs.get(i);
+            float fx = fireball.x - cameraX;
+            float fy = fireball.y - cameraY;
+            effectPaint.setColor(0xFFE8421A);
+            canvas.drawCircle(fx, fy, 10f, effectPaint);
+            effectPaint.setColor(0xFFFFC53A);
+            canvas.drawCircle(fx, fy, 5.5f, effectPaint);
+        }
+
         for (int i = 0; i < explosions.size(); i++) {
             Explosion explosion = explosions.get(i);
             float t = explosion.elapsedMs / (float) EXPLOSION_MS;
@@ -1090,16 +1215,19 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (lightningFlashMs > 0) {
             float fade = lightningFlashMs / (float) LIGHTNING_FLASH_MS;
             effectPaint.setStyle(Paint.Style.STROKE);
-            effectPaint.setStrokeWidth(4f);
             effectPaint.setColor(0xFFFFF27A);
             effectPaint.setAlpha((int) (255f * fade));
             int segments = LIGHTNING_JITTER.length - 1;
-            float top = lightningY - 7f * GameMap.TILE_SIZE;
-            for (int i = 0; i < segments; i++) {
-                float y1 = top + (lightningY - top) * i / segments;
-                float y2 = top + (lightningY - top) * (i + 1) / segments;
-                canvas.drawLine(lightningX + LIGHTNING_JITTER[i] - cameraX, y1 - cameraY,
-                        lightningX + LIGHTNING_JITTER[i + 1] - cameraX, y2 - cameraY, effectPaint);
+            for (int t = 0; t < lightningTargets.size(); t++) {
+                float[] hit = lightningTargets.get(t);
+                effectPaint.setStrokeWidth(t == 0 ? 4f : 3f);
+                float top = hit[1] - 7f * GameMap.TILE_SIZE;
+                for (int i = 0; i < segments; i++) {
+                    float y1 = top + (hit[1] - top) * i / segments;
+                    float y2 = top + (hit[1] - top) * (i + 1) / segments;
+                    canvas.drawLine(hit[0] + LIGHTNING_JITTER[i] - cameraX, y1 - cameraY,
+                            hit[0] + LIGHTNING_JITTER[i + 1] - cameraX, y2 - cameraY, effectPaint);
+                }
             }
         }
     }

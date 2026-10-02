@@ -20,7 +20,7 @@ public class Enemy {
     private static final long ANIM_FRAME_MS = 300;
 
     public final EnemyType type;
-    private final SpriteSheet spriteSheet;
+    protected final SpriteSheet spriteSheet;
 
     private int fromRow, fromCol;
     private int row, col;
@@ -33,6 +33,7 @@ public class Enemy {
     private HitSource flashSource = HitSource.BULLET;
     private long touchCooldownMs = 0;
     private long animMs = 0;
+    private boolean alwaysChase = false;
 
     public Enemy(EnemyType type, SpriteSheet spriteSheet, int row, int col) {
         this.type = type;
@@ -54,7 +55,7 @@ public class Enemy {
             touchCooldownMs = Math.max(0, touchCooldownMs - deltaMs);
         }
 
-        if (!moving && chase) {
+        if (!moving && (chase || alwaysChase)) {
             startStepToward(map, targetRow, targetCol, others);
         }
         if (moving) {
@@ -121,6 +122,22 @@ public class Enemy {
         flashSource = source;
         dead = hp <= 0;
         return dead;
+    }
+
+    public void setAlwaysChase(boolean alwaysChase) {
+        this.alwaysChase = alwaysChase;
+    }
+
+    public boolean isMoving() {
+        return moving;
+    }
+
+    public float getTapRadius() {
+        return 56f;
+    }
+
+    public float getHitRadius() {
+        return 22f;
     }
 
     public boolean isDead() {
