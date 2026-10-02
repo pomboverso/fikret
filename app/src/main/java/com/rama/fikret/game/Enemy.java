@@ -34,6 +34,7 @@ public class Enemy {
     private long touchCooldownMs = 0;
     private long animMs = 0;
     private boolean alwaysChase = false;
+    private boolean canCrossLiquid = false;
 
     public Enemy(EnemyType type, SpriteSheet spriteSheet, int row, int col) {
         this.type = type;
@@ -73,7 +74,7 @@ public class Enemy {
         long best = distanceSq(row, col, targetRow, targetCol);
         for (int dy = -1; dy <= 1; dy++) {
             for (int dx = -1; dx <= 1; dx++) {
-                if ((dx == 0 && dy == 0) || !map.canStep(row, col, dx, dy, false)) {
+                if ((dx == 0 && dy == 0) || !map.canStep(row, col, dx, dy, canCrossLiquid)) {
                     continue;
                 }
                 if (isOccupied(row + dy, col + dx, others)) {
@@ -126,6 +127,10 @@ public class Enemy {
 
     public void setAlwaysChase(boolean alwaysChase) {
         this.alwaysChase = alwaysChase;
+    }
+
+    public void setCanCrossLiquid(boolean canCrossLiquid) {
+        this.canCrossLiquid = canCrossLiquid;
     }
 
     public boolean isMoving() {

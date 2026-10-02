@@ -52,10 +52,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private long teleportTimerMs;
     private static final int ENEMY_SHEET_COLUMNS = 6;
     private static final int ENEMY_AGGRO_TILES = 7;
-    private static final int FIREBALLS_PER_VOLLEY = 3;
-    private static final float FIREBALL_SPREAD_DEG = 18f;   // angle between neighbouring fireballs
+    private static final int FIREBALLS_PER_VOLLEY = 7;
+    private static final float FIREBALL_SPREAD_DEG = 12f;   // angle between neighbouring fireballs
     private static final float FIREBALL_SPEED = 0.28f;      // world units per ms (the goose's bullet is 0.8)
-    private static final int FIREBALL_RANGE_TILES = 10;
     private static final int FIREBALL_DAMAGE = 10;
     private static final float FIREBALL_HIT_DISTANCE = 26f;
     private static final int SUMMONS_PER_CAST = 2;
@@ -929,7 +928,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             for (int i = 0; i < FIREBALLS_PER_VOLLEY; i++) {
                 double angle = baseAngle + (i - (FIREBALLS_PER_VOLLEY - 1) / 2f) * spread;
                 fireballs.add(new Bullet(bx, by, (float) Math.cos(angle), (float) Math.sin(angle),
-                        FIREBALL_SPEED, FIREBALL_RANGE_TILES * GameMap.TILE_SIZE));
+                        FIREBALL_SPEED, fireballRange()));
             }
         }
     }
@@ -952,16 +951,22 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     }
                     int r = boss.getRow() + dy;
                     int c = boss.getCol() + dx;
-                    if (!map.isWalkable(r, c, false) || isTileTaken(r, c)) {
+                    if (!map.isWalkable(r, c, true) || isTileTaken(r, c)) {
                         continue;
                     }
                     Enemy red = new Enemy(EnemyType.RED, getEnemySheet(), r, c);
                     red.setAlwaysChase(true);
+                    red.setCanCrossLiquid(true);
                     enemies.add(red);
                     toSpawn--;
                 }
             }
         }
+    }
+
+    private float fireballRange() {
+        return (float) Math.sqrt((double) map.getWidthPx() * map.getWidthPx()
+                + (double) map.getHeightPx() * map.getHeightPx());
     }
 
     private boolean isTileTaken(int row, int col) {

@@ -47,11 +47,20 @@ public class Goose {
                     facing = dx < 0 ? Direction.LEFT : Direction.RIGHT;
                 }
 
-                if (map.canStep(row, col, dx, dy, canSwimNonWater)) {
+                int stepX = dx;
+                int stepY = dy;
+                if (!map.canStep(row, col, stepX, stepY, canSwimNonWater) && dx != 0 && dy != 0) {
+                    if (map.canStep(row, col, dx, 0, canSwimNonWater)) {
+                        stepY = 0;
+                    } else if (map.canStep(row, col, 0, dy, canSwimNonWater)) {
+                        stepX = 0;
+                    }
+                }
+                if (map.canStep(row, col, stepX, stepY, canSwimNonWater)) {
                     fromRow = row;
                     fromCol = col;
-                    row = row + dy;
-                    col = col + dx;
+                    row = row + stepY;
+                    col = col + stepX;
                     stepProgress = 0f;
                     moving = true;
                 }

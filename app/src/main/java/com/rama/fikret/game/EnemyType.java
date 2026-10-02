@@ -5,7 +5,7 @@ public enum EnemyType {
     RED(2, 1, 20, 320, 40, 0, 0, 0, 0, true),           // explodes on touch, big damage
     PURPLE(3, 2, 25, 380, 8, 800, 0, 0, 0, false),      // plain damage
     GREEN(4, 3, 30, 400, 3, 800, 0, 5000, 2, false),    // poisons you and takes a little life
-    BOSS(5, 0, 300, 700, 15, 1000, 0, 0, 0, false);     // nightmare boss, see Boss.java (column is unused: it has its own sprite)
+    BOSS(5, 0, 300, 330, 15, 1000, 0, 0, 0, false);     // nightmare boss, see Boss.java (column is unused: it has its own sprite)
 
     public final int id;
     public final int column;

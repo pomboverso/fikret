@@ -873,11 +873,17 @@ public final class Maps {
     private static Stage nightmare() {
         int[][] tiles = new int[30][30];
         for (int y = 0; y < 30; y++) {
-            Arrays.fill(tiles[y], 175);
+            Arrays.fill(tiles[y], 95);
         }
 
-        drawPond(tiles, 0, 0, BLOOD_LAKE, POND_3, VOLCANIC_SOIL);
-        drawPond(tiles, 11, 11, BLOOD_LAKE, POND_7, VOLCANIC_SOIL);
+        drawPond(tiles, 2, 2, VOLCANIC_SOIL, POND_2, BLOOD_LAKE);
+        drawPond(tiles, 10, 6, VOLCANIC_SOIL, POND_3, BLOOD_LAKE);
+        drawPond(tiles, 24, 24, VOLCANIC_SOIL, POND_4, BLOOD_LAKE);
+        drawPond(tiles, 3, 18, VOLCANIC_SOIL, POND_5, BLOOD_LAKE);
+        drawPond(tiles, 15, 13, VOLCANIC_SOIL, POND_2, BLOOD_LAKE);
+        drawPond(tiles, 17, 23, VOLCANIC_SOIL, POND_3, BLOOD_LAKE);
+        drawPond(tiles, 24, 0, VOLCANIC_SOIL, POND_4, BLOOD_LAKE);
+
         tiles[1][2] += hole_up;
         tiles[15][23] += bird;
 

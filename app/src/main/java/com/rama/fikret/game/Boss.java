@@ -18,7 +18,7 @@ public class Boss extends Enemy {
     private static final long WALK_PHASE_MS = 5000;     // how long it walks before stopping
     private static final long SHOOT_PHASE_MS = 4600;    // how long it stands and attacks
     private static final long WINDUP_MS = 600;          // pause before the first volley
-    private static final long VOLLEY_INTERVAL_MS = 1000;
+    private static final long VOLLEY_INTERVAL_MS = 700;
 
     private enum Phase { WALK, SHOOT }
 
