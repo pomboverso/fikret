@@ -1,274 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
 <merge xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Ability bar: only the abilities that survived the idle-game redesign. -->
     <LinearLayout
         android:id="@+id/hud_root"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/hud_background"
-        android:orientation="vertical"
-        android:padding="@dimen/space_between_elements">
+        android:orientation="horizontal"
+        android:padding="@dimen/space_between_elements"
+        android:weightSum="3">
 
-        <LinearLayout
-            android:id="@+id/hud_row_top"
-            style="@style/HorizontalList"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:weightSum="7">
+        <FrameLayout
+            android:id="@+id/hud_btn_sonar"
+            style="@style/HudButtonFirst">
 
-            <FrameLayout
-                android:id="@+id/hud_btn_menu"
-                style="@style/HudButtonFirst">
+            <ImageView
+                android:id="@+id/hud_icon_sonar"
+                style="@style/HudButtonIcon"
+                android:contentDescription="@string/hud_desc_sonar" />
+        </FrameLayout>
 
-                <ImageView
-                    android:id="@+id/hud_icon_menu"
-                    style="@style/HudButtonIcon_Themed"
-                    android:contentDescription="@string/hud_desc_menu"
-                    android:src="@drawable/px_menu" />
-            </FrameLayout>
+        <FrameLayout
+            android:id="@+id/hud_btn_teleport_home"
+            style="@style/HudButton">
 
-            <FrameLayout
-                android:id="@+id/hud_btn_sleep"
-                style="@style/HudButton">
+            <ImageView
+                android:id="@+id/hud_icon_teleport_home"
+                style="@style/HudButtonIcon"
+                android:contentDescription="@string/hud_desc_teleport_home" />
+        </FrameLayout>
 
-                <ImageView
-                    android:id="@+id/hud_icon_sleep"
-                    style="@style/HudButtonIcon"
-                    android:contentDescription="@string/hud_desc_sleep" />
-            </FrameLayout>
+        <FrameLayout
+            android:id="@+id/hud_btn_dive"
+            style="@style/HudButton">
 
-            <FrameLayout
-                android:id="@+id/hud_btn_heal"
-                style="@style/HudButton">
-
-                <ImageView
-                    android:id="@+id/hud_icon_heal"
-                    style="@style/HudButtonIcon"
-                    android:contentDescription="@string/hud_desc_heal" />
-            </FrameLayout>
-
-            <FrameLayout
-                android:id="@+id/hud_btn_sonar"
-                style="@style/HudButton">
-
-                <ImageView
-                    android:id="@+id/hud_icon_sonar"
-                    style="@style/HudButtonIcon"
-                    android:contentDescription="@string/hud_desc_sonar" />
-            </FrameLayout>
-
-            <FrameLayout
-                android:id="@+id/hud_btn_teleport"
-                style="@style/HudButton">
-
-                <ImageView
-                    android:id="@+id/hud_icon_teleport"
-                    style="@style/HudButtonIcon"
-                    android:contentDescription="@string/hud_desc_teleport" />
-            </FrameLayout>
-
-            <FrameLayout
-                android:id="@+id/hud_btn_teleport_home"
-                style="@style/HudButton">
-
-                <ImageView
-                    android:id="@+id/hud_icon_teleport_home"
-                    style="@style/HudButtonIcon"
-                    android:contentDescription="@string/hud_desc_teleport_home" />
-            </FrameLayout>
-
-            <FrameLayout
-                android:id="@+id/hud_btn_expand"
-                style="@style/HudButton">
-
-                <ImageView
-                    android:id="@+id/hud_icon_expand"
-                    style="@style/HudButtonIcon_Themed"
-                    android:contentDescription="@string/hud_desc_collapse"
-                    android:src="@drawable/px_chevron_up" />
-            </FrameLayout>
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/hud_row_abilities"
-            style="@style/HorizontalList"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_between_elements"
-            android:weightSum="7">
-
-            <FrameLayout
-                android:id="@+id/hud_slot_empty_1"
-                style="@style/HudButtonFirst" />
-
-            <FrameLayout
-                android:id="@+id/hud_btn_magic"
-                style="@style/HudButton">
-
-                <ImageView
-                    android:id="@+id/hud_icon_magic"
-                    style="@style/HudButtonIcon"
-                    android:contentDescription="@string/hud_desc_magic" />
-            </FrameLayout>
-
-            <FrameLayout
-                android:id="@+id/hud_btn_candle"
-                style="@style/HudButton">
-
-                <ImageView
-                    android:id="@+id/hud_icon_candle"
-                    style="@style/HudButtonIcon"
-                    android:contentDescription="@string/hud_desc_candle" />
-            </FrameLayout>
-
-            <FrameLayout
-                android:id="@+id/hud_btn_diamond_skin"
-                style="@style/HudButton">
-
-                <ImageView
-                    android:id="@+id/hud_icon_diamond_skin"
-                    style="@style/HudButtonIcon"
-                    android:contentDescription="@string/hud_desc_diamond_skin" />
-            </FrameLayout>
-
-            <FrameLayout
-                android:id="@+id/hud_btn_thunder"
-                style="@style/HudButton">
-
-                <ImageView
-                    android:id="@+id/hud_icon_thunder"
-                    style="@style/HudButtonIcon"
-                    android:contentDescription="@string/hud_desc_thunder" />
-            </FrameLayout>
-
-            <FrameLayout
-                android:id="@+id/hud_btn_dive"
-                style="@style/HudButton">
-
-                <ImageView
-                    android:id="@+id/hud_icon_dive"
-                    style="@style/HudButtonIcon"
-                    android:contentDescription="@string/hud_desc_dive" />
-            </FrameLayout>
-
-            <FrameLayout
-                android:id="@+id/hud_slot_empty_2"
-                style="@style/HudButton" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/hud_row_stats"
-            style="@style/HorizontalList"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_between_elements"
-            android:weightSum="7">
-
-            <LinearLayout style="@style/HudColumnFirst">
-
-                <TextView
-                    style="@style/HudDisplayLabel"
-                    android:text="@string/hud_label_hp" />
-
-                <FrameLayout style="@style/HudDisplayBox">
-
-                    <TextView
-                        android:id="@+id/hud_value_hp"
-                        style="@style/HudDisplayValue"
-                        android:text="@string/hud_stat_placeholder" />
-                </FrameLayout>
-            </LinearLayout>
-
-            <LinearLayout style="@style/HudColumn">
-
-                <TextView
-                    style="@style/HudDisplayLabel"
-                    android:text="@string/hud_label_def" />
-
-                <FrameLayout style="@style/HudDisplayBox">
-
-                    <TextView
-                        android:id="@+id/hud_value_def"
-                        style="@style/HudDisplayValue"
-                        android:text="@string/hud_stat_placeholder" />
-                </FrameLayout>
-            </LinearLayout>
-
-            <LinearLayout style="@style/HudColumn">
-
-                <TextView
-                    style="@style/HudDisplayLabel"
-                    android:text="@string/hud_label_atk" />
-
-                <FrameLayout style="@style/HudDisplayBox">
-
-                    <TextView
-                        android:id="@+id/hud_value_atk"
-                        style="@style/HudDisplayValue"
-                        android:text="@string/hud_stat_placeholder" />
-                </FrameLayout>
-            </LinearLayout>
-
-            <LinearLayout style="@style/HudColumn">
-
-                <TextView
-                    style="@style/HudDisplayLabel"
-                    android:text="@string/hud_label_mana" />
-
-                <FrameLayout style="@style/HudDisplayBox">
-
-                    <TextView
-                        android:id="@+id/hud_value_mana"
-                        style="@style/HudDisplayValue"
-                        android:text="@string/hud_stat_placeholder" />
-                </FrameLayout>
-            </LinearLayout>
-
-            <LinearLayout style="@style/HudColumn">
-
-                <TextView
-                    style="@style/HudDisplayLabel"
-                    android:text="@string/hud_label_exp" />
-
-                <FrameLayout style="@style/HudDisplayBox">
-
-                    <TextView
-                        android:id="@+id/hud_value_exp"
-                        style="@style/HudDisplayValue"
-                        android:text="@string/hud_stat_placeholder" />
-                </FrameLayout>
-            </LinearLayout>
-
-            <LinearLayout style="@style/HudColumn">
-
-                <TextView
-                    style="@style/HudDisplayLabel"
-                    android:text="@string/hud_label_lv" />
-
-                <FrameLayout style="@style/HudDisplayBox">
-
-                    <TextView
-                        android:id="@+id/hud_value_lv"
-                        style="@style/HudDisplayValue"
-                        android:text="@string/hud_stat_placeholder" />
-                </FrameLayout>
-            </LinearLayout>
-
-            <LinearLayout style="@style/HudColumn">
-
-                <TextView
-                    style="@style/HudDisplayLabel"
-                    android:text="@string/hud_label_coins" />
-
-                <FrameLayout style="@style/HudDisplayBox">
-
-                    <TextView
-                        android:id="@+id/hud_value_coins"
-                        style="@style/HudDisplayValue"
-                        android:text="@string/hud_stat_placeholder" />
-                </FrameLayout>
-            </LinearLayout>
-        </LinearLayout>
+            <ImageView
+                android:id="@+id/hud_icon_dive"
+                style="@style/HudButtonIcon"
+                android:contentDescription="@string/hud_desc_dive" />
+        </FrameLayout>
     </LinearLayout>
-
 </merge>

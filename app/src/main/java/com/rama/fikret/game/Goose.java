@@ -21,10 +21,8 @@ public class Goose {
     private int fromRow, fromCol;
     private int row, col;
     private float stepProgress = 1f;
-    private float stepMultiplier = 1f;
     private Direction facing = Direction.RIGHT;
     private boolean moving = false;
-    private boolean resting = false;
     private boolean swimming = false;
     private boolean teleporting = false;
     private boolean walkToggle = false;
@@ -37,11 +35,8 @@ public class Goose {
         this.col = this.fromCol = startCol;
     }
 
-    public void update(long deltaMs, int dx, int dy, GameMap map, boolean canSwimNonWater) {
+    public void update(long deltaMs, int dx, int dy, GameMap map) {
         if (!moving) {
-            if (resting) {
-                return;
-            }
             if (dx != 0 || dy != 0) {
                 if(dx != 0){
                     facing = dx < 0 ? Direction.LEFT : Direction.RIGHT;
@@ -49,14 +44,14 @@ public class Goose {
 
                 int stepX = dx;
                 int stepY = dy;
-                if (!map.canStep(row, col, stepX, stepY, canSwimNonWater) && dx != 0 && dy != 0) {
-                    if (map.canStep(row, col, dx, 0, canSwimNonWater)) {
+                if (!map.canStep(row, col, stepX, stepY) && dx != 0 && dy != 0) {
+                    if (map.canStep(row, col, dx, 0)) {
                         stepY = 0;
-                    } else if (map.canStep(row, col, 0, dy, canSwimNonWater)) {
+                    } else if (map.canStep(row, col, 0, dy)) {
                         stepX = 0;
                     }
                 }
-                if (map.canStep(row, col, stepX, stepY, canSwimNonWater)) {
+                if (map.canStep(row, col, stepX, stepY)) {
                     fromRow = row;
                     fromCol = col;
                     row = row + stepY;
@@ -68,7 +63,7 @@ public class Goose {
         }
 
         if (moving) {
-            stepProgress += deltaMs / (STEP_DURATION_MS * stepMultiplier);
+            stepProgress += deltaMs / STEP_DURATION_MS;
             if (stepProgress >= 1f) {
                 stepProgress = 1f;
                 moving = false;
@@ -91,16 +86,8 @@ public class Goose {
         moving = false;
     }
 
-    public void setResting(boolean resting) {
-        this.resting = resting;
-    }
-
     public void setSwimming(boolean swimming) {
         this.swimming = swimming;
-    }
-
-    public void setStepMultiplier(float multiplier) {
-        this.stepMultiplier = multiplier;
     }
 
     public void setTeleporting(boolean teleporting) {
@@ -116,9 +103,7 @@ public class Goose {
     }
 
     public void draw(Canvas canvas, Rect dst) {
-        int frame = resting
-                ? FRAME_SWIMMING_A
-                : swimming
+        int frame = swimming
                 ? (walkToggle ? FRAME_SWIMMING_A : FRAME_SWIMMING_B)
                 : (moving ? (walkToggle ? FRAME_WALK_A : FRAME_WALK_B) : FRAME_IDLE);
         int column = facing.column + (teleporting && hasTeleportPose ? TELEPORT_COLUMN_OFFSET : 0);

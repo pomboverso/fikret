@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/teleport_name"
+    style="@style/Text"
+    android:background="@color/surface_0"
+    android:padding="16dp"
+    android:textSize="@dimen/h3" />

@@ -12,12 +12,13 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 import com.rama.fikret.R;
+import com.rama.fikret.economy.GameState;
+import com.rama.fikret.economy.Worlds;
 import com.rama.fikret.managers.PrefsManager;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
@@ -26,12 +27,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private Goose goose;
     private Stage stage;
     private int stageId;
-    private final List<Bird> followingBirds = new ArrayList<>();
-    private final List<int[]> chaseTargets = new ArrayList<>();
-    private final List<Bird> idleBirds = new ArrayList<>();
-    private final Random random = new Random();
+    /** One idle bird per hired manager; they stay where they are and never chase. */
+    private final List<Bird> managerBirds = new ArrayList<>();
+    /** The bird of the "travel" manager: the only one that chases the player once touched. */
+    private Bird travelBird;
+    private final int[] travelChase = new int[2];
+    private int worldIndex = -1;
     private int[] startPosition;
-    private boolean canSwimNonWater;
     private int holeGooseRow, holeGooseCol;
     private SpriteSheet tileSheet;
     private SpriteSheet itemSheet;
@@ -46,66 +48,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private static final long CAMERA_GLIDE_MIN_MS = 250;
     private static final long CAMERA_GLIDE_MAX_MS = 600;
     private static final float CAMERA_GLIDE_SPEED = 4f;   // world units per ms; longer jumps take longer, within the limits above
-    private enum TeleportKind { RANDOM, HOME }
+    private enum TeleportKind { HOME }
     private TeleportKind teleportKind;
     private boolean teleportArrived;
     private long teleportTimerMs;
-    private static final int ENEMY_SHEET_COLUMNS = 6;
-    private static final int ENEMY_AGGRO_TILES = 7;
-    private static final int FIREBALLS_PER_VOLLEY = 7;
-    private static final float FIREBALL_SPREAD_DEG = 12f;   // angle between neighbouring fireballs
-    private static final float FIREBALL_SPEED = 0.28f;      // world units per ms (the goose's bullet is 0.8)
-    private static final int FIREBALL_DAMAGE = 10;
-    private static final float FIREBALL_HIT_DISTANCE = 26f;
-    private static final int SUMMONS_PER_CAST = 2;
-    private static final int MAX_SUMMONED_REDS = 4;         // the boss won't summon while this many reds are alive
-    private static final float TOUCH_DISTANCE = 40f;
-    private static final long BULLET_INTERVAL_MS = 600;
-    private static final int BULLET_RANGE_TILES = 6;
-    private static final float BULLET_SPEED = 0.8f;
-    private static final int BULLET_DAMAGE = 10;
-    private static final long LIGHTNING_INTERVAL_MS = 2500;
-    private static final int LIGHTNING_RANGE_TILES = 8;
-    private static final int LIGHTNING_DAMAGE = 30;
-    private static final int LIGHTNING_SPLASH_DAMAGE = LIGHTNING_DAMAGE / 2;   // 50% for every enemy after the first
-    private static final int LIGHTNING_MAX_TARGETS = 10;
-    private static final long LIGHTNING_FLASH_MS = 180;
     private static final long TAP_MAX_MS = 300;
     private static final float TAP_SLOP_DP = 14f;
-    private static final long EXPLOSION_MS = 350;
-    private static final float EXPLOSION_RADIUS = 56f;
-    private static final float[] LIGHTNING_JITTER = {0f, 14f, -12f, 10f, -8f, 6f, 0f};
 
-    private static final class Explosion {
-        final float x, y;
-        long elapsedMs;
-
-        Explosion(float x, float y) {
-            this.x = x;
-            this.y = y;
-        }
-    }
-
-    public interface HpListener {
-        void onHpChanged(int hp, int maxHp);
-    }
-
-    private final PlayerStats stats = new PlayerStats();
-    private final List<Enemy> enemies = new ArrayList<>();
-    private final List<Bullet> bullets = new ArrayList<>();
-    private final List<Bullet> fireballs = new ArrayList<>();
-    private final List<Explosion> explosions = new ArrayList<>();
-    private final Paint effectPaint = new Paint();
-    private SpriteSheet enemySheet;
-    private boolean enemySpawning = true;
-    private boolean canShoot;
-    private boolean hasThunder;
-    private long bulletCooldownMs;
-    private long lightningCooldownMs;
-    private long lightningFlashMs;
-    private final List<float[]> lightningTargets = new ArrayList<>();
-    private int reportedHp = -1;
-    private HpListener hpListener;
     private final Paint sonarPaint = new Paint();
     private final List<SonarReveal> sonarPendingReveals = new ArrayList<>();
     private boolean sonarActive;
@@ -142,15 +91,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private boolean tapCandidate;
     private float tapDownX, tapDownY;
     private float tapSlopPx;
-    private OnAbilityUnlockedListener abilityUnlockedListener;
-
-    public interface OnAbilityUnlockedListener {
-        void onAbilityUnlocked(Ability ability);
-    }
-
-    public void setOnAbilityUnlockedListener(OnAbilityUnlockedListener listener) {
-        this.abilityUnlockedListener = listener;
-    }
 
     public GameView(Context context) {
         this(context, Maps.BEACH);
@@ -167,7 +107,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         setFocusableInTouchMode(true);
 
         backgroundPaint.setColor(Color.BLACK);
-        effectPaint.setAntiAlias(true);
+//        effectPaint.setAntiAlias(true);
         sonarPaint.setStyle(Paint.Style.STROKE);
         sonarPaint.setAntiAlias(true);
         sonarPaint.setColor(0xFF7FE8FF);
@@ -195,18 +135,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
         this.stageId = stageId;
         map = new GameMap(stage.tiles);
+        worldIndex = Worlds.indexOfStage(stageId);
+        GameState.get(context).onStageEntered(stageId);
         applyRevealedItems();
-        refreshPassiveAbilities();
         loadTileSheets();
         loadItemSheet();
-        findIdleBirdSpawns();
-    }
-
-    private void refreshPassiveAbilities() {
-        PrefsManager prefs = PrefsManager.getInstance(getContext());
-        canSwimNonWater = prefs.hasAbility(Ability.SWIM_NON_WATER);
-        canShoot = prefs.hasAbility(Ability.SHOOT_MAGIC);
-        hasThunder = prefs.hasAbility(Ability.THUNDER_ATTACK);
     }
 
     private void loadTileSheets() {
@@ -221,18 +154,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
-    private void findIdleBirdSpawns() {
-        idleBirds.clear();
-        PrefsManager prefs = PrefsManager.getInstance(getContext());
-        for (int r = 0; r < map.getRows(); r++) {
-            for (int c = 0; c < map.getCols(); c++) {
-                if (map.getCell(r, c).item == ItemType.BIRD && !prefs.isBirdRescued(stageId, r, c)) {
-                    idleBirds.add(new Bird(getResources(), r, c));
-                }
-            }
-        }
-    }
-
     private void setZoom(float newZoom) {
         zoomRaw = Math.max(MIN_ZOOM, Math.min(newZoom, MAX_ZOOM));
         zoom = Math.round(zoomRaw);
@@ -243,31 +164,18 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (goose == null) {
             int row = stage.spawnRow;
             int col = stage.spawnCol;
-            if (startPosition != null && map.isWalkable(startPosition[0], startPosition[1], canSwimNonWater)) {
+            if (startPosition != null && map.isWalkable(startPosition[0], startPosition[1])) {
                 row = startPosition[0];
                 col = startPosition[1];
             }
             goose = new Goose(getResources(), row, col);
-            restoreRescuedBirds();
-            spawnEnemies();
+            placeBirds();
         }
         holeGooseRow = goose.getRow();
         holeGooseCol = goose.getCol();
         thread = new GameThread(holder, this);
         thread.setRunning(true);
         thread.start();
-    }
-
-    private void restoreRescuedBirds() {
-        List<String> rescuedKeys = PrefsManager.getInstance(getContext()).getRescuedBirdKeys();
-        int row = goose.getRow();
-        int col = goose.getCol();
-        for (int i = 0; i < rescuedKeys.size(); i++) {
-            Bird bird = new Bird(getResources(), row, col);
-            bird.startFollowing();
-            followingBirds.add(bird);
-            chaseTargets.add(new int[]{row, col});
-        }
     }
 
     @Override
@@ -340,9 +248,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 tapCandidate = false;
                 pinching = false;
                 joystick.end();
-                if (isTap) {
-                    tapAt(event.getX(), event.getY());
-                }
                 return true;
             case MotionEvent.ACTION_CANCEL:
                 tapCandidate = false;
@@ -503,14 +408,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
         wasMoving = nowMoving;
 
-        goose.update(deltaMs, dx, dy, map, canSwimNonWater);
+        goose.update(deltaMs, dx, dy, map);
         goose.setSwimming(isOverLiquid(goose.getX(), goose.getY()));
         checkHoleTransition();
-        checkBirdRescues();
+        checkTravelBirdRecruited();
         updateTeleport(deltaMs);
-        updateCombat(deltaMs);
         updateSonar(deltaMs);
-        updateBirds(deltaMs);
+        updateTravelBird(deltaMs);
         updatePanReset(deltaMs);
         updateCamera(deltaMs);
         if (stage.hasBlizzard) {
@@ -554,7 +458,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             return;
         }
         if (cell.item == ItemType.HOLE_DOWN) {
-            changeStage(stageId + 1);
+            if (isHoleDownUnlocked()) {
+                changeStage(stageId + 1);
+            }
         } else if (cell.item == ItemType.HOLE_UP) {
             changeStage(isNestStage(stageId) ? stageId - Maps.NEST_OFFSET : stageId - 1);
         } else if (cell.item == ItemType.HOLE_DOWN_NEST) {
@@ -597,16 +503,17 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         stageId = newStageId;
         stage = newStage;
         map = new GameMap(stage.tiles);
+        worldIndex = Worlds.indexOfStage(stageId);
+        GameState.get(getContext()).onStageEntered(stageId);
         applyRevealedItems();
         resetSonar();
         cancelCameraGlide();
-        findIdleBirdSpawns();
 
         int spawnRow = stage.spawnRow;
         int spawnCol = stage.spawnCol;
         if (!resetWorld) {
             int[] savedPos = prefs.getStagePosition(newStageId);
-            if (savedPos != null && map.isWalkable(savedPos[0], savedPos[1], canSwimNonWater)) {
+            if (savedPos != null && map.isWalkable(savedPos[0], savedPos[1])) {
                 spawnRow = savedPos[0];
                 spawnCol = savedPos[1];
             }
@@ -619,8 +526,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
 
         goose = new Goose(getResources(), spawnRow, spawnCol);
-        relocateFollowers(spawnRow, spawnCol);
-        spawnEnemies();
+        placeBirds();
 
         holeGooseRow = goose.getRow();
         holeGooseCol = goose.getCol();
@@ -642,15 +548,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         sonarPendingReveals.clear();
     }
 
-    private void relocateFollowers(int row, int col) {
-        for (int i = 0; i < followingBirds.size(); i++) {
-            followingBirds.get(i).teleportTo(row, col);
-            int[] chaseTarget = chaseTargets.get(i);
-            chaseTarget[0] = row;
-            chaseTarget[1] = col;
-        }
-    }
-
     private void resetPan() {
         panOffsetX = 0f;
         panOffsetY = 0f;
@@ -659,26 +556,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
     private void moveGooseTo(int row, int col) {
         goose.teleportTo(row, col);
-        relocateFollowers(row, col);
+        if (travelBird != null && travelBird.isFollowing()) {
+            travelBird.teleportTo(row, col);
+            travelChase[0] = row;
+            travelChase[1] = col;
+        }
         holeGooseRow = row;
         holeGooseCol = col;
         resetPan();
-    }
-
-    public boolean teleportRandom() {
-        if (!PrefsManager.getInstance(getContext()).hasAbility(Ability.RANDOM_TELEPORT)) {
-            return false;
-        }
-        synchronized (getHolder()) {
-            if (goose == null || isTeleporting()) {
-                return false;
-            }
-            if (map.randomFreeCell(random, canSwimNonWater, goose.getRow(), goose.getCol()) == null) {
-                return false;
-            }
-            startTeleport(TeleportKind.RANDOM);
-            return true;
-        }
     }
 
     public boolean teleportHome() {
@@ -727,13 +612,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     private void performTeleport() {
-        if (teleportKind == TeleportKind.RANDOM) {
-            int[] spot = map.randomFreeCell(random, canSwimNonWater, goose.getRow(), goose.getCol());
-            if (spot != null) {
-                beginCameraGlide();
-                moveGooseTo(spot[0], spot[1]);
-            }
-        } else if (stageId == Maps.BEACH) {
+        if (stageId == Maps.BEACH) {
             beginCameraGlide();
             moveGooseTo(stage.spawnRow, stage.spawnCol);
         } else {
@@ -813,494 +692,141 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
-    public void setHpListener(HpListener listener) {
-        synchronized (getHolder()) {
-            hpListener = listener;
-            reportedHp = -1;
-            reportHp();
-        }
-    }
-
-    public int getHp() {
-        synchronized (getHolder()) {
-            return stats.getHp();
-        }
-    }
-
-    public void setEnemySpawning(boolean enabled) {
-        synchronized (getHolder()) {
-            enemySpawning = enabled;
-            if (!enabled) {
-                clearCombat();
-            }
-        }
-    }
-
-    private void clearCombat() {
-        enemies.clear();
-        bullets.clear();
-        fireballs.clear();
-        explosions.clear();
-        lightningFlashMs = 0;
-        lightningTargets.clear();
-    }
-
-    private void spawnEnemies() {
-        clearCombat();
-        if (!enemySpawning) {
-            return;
-        }
-        for (int row = 0; row < map.getRows(); row++) {
-            for (int col = 0; col < map.getCols(); col++) {
-                EnemyType type = map.getCell(row, col).enemy;
-                if (type == null) {
-                    continue;
-                }
-                if (type == EnemyType.BOSS) {
-                    enemies.add(new Boss(getResources(), row, col));
-                    continue;
-                }
-                enemies.add(new Enemy(type, getEnemySheet(), row, col));
-            }
-        }
-    }
-
-    private SpriteSheet getEnemySheet() {
-        if (enemySheet == null) {
-            enemySheet = SpriteSheet.withSquareCellsByColumns(getResources(), R.drawable.enemies, ENEMY_SHEET_COLUMNS);
-        }
-        return enemySheet;
-    }
-
-    private void updateCombat(long deltaMs) {
-        stats.update(deltaMs);
-        goose.setStepMultiplier(stats.stepMultiplier());
-        updateEnemies(deltaMs);
-        updateAttackCooldowns(deltaMs);
-        updateBullets(deltaMs);
-        updateFireballs(deltaMs);
-        updateExplosions(deltaMs);
-        if (stats.isDead()) {
-            onPlayerDied();
-        }
-        reportHp();
-    }
-
-    private void updateEnemies(long deltaMs) {
-        float half = GameMap.TILE_SIZE / 2f;
-        float gx = goose.getX() + half;
-        float gy = goose.getY() + half;
-        float aggro = ENEMY_AGGRO_TILES * GameMap.TILE_SIZE;
-        for (int i = enemies.size() - 1; i >= 0; i--) {
-            Enemy enemy = enemies.get(i);
-            if (enemy.isGone()) {
-                enemies.remove(i);
-                continue;
-            }
-            boolean chase = distance(enemy.getCenterX(), enemy.getCenterY(), gx, gy) <= aggro;
-            enemy.update(deltaMs, map, goose.getRow(), goose.getCol(), chase, enemies);
-            if (enemy instanceof Boss) {
-                updateBossAttacks((Boss) enemy, gx, gy);
-            }
-            if (!isTeleporting() && enemy.canTouch()
-                    && distance(enemy.getCenterX(), enemy.getCenterY(), gx, gy) < TOUCH_DISTANCE) {
-                touch(enemy);
-                if (enemy.type.explodes) {
-                    explosions.add(new Explosion(enemy.getCenterX(), enemy.getCenterY()));
-                    enemies.remove(i);
-                }
-            }
-        }
-    }
-
-    private void updateBossAttacks(Boss boss, float gx, float gy) {
-        if (boss.isDead() || isTeleporting()) {
-            return;
-        }
-        if (boss.consumeSummon()) {
-            summonReds(boss);
-        }
-        if (boss.consumeVolley()) {
-            float bx = boss.getCenterX();
-            float by = boss.getCenterY();
-            double baseAngle = Math.atan2(gy - by, gx - bx);
-            double spread = Math.toRadians(FIREBALL_SPREAD_DEG);
-            for (int i = 0; i < FIREBALLS_PER_VOLLEY; i++) {
-                double angle = baseAngle + (i - (FIREBALLS_PER_VOLLEY - 1) / 2f) * spread;
-                fireballs.add(new Bullet(bx, by, (float) Math.cos(angle), (float) Math.sin(angle),
-                        FIREBALL_SPEED, fireballRange()));
-            }
-        }
-    }
-
-    // Puts red monsters on free tiles next to the boss (closest ring first).
-    private void summonReds(Boss boss) {
-        int alive = 0;
-        for (int i = 0; i < enemies.size(); i++) {
-            Enemy e = enemies.get(i);
-            if (e.type == EnemyType.RED && !e.isDead()) {
-                alive++;
-            }
-        }
-        int toSpawn = Math.min(SUMMONS_PER_CAST, MAX_SUMMONED_REDS - alive);
-        for (int radius = 2; radius <= 3 && toSpawn > 0; radius++) {
-            for (int dy = -radius; dy <= radius && toSpawn > 0; dy++) {
-                for (int dx = -radius; dx <= radius && toSpawn > 0; dx++) {
-                    if (Math.max(Math.abs(dx), Math.abs(dy)) != radius) {
-                        continue;
-                    }
-                    int r = boss.getRow() + dy;
-                    int c = boss.getCol() + dx;
-                    if (!map.isWalkable(r, c, true) || isTileTaken(r, c)) {
-                        continue;
-                    }
-                    Enemy red = new Enemy(EnemyType.RED, getEnemySheet(), r, c);
-                    red.setAlwaysChase(true);
-                    red.setCanCrossLiquid(true);
-                    enemies.add(red);
-                    toSpawn--;
-                }
-            }
-        }
-    }
-
-    private float fireballRange() {
-        return (float) Math.sqrt((double) map.getWidthPx() * map.getWidthPx()
-                + (double) map.getHeightPx() * map.getHeightPx());
-    }
-
-    private boolean isTileTaken(int row, int col) {
-        if (goose.getRow() == row && goose.getCol() == col) {
-            return true;
-        }
-        for (int i = 0; i < enemies.size(); i++) {
-            Enemy e = enemies.get(i);
-            if (e.getRow() == row && e.getCol() == col) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private void updateFireballs(long deltaMs) {
-        float half = GameMap.TILE_SIZE / 2f;
-        float gx = goose.getX() + half;
-        float gy = goose.getY() + half;
-        for (int i = fireballs.size() - 1; i >= 0; i--) {
-            Bullet fireball = fireballs.get(i);
-            fireball.update(deltaMs);
-            int row = (int) Math.floor(fireball.y / GameMap.TILE_SIZE);
-            int col = (int) Math.floor(fireball.x / GameMap.TILE_SIZE);
-            if (fireball.isSpent() || !map.isPassable(row, col)) {
-                fireballs.remove(i);
-            } else if (!isTeleporting() && distance(fireball.x, fireball.y, gx, gy) <= FIREBALL_HIT_DISTANCE) {
-                stats.damage(FIREBALL_DAMAGE);
-                fireballs.remove(i);
-            }
-        }
-    }
-
-    private void touch(Enemy enemy) {
-        EnemyType type = enemy.type;
-        stats.damage(type.touchDamage);
-        if (type.slowMs > 0) {
-            stats.applySlow(type.slowMs);
-        }
-        if (type.poisonMs > 0) {
-            stats.applyPoison(type.poisonMs, type.poisonDamage);
-        }
-        enemy.startTouchCooldown();
-    }
-
-    private void updateAttackCooldowns(long deltaMs) {
-        bulletCooldownMs = Math.max(0, bulletCooldownMs - deltaMs);
-        lightningCooldownMs = Math.max(0, lightningCooldownMs - deltaMs);
-        if (lightningFlashMs > 0) {
-            lightningFlashMs = Math.max(0, lightningFlashMs - deltaMs);
-        }
-    }
-
-    public boolean tapAt(float screenX, float screenY) {
-        synchronized (getHolder()) {
-            if (goose == null || isTeleporting()) {
-                return false;
-            }
-            Enemy target = enemyAt(screenX / zoom + cameraX, screenY / zoom + cameraY);
-            return target != null && attack(target);
-        }
-    }
-
-    private Enemy enemyAt(float worldX, float worldY) {
-        float best = Float.MAX_VALUE;
-        Enemy tapped = null;
-        for (int i = 0; i < enemies.size(); i++) {
-            Enemy e = enemies.get(i);
-            if (e.isDead()) {
-                continue;
-            }
-            float d = distance(e.getCenterX(), e.getCenterY(), worldX, worldY);
-            if (d <= e.getTapRadius() && d < best) {
-                best = d;
-                tapped = e;
-            }
-        }
-        return tapped;
-    }
-
-    private boolean attack(Enemy target) {
-        float half = GameMap.TILE_SIZE / 2f;
-        float d = distance(target.getCenterX(), target.getCenterY(), goose.getX() + half, goose.getY() + half);
-        boolean attacked = false;
-        if (canShoot && bulletCooldownMs == 0 && d <= BULLET_RANGE_TILES * GameMap.TILE_SIZE) {
-            fireBullet(target);
-            bulletCooldownMs = BULLET_INTERVAL_MS;
-            attacked = true;
-        }
-        if (hasThunder && lightningCooldownMs == 0 && d <= LIGHTNING_RANGE_TILES * GameMap.TILE_SIZE) {
-            strike(target);
-            lightningCooldownMs = LIGHTNING_INTERVAL_MS;
-            attacked = true;
-        }
-        return attacked;
-    }
-
-    private void fireBullet(Enemy target) {
-        float half = GameMap.TILE_SIZE / 2f;
-        float gx = goose.getX() + half;
-        float gy = goose.getY() + half;
-        float dx = target.getCenterX() - gx;
-        float dy = target.getCenterY() - gy;
-        float len = (float) Math.sqrt(dx * dx + dy * dy);
-        float dirX = len == 0f ? 1f : dx / len;
-        float dirY = len == 0f ? 0f : dy / len;
-        bullets.add(new Bullet(gx, gy, dirX, dirY, BULLET_SPEED, (BULLET_RANGE_TILES + 1) * GameMap.TILE_SIZE));
-    }
-
-    private void strike(Enemy target) {
-        lightningFlashMs = LIGHTNING_FLASH_MS;
-        lightningTargets.clear();
-        List<Enemy> struck = new ArrayList<>();
-
-        target.hit(LIGHTNING_DAMAGE, Enemy.HitSource.LIGHTNING);
-        struck.add(target);
-        lightningTargets.add(new float[]{target.getCenterX(), target.getCenterY()});
-
-        float half = GameMap.TILE_SIZE / 2f;
-        float gx = goose.getX() + half;
-        float gy = goose.getY() + half;
-        float range = LIGHTNING_RANGE_TILES * GameMap.TILE_SIZE;
-        while (struck.size() < LIGHTNING_MAX_TARGETS) {
-            Enemy next = null;
-            float best = Float.MAX_VALUE;
-            for (int i = 0; i < enemies.size(); i++) {
-                Enemy e = enemies.get(i);
-                if (e.isDead() || struck.contains(e) || distance(e.getCenterX(), e.getCenterY(), gx, gy) > range) {
-                    continue;
-                }
-                float d = distance(e.getCenterX(), e.getCenterY(), target.getCenterX(), target.getCenterY());
-                if (d < best) {
-                    best = d;
-                    next = e;
-                }
-            }
-            if (next == null) {
-                break;
-            }
-            next.hit(LIGHTNING_SPLASH_DAMAGE, Enemy.HitSource.LIGHTNING);
-            struck.add(next);
-            lightningTargets.add(new float[]{next.getCenterX(), next.getCenterY()});
-        }
-    }
-
-    private void updateBullets(long deltaMs) {
-        for (int i = bullets.size() - 1; i >= 0; i--) {
-            Bullet bullet = bullets.get(i);
-            bullet.update(deltaMs);
-            int row = (int) Math.floor(bullet.y / GameMap.TILE_SIZE);
-            int col = (int) Math.floor(bullet.x / GameMap.TILE_SIZE);
-            if (bullet.isSpent() || !map.isPassable(row, col)) {
-                bullets.remove(i);
-                continue;
-            }
-            for (int j = enemies.size() - 1; j >= 0; j--) {
-                Enemy enemy = enemies.get(j);
-                if (!enemy.isDead()
-                        && distance(enemy.getCenterX(), enemy.getCenterY(), bullet.x, bullet.y) <= enemy.getHitRadius()) {
-                    enemy.hit(BULLET_DAMAGE, Enemy.HitSource.BULLET);
-                    bullets.remove(i);
-                    break;
-                }
-            }
-        }
-    }
-
-    private void updateExplosions(long deltaMs) {
-        for (int i = explosions.size() - 1; i >= 0; i--) {
-            Explosion explosion = explosions.get(i);
-            explosion.elapsedMs += deltaMs;
-            if (explosion.elapsedMs >= EXPLOSION_MS) {
-                explosions.remove(i);
-            }
-        }
-    }
-
-    private void onPlayerDied() {
-        stats.revive();
-        bullets.clear();
-        fireballs.clear();
-        if (!isTeleporting()) {
-            startTeleport(TeleportKind.HOME);
-        } else if (!teleportArrived) {
-            teleportKind = TeleportKind.HOME;
-        }
-    }
-
-    private void reportHp() {
-        int hp = stats.getHp();
-        if (hp != reportedHp) {
-            reportedHp = hp;
-            if (hpListener != null) {
-                hpListener.onHpChanged(hp, PlayerStats.MAX_HP);
-            }
-        }
-    }
-
     private static float distance(float x1, float y1, float x2, float y2) {
         float dx = x1 - x2;
         float dy = y1 - y2;
         return (float) Math.sqrt(dx * dx + dy * dy);
     }
 
-    private void drawEnemies(Canvas canvas, int tileSize) {
-        for (int i = 0; i < enemies.size(); i++) {
-            Enemy enemy = enemies.get(i);
-            int ex = Math.round(enemy.getX()) - cameraX;
-            int ey = Math.round(enemy.getY()) - cameraY;
-            reusableDst.set(ex, ey, ex + tileSize, ey + tileSize);
-            enemy.draw(canvas, reusableDst);
-        }
+    private boolean isOverLiquid(float spriteX, float spriteY) {
+        return map.isLiquidAt(spriteX + GameMap.TILE_SIZE / 2f, spriteY + GameMap.TILE_SIZE / 2f);
     }
 
-    private void drawCombatEffects(Canvas canvas) {
-        effectPaint.setStyle(Paint.Style.FILL);
-        effectPaint.setColor(0xFF9FEFFF);
-        effectPaint.setAlpha(255);
-        for (int i = 0; i < bullets.size(); i++) {
-            Bullet bullet = bullets.get(i);
-            canvas.drawCircle(bullet.x - cameraX, bullet.y - cameraY, 6f, effectPaint);
+    // ---- Birds ------------------------------------------------------------------------------
+
+    /** The hole to the next world only exists once the world's travel manager has been hired. */
+    private boolean isHoleDownUnlocked() {
+        if (worldIndex < 0) {
+            return true;   // caves, nests and other non-farm stages keep their doors
+        }
+        return GameState.get(getContext()).hasTravelManager(worldIndex);
+    }
+
+    /** Rebuilds every bird of the current stage from the hired managers. */
+    private void placeBirds() {
+        managerBirds.clear();
+        travelBird = null;
+        if (worldIndex < 0 || goose == null) {
+            return;
+        }
+        GameState state = GameState.get(getContext());
+        List<int[]> used = new ArrayList<>();
+        used.add(new int[]{stage.spawnRow, stage.spawnCol});
+
+        for (int g = 0; g < Worlds.GARDENS_PER_WORLD; g++) {
+            if (!state.hasManager(worldIndex, g)) {
+                continue;
+            }
+            int[] spot = findFreeSpotNear(stage.spawnRow, stage.spawnCol, used);
+            if (spot == null) {
+                break;
+            }
+            used.add(spot);
+            managerBirds.add(new Bird(getResources(), spot[0], spot[1]));
         }
 
-        for (int i = 0; i < fireballs.size(); i++) {
-            Bullet fireball = fireballs.get(i);
-            float fx = fireball.x - cameraX;
-            float fy = fireball.y - cameraY;
-            effectPaint.setColor(0xFFE8421A);
-            canvas.drawCircle(fx, fy, 10f, effectPaint);
-            effectPaint.setColor(0xFFFFC53A);
-            canvas.drawCircle(fx, fy, 5.5f, effectPaint);
-        }
-
-        for (int i = 0; i < explosions.size(); i++) {
-            Explosion explosion = explosions.get(i);
-            float t = explosion.elapsedMs / (float) EXPLOSION_MS;
-            float cx = explosion.x - cameraX;
-            float cy = explosion.y - cameraY;
-            float radius = EXPLOSION_RADIUS * (0.25f + 0.75f * t);
-            effectPaint.setStyle(Paint.Style.FILL);
-            effectPaint.setColor(0xFFFF7A2F);
-            effectPaint.setAlpha((int) (110f * (1f - t)));
-            canvas.drawCircle(cx, cy, radius, effectPaint);
-            effectPaint.setStyle(Paint.Style.STROKE);
-            effectPaint.setStrokeWidth(4f);
-            effectPaint.setColor(0xFFFFD27A);
-            effectPaint.setAlpha((int) (255f * (1f - t)));
-            canvas.drawCircle(cx, cy, radius, effectPaint);
-        }
-
-        if (lightningFlashMs > 0) {
-            float fade = lightningFlashMs / (float) LIGHTNING_FLASH_MS;
-            effectPaint.setStyle(Paint.Style.STROKE);
-            effectPaint.setColor(0xFFFFF27A);
-            effectPaint.setAlpha((int) (255f * fade));
-            int segments = LIGHTNING_JITTER.length - 1;
-            for (int t = 0; t < lightningTargets.size(); t++) {
-                float[] hit = lightningTargets.get(t);
-                effectPaint.setStrokeWidth(t == 0 ? 4f : 3f);
-                float top = hit[1] - 7f * GameMap.TILE_SIZE;
-                for (int i = 0; i < segments; i++) {
-                    float y1 = top + (hit[1] - top) * i / segments;
-                    float y2 = top + (hit[1] - top) * (i + 1) / segments;
-                    canvas.drawLine(hit[0] + LIGHTNING_JITTER[i] - cameraX, y1 - cameraY,
-                            hit[0] + LIGHTNING_JITTER[i + 1] - cameraX, y2 - cameraY, effectPaint);
+        if (state.hasTravelManager(worldIndex)) {
+            int[] hole = findItem(ItemType.HOLE_DOWN);
+            int anchorRow = hole != null ? hole[0] : stage.spawnRow;
+            int anchorCol = hole != null ? hole[1] : stage.spawnCol;
+            int[] spot = findFreeSpotNear(anchorRow, anchorCol, used);
+            if (spot != null) {
+                used.add(spot);
+                travelBird = new Bird(getResources(), spot[0], spot[1]);
+                if (state.isTravelBirdRecruited(worldIndex)) {
+                    travelBird.teleportTo(goose.getRow(), goose.getCol());
+                    travelBird.startFollowing();
+                    travelChase[0] = goose.getRow();
+                    travelChase[1] = goose.getCol();
                 }
             }
         }
     }
 
-    private boolean isOverLiquid(float spriteX, float spriteY) {
-        return map.isLiquidAt(spriteX + GameMap.TILE_SIZE / 2f, spriteY + GameMap.TILE_SIZE / 2f);
+    private int[] findItem(ItemType item) {
+        for (int r = 0; r < map.getRows(); r++) {
+            for (int c = 0; c < map.getCols(); c++) {
+                if (map.getCell(r, c).item == item) {
+                    return new int[]{r, c};
+                }
+            }
+        }
+        return null;
     }
 
-    private void checkBirdRescues() {
-        for (Iterator<Bird> it = idleBirds.iterator(); it.hasNext(); ) {
-            Bird idle = it.next();
-            if (idle.getRow() != goose.getRow() || idle.getCol() != goose.getCol()) {
-                continue;
+    /** Closest empty dry tile to (row, col), scanning outwards in rings; deterministic. */
+    private int[] findFreeSpotNear(int row, int col, List<int[]> used) {
+        int maxRadius = Math.max(map.getRows(), map.getCols());
+        for (int radius = 1; radius <= maxRadius; radius++) {
+            for (int dr = -radius; dr <= radius; dr++) {
+                for (int dc = -radius; dc <= radius; dc++) {
+                    if (Math.max(Math.abs(dr), Math.abs(dc)) != radius) {
+                        continue;
+                    }
+                    int r = row + dr;
+                    int c = col + dc;
+                    MapCell cell = map.getCell(r, c);
+                    if (cell == null || cell.hasItem() || cell.isLiquid() || isUsed(used, r, c)) {
+                        continue;
+                    }
+                    return new int[]{r, c};
+                }
             }
-            it.remove();
-            idle.startFollowing();
+        }
+        return null;
+    }
 
-            int leaderRow, leaderCol;
-            if (followingBirds.isEmpty()) {
-                leaderRow = goose.getRow();
-                leaderCol = goose.getCol();
-            } else {
-                Bird lastInChain = followingBirds.get(followingBirds.size() - 1);
-                leaderRow = lastInChain.getRow();
-                leaderCol = lastInChain.getCol();
+    private static boolean isUsed(List<int[]> used, int r, int c) {
+        for (int i = 0; i < used.size(); i++) {
+            int[] u = used.get(i);
+            if (u[0] == r && u[1] == c) {
+                return true;
             }
+        }
+        return false;
+    }
 
-            followingBirds.add(idle);
-            chaseTargets.add(new int[]{leaderRow, leaderCol});
-
-            onBirdRescued(idle.getRow(), idle.getCol());
+    private void checkTravelBirdRecruited() {
+        if (travelBird == null || travelBird.isFollowing()) {
+            return;
+        }
+        if (travelBird.getRow() == goose.getRow() && travelBird.getCol() == goose.getCol()) {
+            travelBird.startFollowing();
+            travelChase[0] = goose.getRow();
+            travelChase[1] = goose.getCol();
+            GameState.get(getContext()).setTravelBirdRecruited(worldIndex);
         }
     }
 
-    private void onBirdRescued(int spawnRow, int spawnCol) {
-        PrefsManager prefs = PrefsManager.getInstance(getContext());
-        prefs.setBirdRescued(stageId, spawnRow, spawnCol);
-
-        Ability ability = Ability.forStage(stageId);
-        if (ability != null) {
-            prefs.unlockAbility(ability);
-            refreshPassiveAbilities();
-            if (abilityUnlockedListener != null) {
-                abilityUnlockedListener.onAbilityUnlocked(ability);
-            }
+    private void updateTravelBird(long deltaMs) {
+        if (travelBird == null) {
+            return;
         }
+        if (travelBird.isFollowing()) {
+            if (goose.getRow() != travelChase[0] || goose.getCol() != travelChase[1]) {
+                travelBird.moveTowards(travelChase[0], travelChase[1]);
+            }
+            travelChase[0] = goose.getRow();
+            travelChase[1] = goose.getCol();
+        }
+        travelBird.update(deltaMs);
+        travelBird.setSwimming(isOverLiquid(travelBird.getX(), travelBird.getY()));
     }
 
-    private void updateBirds(long deltaMs) {
-        int leaderRow = goose.getRow();
-        int leaderCol = goose.getCol();
-
-        for (int i = 0; i < followingBirds.size(); i++) {
-            Bird bird = followingBirds.get(i);
-            int[] chaseTarget = chaseTargets.get(i);
-
-            if (leaderRow != chaseTarget[0] || leaderCol != chaseTarget[1]) {
-                bird.moveTowards(chaseTarget[0], chaseTarget[1]);
-            }
-            chaseTarget[0] = leaderRow;
-            chaseTarget[1] = leaderCol;
-
-            bird.update(deltaMs);
-            bird.setSwimming(isOverLiquid(bird.getX(), bird.getY()));
-
-            leaderRow = bird.getRow();
-            leaderCol = bird.getCol();
-        }
+    /** Where the goose stands, so leaving to a menu and coming back keeps the position. */
+    public int[] getGoosePosition() {
+        Goose g = goose;
+        return g == null ? null : new int[]{g.getRow(), g.getCol()};
     }
 
     private void updateCamera(long deltaMs) {
@@ -1390,9 +916,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
 
-        drawBirds(canvas, idleBirds, tileSize);
-        drawBirds(canvas, followingBirds, tileSize);
-        drawEnemies(canvas, tileSize);
+        drawBirds(canvas, managerBirds, tileSize);
+        if (travelBird != null) {
+            reusableDst.set(Math.round(travelBird.getX()) - cameraX, Math.round(travelBird.getY()) - cameraY,
+                    Math.round(travelBird.getX()) - cameraX + tileSize, Math.round(travelBird.getY()) - cameraY + tileSize);
+            travelBird.draw(canvas, reusableDst);
+        }
         drawSonar(canvas, visibleW, visibleH);
 
         if (goose != null) {
@@ -1401,7 +930,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             reusableDst.set(screenX, screenY, screenX + tileSize, screenY + tileSize);
             goose.draw(canvas, reusableDst);
         }
-        drawCombatEffects(canvas);
 
         canvas.restore();
 
@@ -1434,24 +962,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 sonarPaint.setStrokeWidth(stroke);
                 canvas.drawCircle(cx, cy, r, sonarPaint);
             }
-        }
-
-        float half = GameMap.TILE_SIZE / 2f;
-        for (int i = 0; i < idleBirds.size(); i++) {
-            Bird bird = idleBirds.get(i);
-            float bx = bird.getX() + half;
-            float by = bird.getY() + half;
-            float dx = bx - sonarX;
-            float dy = by - sonarY;
-            float pingStart = (float) Math.sqrt(dx * dx + dy * dy) / SONAR_SPEED;
-            float t = sonarElapsedMs - pingStart;
-            if (t < 0f || t >= SONAR_PING_MS) {
-                continue;
-            }
-            float phase = t / SONAR_PING_MS;
-            sonarPaint.setAlpha((int) (255f * (1f - phase)));
-            sonarPaint.setStrokeWidth(SONAR_STROKE);
-            canvas.drawCircle(bx - cameraX, by - cameraY, GameMap.TILE_SIZE * (0.3f + 0.6f * phase), sonarPaint);
         }
     }
 
@@ -1486,7 +996,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
         drawTileLayer(canvas, cell.tile, cell.position, row, col, tileSize);
 
-        if (cell.hasItem() && cell.item.hasSprite() && itemSheet != null) {
+        boolean hiddenHole = cell.item == ItemType.HOLE_DOWN && !isHoleDownUnlocked();
+        if (cell.hasItem() && !hiddenHole && cell.item.hasSprite() && itemSheet != null) {
             int screenX = col * tileSize - cameraX;
             int screenY = row * tileSize - cameraY;
             reusableSrc.set(itemSheet.frameRect(cell.item.spriteCol, cell.item.spriteRow));

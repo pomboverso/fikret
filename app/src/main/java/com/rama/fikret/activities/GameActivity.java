@@ -1,18 +1,19 @@
 package com.rama.fikret.activities;
 
 import android.app.Activity;
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.LinearLayout;
 
+import com.rama.fikret.economy.GameState;
 import com.rama.fikret.game.GameView;
 import com.rama.fikret.game.Maps;
 import com.rama.fikret.managers.PrefsManager;
 import com.rama.fikret.widgets.HudView;
 
+/** The map. Only used to walk between farms and to see the birds of the managers you hired. */
 public class GameActivity extends Activity {
     public static final String EXTRA_STAGE = "stage";
 
@@ -31,7 +32,7 @@ public class GameActivity extends Activity {
         if (getIntent().hasExtra(EXTRA_STAGE)) {
             stageId = getIntent().getIntExtra(EXTRA_STAGE, Maps.BEACH);
         } else {
-            // Resume where the player last entered a map.
+            // Resume where the player was.
             PrefsManager prefs = PrefsManager.getInstance(this);
             stageId = prefs.getCurrentStage(Maps.BEACH);
             startPosition = prefs.getArrivalPosition();
@@ -46,9 +47,6 @@ public class GameActivity extends Activity {
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
         root.addView(hudView, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-
-        gameView.setOnAbilityUnlockedListener(ability -> runOnUiThread(() -> hudView.refreshAbilities()));
-        gameView.setHpListener((hp, maxHp) -> runOnUiThread(() -> hudView.setHp(String.valueOf(hp))));
 
         setContentView(root);
         gameView.requestFocus();
@@ -68,29 +66,20 @@ public class GameActivity extends Activity {
         hudView.refreshAbilities();
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        int[] position = gameView.getGoosePosition();
+        if (position != null) {
+            PrefsManager.getInstance(this).setArrivalPosition(position[0], position[1]);
+        }
+        GameState.get(this).save();
+    }
+
     private final HudView.OnActionListener hudListener = new HudView.OnActionListener() {
-        @Override
-        public void onMenu() {
-            startActivity(new Intent(GameActivity.this, Main.class));
-            finish();
-        }
-
-        @Override
-        public void onSleep() {
-        }
-
         @Override
         public void onSonar() {
             gameView.sonar();
-        }
-
-        @Override
-        public void onHeal() {
-        }
-
-        @Override
-        public void onTeleport() {
-            gameView.teleportRandom();
         }
 
         @Override
@@ -99,21 +88,8 @@ public class GameActivity extends Activity {
         }
 
         @Override
-        public void onMagic() {
-        }
-
-        @Override
-        public void onCandle() {
-        }
-
-        @Override
-        public void onThunder() {
-        }
-
-        @Override
         public void onDive() {
             gameView.dive();
         }
     };
 }
-

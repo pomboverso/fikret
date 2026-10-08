@@ -12,57 +12,62 @@
     <LinearLayout style="@style/HorizontalList">
 
         <FrameLayout
-            android:id="@+id/menu"
+            android:id="@+id/back"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content">
 
             <ImageView
                 style="@style/Icon32"
-                android:contentDescription="@string/app_name"
-                android:src="@drawable/px_menu" />
+                android:contentDescription="@null"
+                android:src="@drawable/px_arrow_left" />
         </FrameLayout>
 
         <View style="@style/SeparatorListHorizontal" />
 
         <TextView
-            android:id="@+id/money"
+            android:id="@+id/title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:singleLine="true"
-            android:text="A$0"
-            android:textColor="@color/text"
-            android:textSize="24sp" />
+            android:textColor="@color/accent"
+            android:textSize="@dimen/h2" />
 
-        <Button
-            android:id="@+id/multiplier"
+        <TextView
+            android:id="@+id/money"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@color/accent"
-            android:paddingLeft="8dp"
-            android:paddingTop="4dp"
-            android:paddingRight="8dp"
-            android:paddingBottom="4dp"
-            android:text="x1"
-            android:textColor="@color/base" />
+            android:singleLine="true"
+            android:textColor="@color/text"
+            android:textSize="20sp" />
     </LinearLayout>
 
     <View style="@style/SeparatorListVertical" />
 
     <TextView
-        android:id="@+id/world_name"
-        style="@style/H3"
-        android:textColor="@color/accent" />
+        android:id="@+id/subtitle"
+        style="@style/Text" />
 
     <View style="@style/SeparatorListVertical" />
 
-    <ListView
-        android:id="@+id/garden_list"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:divider="@android:color/transparent"
-        android:dividerHeight="8dp"
-        android:scrollbars="none" />
+        android:layout_weight="1">
+
+        <ListView
+            android:id="@+id/list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:divider="@android:color/transparent"
+            android:dividerHeight="8dp"
+            android:scrollbars="none" />
+
+        <TextView
+            android:id="@+id/empty"
+            style="@style/H2_center"
+            android:layout_gravity="center"
+            android:text="@string/coming_soon" />
+    </FrameLayout>
 
 </LinearLayout>

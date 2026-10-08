@@ -5,14 +5,9 @@ import android.content.SharedPreferences;
 
 import com.rama.fikret.game.Ability;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class PrefsManager {
     private static final String PREFS_NAME = "fikret";
-    private static final String KEY_BIRD_RESCUED = "bird:rescued";
     private static final String KEY_ABILITY_UNLOCKED = "ability:unlocked";
-    private static final String KEY_HUD_EXPANDED = "hud:expanded";
     private static final String KEY_CURRENT_STAGE = "stage:current";
     private static final String KEY_ARRIVAL = "stage:arrival";
     private static final String KEY_STAGE_POSITION = "stage:position";
@@ -38,48 +33,6 @@ public class PrefsManager {
             sb.append(parts[i]);
         }
         return sb.toString();
-    }
-
-    private List<String> splitCsv(String value) {
-        List<String> result = new ArrayList<>();
-        if (value == null || value.length() == 0) return result;
-        String[] parts = value.split(",");
-        for (String part : parts) {
-            if (part.length() > 0) result.add(part);
-        }
-        return result;
-    }
-
-    private String joinCsv(java.util.Collection<String> values) {
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for (String value : values) {
-            if (!first) sb.append(',');
-            sb.append(value);
-            first = false;
-        }
-        return sb.toString();
-    }
-
-    public boolean isBirdRescued(int stageId, int row, int col) {
-        return getRescuedBirdKeys().contains(birdKey(stageId, row, col));
-    }
-
-    public void setBirdRescued(int stageId, int row, int col) {
-        String key = birdKey(stageId, row, col);
-        List<String> keys = getRescuedBirdKeys();
-        if (!keys.contains(key)) {
-            keys.add(key);
-            prefs.edit().putString(KEY_BIRD_RESCUED, joinCsv(keys)).commit();
-        }
-    }
-
-    public List<String> getRescuedBirdKeys() {
-        return splitCsv(prefs.getString(KEY_BIRD_RESCUED, ""));
-    }
-
-    private String birdKey(int stageId, int row, int col) {
-        return stageId + "_" + row + "_" + col;
     }
 
     public boolean hasAbility(Ability ability) {
@@ -110,6 +63,11 @@ public class PrefsManager {
         editor.putInt(KEY_CURRENT_STAGE, homeStageId)
                 .putString(KEY_ARRIVAL, pair(arrivalRow, arrivalCol))
                 .commit();
+    }
+
+    /** Remembers where the player stands so coming back from a menu puts them in the same spot. */
+    public void setArrivalPosition(int row, int col) {
+        prefs.edit().putString(KEY_ARRIVAL, pair(row, col)).commit();
     }
 
     public int getCurrentStage(int defaultStageId) {
@@ -151,19 +109,19 @@ public class PrefsManager {
         }
     }
 
-    public boolean isHudExpanded() {
-        return getBoolean(KEY_HUD_EXPANDED, false);
-    }
-
-    public void setHudExpanded(boolean expanded) {
-        setBoolean(KEY_HUD_EXPANDED, expanded);
-    }
-
     public boolean getBoolean(String key, boolean defaultValue) {
         return prefs.getBoolean(key, defaultValue);
     }
 
     public void setBoolean(String key, boolean value) {
         prefs.edit().putBoolean(key, value).commit();
+    }
+
+    public String getString(String key, String defaultValue) {
+        return prefs.getString(key, defaultValue);
+    }
+
+    public void putString(String key, String value) {
+        prefs.edit().putString(key, value).commit();
     }
 }

@@ -26,6 +26,8 @@
     <!-- Links -->
     <color name="link">#89DCEC</color>
 
+    <color name="progress_fill">#6C5BA8</color>
+
     <!-- HUD -->
     <color name="hud_background">#222A37</color>
     <color name="hud_box_background">#324769</color>

@@ -1,4 +1,43 @@
------- concept
+------ concept II
+-- Lake (DR)
+- {name: Yuca, value: 3.7, coefficient: 1.07, time: 0.6, revenue: 1, cash_second: 1.67, revenue: 0.26}
+- {name: Mango, value: 60, coefficient: 1.15, time: 3, revenue: 60, cash_second: 20, revenue: 1}
+- {name: Cajuil, value: 720, coefficient: 1.14, time: 6, revenue: 540, cash_second: 90, revenue: 0.75}
+- {name: Guayaba, value: 8640, coefficient: 1.13, time: 12, revenue: 4320, cash_second: 360, revenue: 0.5}
+- {name: Carambola, value: 103680, coefficient: 1.12, time: 24, revenue: 51840, cash_second: 2160, revenue: 0.5}
+- {name: Jobo, value: 1244160, coefficient: 1.11, time: 96, revenue: 622080, cash_second: 6480, revenue: 0.5}
+- {name: Papaya, value: 14929920, coefficient: 1.1, time: 384, revenue: 7464960, cash_second: 19440, revenue: 0.5}
+- {name: Yautía, value: 179159040, coefficient: 1.09, time: 1536, revenue: 89579520, cash_second: 58320, revenue: 0.5}
+- {name: Mamey, value: 2149908480, coefficient: 1.08, time: 6144, revenue: 1074954240, cash_second: 174960, revenue: 0.5}
+- {name: Guanabana, value: 25789901760, coefficient: 1.07, time: 36864, revenue: 29668737024, cash_second: 804816, revenue: 1.15}
+
+-- Forest (Brazil)
+- Abacaxi
+- Maracujá
+- Pitanga
+- Jabuticaba
+- Açaí
+- Cupuaçu
+- Guaraná
+- Acerola
+- Bacaba
+- Tucumã
+
+
+- Guineo
+- Aguacate
+- Cacao
+- Limón
+- Coco
+- Tomate
+- Melon
+- Sandia
+- Strawberry
+- Grapes
+- Tamarindo
+- Limoncillo
+
+------ concept I
 The game is inspired in Castle of the Winds 1993 and a little bit in metroid, the idea is that it's gonna be a goose that can use different spells to beat enemies (similar to the one from castle of the winds) and the goose its gonna be looking for the missing birds which each one will give him a special ability
 
 It will be similar to metroid where in order to get to certain areas you need special birds that will give you the ability to navigate those paths.
@@ -65,3 +104,4 @@ this means that the whole map is grass bottom left corner, the decimals indicate
 7 8 9
 4 5 6
 1 2 3
+

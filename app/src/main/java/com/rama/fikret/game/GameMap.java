@@ -1,9 +1,5 @@
 package com.rama.fikret.game;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
 public class GameMap {
     public static final int TILE_SIZE = 64;
 
@@ -55,51 +51,26 @@ public class GameMap {
         return !cells[row][col].item.blocksMovement;
     }
 
-    public boolean isWalkable(int row, int col, boolean canSwimNonWater) {
-        if (!isPassable(row, col)) {
-            return false;
-        }
-        return canSwimNonWater || !cells[row][col].isNonWaterLiquid();
+    /** Every liquid can be swum in, so walkable now only means "not blocked by a solid item". */
+    public boolean isWalkable(int row, int col) {
+        return isPassable(row, col);
     }
 
-    public boolean canStep(int row, int col, int dx, int dy, boolean canSwimNonWater) {
+    public boolean canStep(int row, int col, int dx, int dy) {
         if (dx == 0 && dy == 0) {
             return false;
         }
-        if (!isWalkable(row + dy, col + dx, canSwimNonWater)) {
+        if (!isWalkable(row + dy, col + dx)) {
             return false;
         }
         if (dx != 0 && dy != 0) {
-            boolean horizontalSideOpen = isWalkable(row, col + dx, canSwimNonWater);
-            boolean verticalSideOpen = isWalkable(row + dy, col, canSwimNonWater);
+            boolean horizontalSideOpen = isWalkable(row, col + dx);
+            boolean verticalSideOpen = isWalkable(row + dy, col);
             if (!horizontalSideOpen && !verticalSideOpen) {
                 return false;
             }
         }
         return true;
-    }
-
-    public int[] randomFreeCell(Random random, boolean canSwimNonWater, int avoidRow, int avoidCol) {
-        List<int[]> candidates = new ArrayList<>();
-        for (int r = 0; r < rows; r++) {
-            for (int c = 0; c < cols; c++) {
-                if (r == avoidRow && c == avoidCol) {
-                    continue;
-                }
-                MapCell cell = cells[r][c];
-                if (cell.hasItem()) {
-                    continue;
-                }
-                if (!canSwimNonWater && cell.isNonWaterLiquid()) {
-                    continue;
-                }
-                candidates.add(new int[]{r, c});
-            }
-        }
-        if (candidates.isEmpty()) {
-            return null;
-        }
-        return candidates.get(random.nextInt(candidates.size()));
     }
 
     public boolean isLiquidAt(float worldX, float worldY) {
