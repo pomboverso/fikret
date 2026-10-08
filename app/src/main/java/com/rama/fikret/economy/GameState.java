@@ -39,7 +39,6 @@ public final class GameState {
     private static final class World {
         final Garden[] gardens = new Garden[Worlds.GARDENS_PER_WORLD];
         boolean travelManager;
-        boolean travelBirdRecruited;
 
         World() {
             for (int i = 0; i < gardens.length; i++) {
@@ -198,6 +197,11 @@ public final class GameState {
 
     // ---- Gardens ------------------------------------------------------------------------------
 
+    /** The first garden is always open; the next ones open once the previous one is owned. */
+    public boolean isUnlocked(int w, int g) {
+        return g == 0 || worlds[w].gardens[g].count > 0 || worlds[w].gardens[g - 1].count > 0;
+    }
+
     /** Cost of buying {@code amount} gardens (or as many as affordable for {@link #BUY_MAX}). */
     public synchronized Quote quote(int w, int g, int amount) {
         Worlds.GardenDef def = Worlds.ALL[w].gardens[g];
@@ -221,6 +225,9 @@ public final class GameState {
 
     public synchronized boolean buy(int w, int g, int amount) {
         sync();
+        if (!isUnlocked(w, g)) {
+            return false;
+        }
         Quote q = quote(w, g, amount);
         if (q.amount <= 0 || q.cost > money) {
             return false;
@@ -300,15 +307,6 @@ public final class GameState {
         return true;
     }
 
-    public boolean isTravelBirdRecruited(int w) {
-        return worlds[w].travelBirdRecruited;
-    }
-
-    public synchronized void setTravelBirdRecruited(int w) {
-        worlds[w].travelBirdRecruited = true;
-        save();
-    }
-
     // ---- Upgrades -----------------------------------------------------------------------------
 
     public int upgradeLevel(int w, int g, int type) {
@@ -370,8 +368,7 @@ public final class GameState {
         sb.append("world=").append(currentWorld).append('\n');
         for (int w = 0; w < worlds.length; w++) {
             World world = worlds[w];
-            sb.append(String.format(Locale.US, "w%d=%d,%d\n", w,
-                    world.travelManager ? 1 : 0, world.travelBirdRecruited ? 1 : 0));
+            sb.append(String.format(Locale.US, "w%d=%d\n", w, world.travelManager ? 1 : 0));
             for (int g = 0; g < world.gardens.length; g++) {
                 Garden garden = world.gardens[g];
                 sb.append(String.format(Locale.US, "g%d.%d=%d,%d,%d,%d,%d,%d\n", w, g,
@@ -406,7 +403,6 @@ public final class GameState {
                     String[] p = value.split(",");
                     if (w < worlds.length) {
                         worlds[w].travelManager = p[0].equals("1");
-                        worlds[w].travelBirdRecruited = p[1].equals("1");
                     }
                 } else if (key.startsWith("g")) {
                     String[] ids = key.substring(1).split("\\.");

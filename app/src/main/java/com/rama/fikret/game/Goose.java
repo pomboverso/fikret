@@ -63,7 +63,7 @@ public class Goose {
         }
 
         if (moving) {
-            stepProgress += deltaMs / STEP_DURATION_MS;
+            stepProgress += deltaMs / (float) STEP_DURATION_MS;
             if (stepProgress >= 1f) {
                 stepProgress = 1f;
                 moving = false;

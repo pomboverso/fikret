@@ -55,17 +55,15 @@ public final class Worlds {
     public static final class WorldDef {
         public final int stageId;
         public final String name;
-        public final String country;
         public final GardenDef[] gardens;
         public final double[] managerCosts;
         public final double travelManagerCost;
         public final boolean placeholderPrices;
 
-        WorldDef(int stageId, String name, String country, GardenDef[] gardens,
+        WorldDef(int stageId, String name, GardenDef[] gardens,
                  double[] managerCosts, double travelManagerCost, boolean placeholderPrices) {
             this.stageId = stageId;
             this.name = name;
-            this.country = country;
             this.gardens = gardens;
             this.managerCosts = managerCosts;
             this.travelManagerCost = travelManagerCost;
@@ -106,11 +104,11 @@ public final class Worlds {
     }
 
     public static final WorldDef[] ALL = {
-            new WorldDef(Maps.BEACH, "Lake", "Dominican Republic",
+            new WorldDef(Maps.BEACH, "Lake",
                     build(LAKE_NAMES, LAKE_NUMBERS),
                     PLACEHOLDER_MANAGER_COSTS, PLACEHOLDER_TRAVEL_COST, false),
             // Brazil has no prices yet: it reuses the lake numbers so the world is playable.
-            new WorldDef(Maps.FOREST, "Forest", "Brazil",
+            new WorldDef(Maps.FOREST, "Forest",
                     build(FOREST_NAMES, LAKE_NUMBERS),
                     PLACEHOLDER_MANAGER_COSTS, PLACEHOLDER_TRAVEL_COST, true),
     };
@@ -145,20 +143,8 @@ public final class Worlds {
                 return "Space";
             case Maps.NIGHTMARE:
                 return "Nightmare";
-            case Maps.BEACH_CAVE:
-                return "Beach cave";
-            case Maps.FOREST_NEST:
-                return "Forest nest";
-            case Maps.CAVE_NEST:
-                return "Cave nest";
-            case Maps.VOLCANO_NEST:
-                return "Volcano nest";
             case Maps.ARCTIC_NEST:
-                return "Arctic nest";
-            case Maps.BUBBLEGUM_LAND_NEST:
-                return "Bubblegum land nest";
-            case Maps.SPACE_NEST:
-                return "Space nest";
+                return "Arctic secret farm";
             default:
                 return "Stage " + stageId;
         }
@@ -167,8 +153,6 @@ public final class Worlds {
     /** Every stage id that can be teleported to, in display order. */
     public static final int[] ALL_STAGE_IDS = {
             Maps.BEACH, Maps.FOREST, Maps.CAVE, Maps.VOLCANO, Maps.NUCLEAR, Maps.ARCTIC,
-            Maps.BUBBLEGUM_LAND, Maps.SPACE, Maps.NIGHTMARE, Maps.BEACH_CAVE,
-            Maps.FOREST_NEST, Maps.CAVE_NEST, Maps.VOLCANO_NEST,
-            Maps.ARCTIC_NEST, Maps.BUBBLEGUM_LAND_NEST, Maps.SPACE_NEST
+            Maps.BUBBLEGUM_LAND, Maps.SPACE, Maps.NIGHTMARE, Maps.ARCTIC_NEST
     };
 }

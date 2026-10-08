@@ -10,6 +10,7 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.ViewConfiguration;
 
 import com.rama.fikret.R;
 import com.rama.fikret.economy.GameState;
@@ -19,6 +20,7 @@ import com.rama.fikret.managers.PrefsManager;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
@@ -83,6 +85,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private boolean panResetting;
     private long panResetElapsedMs;
     private float panResetStartX, panResetStartY;
+    public interface OnExitListener {
+        void onExitToFarm();
+    }
+
+    private OnExitListener exitListener;
+
+    public void setOnExitListener(OnExitListener listener) {
+        this.exitListener = listener;
+    }
+
     private volatile boolean keyLeft, keyRight, keyUp, keyDown;
     private volatile int activeNumpadKeyCode = 0;
     private volatile int numpadDx, numpadDy;
@@ -91,6 +103,20 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private boolean tapCandidate;
     private float tapDownX, tapDownY;
     private float tapSlopPx;
+    private long lastTapTime;
+    private float lastTapX, lastTapY;
+    private boolean longPressFired;
+    private final Runnable longPressRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (tapCandidate && !pinching) {
+                longPressFired = true;
+                tapCandidate = false;
+                joystick.end();
+                dive();
+            }
+        }
+    };
 
     public GameView(Context context) {
         this(context, Maps.BEACH);
@@ -107,7 +133,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         setFocusableInTouchMode(true);
 
         backgroundPaint.setColor(Color.BLACK);
-//        effectPaint.setAntiAlias(true);
         sonarPaint.setStyle(Paint.Style.STROKE);
         sonarPaint.setAntiAlias(true);
         sonarPaint.setColor(0xFF7FE8FF);
@@ -210,12 +235,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             case MotionEvent.ACTION_DOWN:
                 pinching = false;
                 tapCandidate = true;
+                longPressFired = false;
                 tapDownX = event.getX();
                 tapDownY = event.getY();
                 joystick.begin(event.getX(), event.getY());
+                postDelayed(longPressRunnable, ViewConfiguration.getLongPressTimeout());
                 return true;
             case MotionEvent.ACTION_POINTER_DOWN:
                 tapCandidate = false;
+                removeCallbacks(longPressRunnable);
                 pinching = true;
                 panResetting = false;
                 joystick.end();
@@ -235,6 +263,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 } else if (!pinching) {
                     if (distance(event.getX(), event.getY(), tapDownX, tapDownY) > tapSlopPx) {
                         tapCandidate = false;
+                        removeCallbacks(longPressRunnable);
                     }
                     joystick.move(event.getX(), event.getY());
                 }
@@ -248,8 +277,23 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 tapCandidate = false;
                 pinching = false;
                 joystick.end();
+                removeCallbacks(longPressRunnable);
+                if (isTap && !longPressFired) {
+                    boolean second = lastTapTime > 0
+                            && event.getEventTime() - lastTapTime <= ViewConfiguration.getDoubleTapTimeout()
+                            && distance(event.getX(), event.getY(), lastTapX, lastTapY) <= tapSlopPx * 4;
+                    if (second) {
+                        lastTapTime = 0;
+                        sonar();
+                    } else {
+                        lastTapTime = event.getEventTime();
+                        lastTapX = event.getX();
+                        lastTapY = event.getY();
+                    }
+                }
                 return true;
             case MotionEvent.ACTION_CANCEL:
+                removeCallbacks(longPressRunnable);
                 tapCandidate = false;
                 pinching = false;
                 joystick.end();
@@ -411,7 +455,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         goose.update(deltaMs, dx, dy, map);
         goose.setSwimming(isOverLiquid(goose.getX(), goose.getY()));
         checkHoleTransition();
-        checkTravelBirdRecruited();
         updateTeleport(deltaMs);
         updateSonar(deltaMs);
         updateTravelBird(deltaMs);
@@ -464,15 +507,19 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         } else if (cell.item == ItemType.HOLE_UP) {
             changeStage(isNestStage(stageId) ? stageId - Maps.NEST_OFFSET : stageId - 1);
         } else if (cell.item == ItemType.HOLE_DOWN_NEST) {
-            changeStage(stageId + Maps.NEST_OFFSET);
+            if (Maps.hasNest(stageId)) {
+                changeStage(stageId + Maps.NEST_OFFSET);
+            }
+        } else if (cell.item == ItemType.FARM_EXIT) {
+            if (exitListener != null) {
+                exitListener.onExitToFarm();
+            }
         }
     }
 
     private static int diveTarget(ItemType item) {
         if (item == ItemType.DIVE_TO_ARCTIC) {
             return Maps.ARCTIC;
-        } else if (item == ItemType.DIVE_TO_BEACH_CAVE) {
-            return Maps.BEACH_CAVE;
         } else if (item == ItemType.DIVE_TO_BEACH) {
             return Maps.BEACH;
         }
@@ -720,37 +767,54 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             return;
         }
         GameState state = GameState.get(getContext());
-        List<int[]> used = new ArrayList<>();
-        used.add(new int[]{stage.spawnRow, stage.spawnCol});
 
-        for (int g = 0; g < Worlds.GARDENS_PER_WORLD; g++) {
+        // Manager birds float around the liquid at random; with no liquid they use the whole map.
+        List<int[]> spots = candidateSpots(true);
+        if (spots.isEmpty()) {
+            spots = candidateSpots(false);
+        }
+        Random random = new Random();
+        for (int g = 0; g < Worlds.GARDENS_PER_WORLD && !spots.isEmpty(); g++) {
             if (!state.hasManager(worldIndex, g)) {
                 continue;
             }
-            int[] spot = findFreeSpotNear(stage.spawnRow, stage.spawnCol, used);
-            if (spot == null) {
-                break;
-            }
-            used.add(spot);
-            managerBirds.add(new Bird(getResources(), spot[0], spot[1]));
+            int[] spot = spots.remove(random.nextInt(spots.size()));
+            Bird bird = new Bird(getResources(), spot[0], spot[1]);
+            bird.setSwimming(map.getCell(spot[0], spot[1]).isLiquid());
+            managerBirds.add(bird);
         }
 
+        // The guide bird shows up right away next to the goose and chases it from the start.
         if (state.hasTravelManager(worldIndex)) {
-            int[] hole = findItem(ItemType.HOLE_DOWN);
-            int anchorRow = hole != null ? hole[0] : stage.spawnRow;
-            int anchorCol = hole != null ? hole[1] : stage.spawnCol;
-            int[] spot = findFreeSpotNear(anchorRow, anchorCol, used);
-            if (spot != null) {
-                used.add(spot);
-                travelBird = new Bird(getResources(), spot[0], spot[1]);
-                if (state.isTravelBirdRecruited(worldIndex)) {
-                    travelBird.teleportTo(goose.getRow(), goose.getCol());
-                    travelBird.startFollowing();
-                    travelChase[0] = goose.getRow();
-                    travelChase[1] = goose.getCol();
+            List<int[]> used = new ArrayList<>();
+            used.add(new int[]{goose.getRow(), goose.getCol()});
+            int[] spot = findFreeSpotNear(goose.getRow(), goose.getCol(), used);
+            if (spot == null) {
+                spot = new int[]{goose.getRow(), goose.getCol()};
+            }
+            travelBird = new Bird(getResources(), spot[0], spot[1]);
+            travelBird.startFollowing();
+            travelChase[0] = goose.getRow();
+            travelChase[1] = goose.getCol();
+        }
+    }
+
+    /** Empty cells of the map (no item on them), optionally only the liquid ones. */
+    private List<int[]> candidateSpots(boolean liquidOnly) {
+        List<int[]> result = new ArrayList<>();
+        for (int r = 0; r < map.getRows(); r++) {
+            for (int c = 0; c < map.getCols(); c++) {
+                MapCell cell = map.getCell(r, c);
+                if (cell.hasItem() || (liquidOnly && !cell.isLiquid())) {
+                    continue;
                 }
+                if (r == goose.getRow() && c == goose.getCol()) {
+                    continue;
+                }
+                result.add(new int[]{r, c});
             }
         }
+        return result;
     }
 
     private int[] findItem(ItemType item) {
@@ -794,18 +858,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
         return false;
-    }
-
-    private void checkTravelBirdRecruited() {
-        if (travelBird == null || travelBird.isFollowing()) {
-            return;
-        }
-        if (travelBird.getRow() == goose.getRow() && travelBird.getCol() == goose.getCol()) {
-            travelBird.startFollowing();
-            travelChase[0] = goose.getRow();
-            travelChase[1] = goose.getCol();
-            GameState.get(getContext()).setTravelBirdRecruited(worldIndex);
-        }
     }
 
     private void updateTravelBird(long deltaMs) {

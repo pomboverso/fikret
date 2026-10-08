@@ -5,20 +5,20 @@ import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.LinearLayout;
 
 import com.rama.fikret.economy.GameState;
 import com.rama.fikret.game.GameView;
 import com.rama.fikret.game.Maps;
 import com.rama.fikret.managers.PrefsManager;
-import com.rama.fikret.widgets.HudView;
 
-/** The map. Only used to walk between farms and to see the birds of the managers you hired. */
+/**
+ * The map. Only used to walk between farms. Controls: swipe/keys to move, double tap for sonar,
+ * long press for dive, and the hole that leads back to the farm screen.
+ */
 public class GameActivity extends Activity {
     public static final String EXTRA_STAGE = "stage";
 
     private GameView gameView;
-    private HudView hudView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,17 +38,9 @@ public class GameActivity extends Activity {
             startPosition = prefs.getArrivalPosition();
         }
         gameView = new GameView(this, stageId, startPosition);
-        hudView = new HudView(this);
-        hudView.setOnActionListener(hudListener);
+        gameView.setOnExitListener(() -> runOnUiThread(() -> finish()));
 
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.addView(gameView, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
-        root.addView(hudView, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-
-        setContentView(root);
+        setContentView(gameView);
         gameView.requestFocus();
     }
 
@@ -61,12 +53,6 @@ public class GameActivity extends Activity {
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        hudView.refreshAbilities();
-    }
-
-    @Override
     protected void onPause() {
         super.onPause();
         int[] position = gameView.getGoosePosition();
@@ -75,21 +61,4 @@ public class GameActivity extends Activity {
         }
         GameState.get(this).save();
     }
-
-    private final HudView.OnActionListener hudListener = new HudView.OnActionListener() {
-        @Override
-        public void onSonar() {
-            gameView.sonar();
-        }
-
-        @Override
-        public void onTeleportHome() {
-            gameView.teleportHome();
-        }
-
-        @Override
-        public void onDive() {
-            gameView.dive();
-        }
-    };
 }

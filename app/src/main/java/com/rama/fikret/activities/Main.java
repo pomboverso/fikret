@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
@@ -24,7 +25,9 @@ import com.rama.fikret.helpers.SystemBars;
 import com.rama.fikret.managers.FontManager;
 import com.rama.fikret.managers.PrefsManager;
 
-/** Home screen: the gardens of the farm you are currently in. */
+/**
+ * Home screen: the gardens of the farm you are currently in.
+ */
 public class Main extends Activity {
     private static final long TICK_MS = 100;
     private static final int[] MULTIPLIERS = {1, 10, 100, GameState.BUY_MAX};
@@ -89,7 +92,7 @@ public class Main extends Activity {
     private void refresh() {
         world = state.getCurrentWorld();
         Worlds.WorldDef def = Worlds.ALL[world];
-        worldName.setText(FontManager.sanitizeForFont(def.name + " - " + def.country));
+        worldName.setText(FontManager.sanitizeForFont(def.name));
         moneyText.setText(NumberFormatter.money(state.getMoney()));
         multiplierButton.setText(multiplierLabel());
         adapter.notifyDataSetChanged();
@@ -170,30 +173,26 @@ public class Main extends Activity {
 
         private void bind(View row, final int g) {
             final int w = world < 0 ? state.getCurrentWorld() : world;
-            Worlds.GardenDef def = Worlds.ALL[w].gardens[g];
             int count = state.getCount(w, g);
-            boolean managed = state.hasManager(w, g);
+            boolean unlocked = state.isUnlocked(w, g);
 
             ((ImageView) row.findViewById(R.id.garden_icon))
-                    .setImageResource(count > 0 ? R.drawable.px_lock_open : R.drawable.px_lock);
+                    .setImageResource(unlocked ? R.drawable.px_lock_open : R.drawable.px_lock);
             ((TextView) row.findViewById(R.id.garden_count))
                     .setText(count + " / " + GameState.nextMilestone(count));
-            ((TextView) row.findViewById(R.id.garden_name))
-                    .setText(FontManager.sanitizeForFont(def.name + (managed ? " (auto)" : "")));
 
+            FrameLayout harvest_btn = row.findViewById(R.id.harvest_btn);
             ProgressBar bar = row.findViewById(R.id.progress_bar);
             bar.setProgress((int) Math.round(state.progress(w, g) * 1000));
             ((TextView) row.findViewById(R.id.product_value)).setText(
                     count > 0 ? NumberFormatter.money(state.revenuePerCycle(w, g)) : "Locked");
-            ((TextView) row.findViewById(R.id.time_left)).setText(
-                    state.isRunning(w, g) && state.cycleSeconds(w, g) >= 0.25
-                            ? NumberFormatter.duration(state.timeLeft(w, g)) : "");
             ((TextView) row.findViewById(R.id.duration)).setText(
-                    NumberFormatter.duration(state.cycleSeconds(w, g)));
+                    state.isRunning(w, g) && state.cycleSeconds(w, g) >= 0.25
+                            ? NumberFormatter.duration(state.timeLeft(w, g)) : NumberFormatter.duration(state.cycleSeconds(w, g)));
 
             int multiplier = MULTIPLIERS[multiplierIndex];
             GameState.Quote quote = state.quote(w, g, multiplier);
-            boolean affordable = quote.amount > 0 && quote.cost <= state.getMoney();
+            boolean affordable = unlocked && quote.amount > 0 && quote.cost <= state.getMoney();
             String label = multiplier == GameState.BUY_MAX
                     ? "Buy Max" + (quote.amount > 0 ? " (" + quote.amount + ")" : "")
                     : "Buy x" + multiplier;
@@ -201,21 +200,18 @@ public class Main extends Activity {
             ((TextView) row.findViewById(R.id.buy_cost)).setText(NumberFormatter.money(quote.cost));
 
             View buy = row.findViewById(R.id.buy_button);
-            buy.setBackgroundColor(getResources().getColor(affordable ? R.color.progress_fill : R.color.surface_0));
+            buy.setBackgroundColor(getResources().getColor(affordable ? R.color.accent : R.color.disabled));
             buy.setOnClickListener(v -> {
                 if (state.buy(w, g, MULTIPLIERS[multiplierIndex])) {
                     refresh();
                 }
             });
 
-            // Tapping the bar (or the icon) harvests a garden that has no manager yet.
-            View.OnClickListener harvest = v -> {
+            harvest_btn.setOnClickListener(v -> {
                 if (state.harvest(w, g)) {
                     refresh();
                 }
-            };
-            row.findViewById(R.id.progress_area).setOnClickListener(harvest);
-            row.findViewById(R.id.garden_preview).setOnClickListener(harvest);
+            });
         }
     }
 }

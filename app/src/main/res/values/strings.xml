@@ -12,12 +12,9 @@
     <string name="license_gpl3" translatable="false">GPL 3.0</string>
 
 
-    <string name="hud_desc_sonar">Sonar</string>
-    <string name="hud_desc_teleport_home">Teleport home</string>
-    <string name="hud_desc_dive">Dive</string>
 
     <string name="menu_map">Map</string>
-    <string name="menu_managers">Managers</string>
+    <string name="menu_managers">Supervisor</string>
     <string name="menu_upgrades">Upgrades</string>
     <string name="menu_ascent">Ascent</string>
     <string name="menu_achievements">Achievements</string>

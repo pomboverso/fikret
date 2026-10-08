@@ -28,7 +28,7 @@ public class ManagersActivity extends ListScreenActivity {
     @Override
     protected String subtitle() {
         Worlds.WorldDef def = Worlds.ALL[state.getCurrentWorld()];
-        return def.name + " - " + def.country;
+        return def.name;
     }
 
     @Override
@@ -74,12 +74,12 @@ public class ManagersActivity extends ListScreenActivity {
         double cost;
         if (travel) {
             name = "Guide Bird";
-            description = "Shows the way to the next world. Find the bird on the map.";
+            description = "Your Lead you the next world.";
             hired = state.hasTravelManager(world);
             cost = state.travelManagerCost(world);
         } else {
             String garden = def.gardens[position].name;
-            name = garden + " manager";
+            name = garden + " supervisor";
             description = "Harvests your " + garden + " automatically.";
             hired = state.hasManager(world, position);
             cost = state.managerCost(world, position);

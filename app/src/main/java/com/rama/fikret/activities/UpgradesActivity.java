@@ -24,7 +24,7 @@ public class UpgradesActivity extends ListScreenActivity {
     @Override
     protected String subtitle() {
         Worlds.WorldDef def = Worlds.ALL[state.getCurrentWorld()];
-        return def.name + " - " + def.country;
+        return def.name;
     }
 
     @Override

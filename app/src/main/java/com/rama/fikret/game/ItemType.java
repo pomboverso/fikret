@@ -38,6 +38,9 @@ public enum ItemType {
     // share a cell with another item
     HOLE_DOWN_NEST(13, 0, 0, false),
 
+    // the way back to the farm screen; looks like a hole going down
+    FARM_EXIT(39, 0, 0, false),
+
     // logic-only, never drawn
     BIRD(4, -1, -1, false),
     DIVE_TO_ARCTIC(29, -1, -1, false),
