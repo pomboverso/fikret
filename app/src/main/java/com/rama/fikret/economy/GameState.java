@@ -319,9 +319,13 @@ public final class GameState {
     }
 
     public double upgradeCost(int w, int g, int type) {
+        return upgradeCostAt(w, g, type, upgradeLevel(w, g, type));
+    }
+
+    /** Price of the upgrade of a given tier (0 = the first one) for a garden. */
+    public double upgradeCostAt(int w, int g, int type, int tier) {
         double factor = type == UPGRADE_SPEED ? Worlds.UPGRADE_SPEED_FACTOR : Worlds.UPGRADE_VALUE_FACTOR;
-        return Worlds.ALL[w].gardens[g].baseCost * factor
-                * Math.pow(Worlds.UPGRADE_GROWTH, upgradeLevel(w, g, type));
+        return Worlds.ALL[w].gardens[g].baseCost * factor * Math.pow(Worlds.UPGRADE_GROWTH, tier);
     }
 
     public synchronized boolean buyUpgrade(int w, int g, int type) {

@@ -13,6 +13,11 @@ public class ComingSoonActivity extends ListScreenActivity {
     }
 
     @Override
+    protected void bindRow(android.view.View row, int position) {
+        // static rows, nothing to refresh
+    }
+
+    @Override
     protected BaseAdapter createAdapter() {
         // An empty adapter makes the "coming soon" text show up.
         return new BaseAdapter() {

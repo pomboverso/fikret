@@ -26,7 +26,7 @@
     <!-- Links -->
     <color name="link">#89DCEC</color>
 
-    <color name="progress_fill">#FFD701</color>
+    <color name="progress_fill">@color/success</color>
 
     <!-- HUD -->
     <color name="hud_background">#222A37</color>

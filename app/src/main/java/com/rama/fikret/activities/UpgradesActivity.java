@@ -4,17 +4,30 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.rama.fikret.R;
 import com.rama.fikret.economy.GameState;
 import com.rama.fikret.economy.NumberFormatter;
 import com.rama.fikret.economy.Worlds;
+import com.rama.fikret.helpers.ViewUpdates;
 import com.rama.fikret.managers.FontManager;
 
-/** The gardens of the current farm with the two things you can improve: speed and value. */
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Every upgrade is its own row, cheapest tier first:
+ * all the Value upgrades of tier 1, then all the Speed upgrades of tier 1, then tier 2, and so on.
+ * Bought upgrades disappear from the list. A tier can only be bought after the one before it.
+ */
 public class UpgradesActivity extends ListScreenActivity {
+    private static final int[] TYPE_ORDER = {GameState.UPGRADE_VALUE, GameState.UPGRADE_SPEED};
+
     private int world;
+    /** Each entry is {tier, type, garden}. */
+    private final List<int[]> rows = new ArrayList<>();
 
     @Override
     protected String screenTitle() {
@@ -23,22 +36,35 @@ public class UpgradesActivity extends ListScreenActivity {
 
     @Override
     protected String subtitle() {
-        Worlds.WorldDef def = Worlds.ALL[state.getCurrentWorld()];
-        return def.name;
+        return Worlds.ALL[state.getCurrentWorld()].name;
+    }
+
+    private void rebuildRows() {
+        rows.clear();
+        for (int tier = 0; tier < Worlds.UPGRADE_MAX_LEVEL; tier++) {
+            for (int type : TYPE_ORDER) {
+                for (int g = 0; g < Worlds.GARDENS_PER_WORLD; g++) {
+                    if (tier >= state.upgradeLevel(world, g, type)) {
+                        rows.add(new int[]{tier, type, g});
+                    }
+                }
+            }
+        }
     }
 
     @Override
     protected BaseAdapter createAdapter() {
         world = state.getCurrentWorld();
+        rebuildRows();
         return new BaseAdapter() {
             @Override
             public int getCount() {
-                return Worlds.GARDENS_PER_WORLD;
+                return rows.size();
             }
 
             @Override
             public Object getItem(int position) {
-                return position;
+                return rows.get(position);
             }
 
             @Override
@@ -52,51 +78,57 @@ public class UpgradesActivity extends ListScreenActivity {
                 if (row == null) {
                     row = LayoutInflater.from(UpgradesActivity.this).inflate(R.layout.list_item_upgrade, parent, false);
                     applyFont(row);
+                    // Placeholder picture until each garden has its own art.
+                    ((ImageView) row.findViewById(R.id.garden_picture)).setImageResource(R.drawable.px_lock_open);
+                    wireListener(row);
                 }
-                bind(row, position);
+                bindRow(row, position);
                 return row;
             }
         };
     }
 
-    private void bind(View row, final int g) {
-        String name = Worlds.ALL[world].gardens[g].name;
-        int count = state.getCount(world, g);
-        ((TextView) row.findViewById(R.id.upgrade_name)).setText(
-                FontManager.sanitizeForFont(name + (count > 0 ? "  x" + count : "  (locked)")));
-        ((TextView) row.findViewById(R.id.upgrade_stats)).setText(
-                "Cycle " + NumberFormatter.duration(state.cycleSeconds(world, g))
-                        + "  -  Harvest " + NumberFormatter.money(state.revenuePerCycle(world, g)));
-
-        bindButton(row, R.id.speed_button, R.id.speed_label, R.id.speed_cost, "Speed", g, GameState.UPGRADE_SPEED, count);
-        bindButton(row, R.id.value_button, R.id.value_label, R.id.value_cost, "Value", g, GameState.UPGRADE_VALUE, count);
+    private void wireListener(final View row) {
+        row.findViewById(R.id.activate_button).setOnClickListener(v -> {
+            int position = (Integer) row.getTag();
+            if (position >= rows.size()) {
+                return;
+            }
+            int[] upgrade = rows.get(position);
+            boolean nextTier = state.upgradeLevel(world, upgrade[2], upgrade[1]) == upgrade[0];
+            if (nextTier && state.getCount(world, upgrade[2]) > 0
+                    && state.buyUpgrade(world, upgrade[2], upgrade[1])) {
+                rebuildRows();
+                adapter.notifyDataSetChanged();
+            }
+        });
     }
 
-    private void bindButton(View row, int buttonId, int labelId, int costId, String title,
-                            final int g, final int type, int count) {
-        View button = row.findViewById(buttonId);
-        TextView label = row.findViewById(labelId);
-        TextView cost = row.findViewById(costId);
-
-        int level = state.upgradeLevel(world, g, type);
-        label.setText(title + " x2  (" + level + "/" + Worlds.UPGRADE_MAX_LEVEL + ")");
-
-        if (state.upgradeMaxed(world, g, type)) {
-            cost.setText("MAX");
-            button.setBackgroundColor(getResources().getColor(R.color.surface_1));
-            button.setClickable(false);
-            button.setOnClickListener(null);
+    @Override
+    protected void bindRow(View row, int position) {
+        row.setTag(position);
+        if (position >= rows.size()) {
             return;
         }
+        int tier = rows.get(position)[0];
+        int type = rows.get(position)[1];
+        int g = rows.get(position)[2];
 
-        double price = state.upgradeCost(world, g, type);
-        boolean affordable = count > 0 && state.getMoney() >= price;
-        cost.setText(NumberFormatter.money(price));
-        button.setBackgroundColor(getResources().getColor(affordable ? R.color.accent : R.color.surface_0));
-        button.setClickable(affordable);
-        button.setOnClickListener(affordable ? v -> {
-            state.buyUpgrade(world, g, type);
-            adapter.notifyDataSetChanged();
-        } : null);
+        String garden = Worlds.ALL[world].gardens[g].name;
+        boolean speed = type == GameState.UPGRADE_SPEED;
+        ViewUpdates.setText((TextView) row.findViewById(R.id.garden_name),
+                FontManager.sanitizeForFont(garden + (speed ? " Speed x2" : " Value x2")));
+        ViewUpdates.setText((TextView) row.findViewById(R.id.upgrade_description),
+                FontManager.sanitizeForFont(speed
+                        ? "Doubles how fast " + garden + " harvests."
+                        : "Doubles how much " + garden + " earns."));
+
+        double cost = state.upgradeCostAt(world, g, type, tier);
+        ViewUpdates.setText((TextView) row.findViewById(R.id.activate_cost), NumberFormatter.money(cost));
+
+        boolean available = state.upgradeLevel(world, g, type) == tier && state.getCount(world, g) > 0;
+        boolean affordable = available && state.getMoney() >= cost;
+        ViewUpdates.setBackgroundColor(row.findViewById(R.id.activate_button),
+                getResources().getColor(affordable ? R.color.accent : R.color.disabled));
     }
 }

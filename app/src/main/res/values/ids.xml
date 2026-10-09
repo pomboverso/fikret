@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Used as a tag key by ViewUpdates to remember the last background colour. -->
+    <item name="last_background" type="id" />
+</resources>

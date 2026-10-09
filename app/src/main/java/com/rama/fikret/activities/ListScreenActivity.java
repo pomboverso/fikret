@@ -12,11 +12,15 @@ import com.rama.fikret.R;
 import com.rama.fikret.economy.GameState;
 import com.rama.fikret.economy.NumberFormatter;
 import com.rama.fikret.helpers.SystemBars;
+import com.rama.fikret.helpers.ViewUpdates;
 import com.rama.fikret.managers.FontManager;
 
 /**
- * Shared shell for the menu screens: back arrow, title, live money counter and a list.
- * Subclasses provide the adapter; the list is refreshed ten times a second while visible.
+ * Shared shell for the menu screens: back button, title, live money counter and a list.
+ *
+ * The visible rows are refreshed ten times a second by calling {@link #bindRow} on them directly.
+ * The adapter is only notified when the list itself changes (for example after a purchase),
+ * because re-laying out a ListView in the middle of a press cancels the press on the buttons.
  */
 public abstract class ListScreenActivity extends Activity {
     private static final long TICK_MS = 100;
@@ -31,10 +35,8 @@ public abstract class ListScreenActivity extends Activity {
         @Override
         public void run() {
             state.sync();
-            moneyText.setText(NumberFormatter.money(state.getMoney()));
-            if (adapter != null) {
-                adapter.notifyDataSetChanged();
-            }
+            ViewUpdates.setText(moneyText, NumberFormatter.money(state.getMoney()));
+            refreshRows();
             handler.postDelayed(this, TICK_MS);
         }
     };
@@ -42,6 +44,9 @@ public abstract class ListScreenActivity extends Activity {
     protected abstract String screenTitle();
 
     protected abstract BaseAdapter createAdapter();
+
+    /** Updates the texts and colours of one row. Must not change the row's size or listeners. */
+    protected abstract void bindRow(View row, int position);
 
     /** Optional line under the header (for example which farm the list belongs to). */
     protected String subtitle() {
@@ -85,6 +90,13 @@ public abstract class ListScreenActivity extends Activity {
         super.onPause();
         handler.removeCallbacks(ticker);
         state.save();
+    }
+
+    private void refreshRows() {
+        int first = list.getFirstVisiblePosition();
+        for (int i = 0; i < list.getChildCount(); i++) {
+            bindRow(list.getChildAt(i), first + i);
+        }
     }
 
     protected void applyFont(View row) {

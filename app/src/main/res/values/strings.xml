@@ -21,6 +21,7 @@
     <string name="menu_teleport">Teleport</string>
     <string name="coming_soon">Coming soon</string>
     <string name="rescue">Rescue</string>
+    <string name="activate">Activate</string>
     <string name="rescued">Rescued</string>
     <string name="buy_max">Max</string>
 </resources>

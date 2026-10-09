@@ -11,6 +11,7 @@ import com.rama.fikret.R;
 import com.rama.fikret.economy.NumberFormatter;
 import com.rama.fikret.economy.Worlds;
 import com.rama.fikret.game.BirdIcon;
+import com.rama.fikret.helpers.ViewUpdates;
 import com.rama.fikret.managers.FontManager;
 
 /**
@@ -27,8 +28,7 @@ public class ManagersActivity extends ListScreenActivity {
 
     @Override
     protected String subtitle() {
-        Worlds.WorldDef def = Worlds.ALL[state.getCurrentWorld()];
-        return def.name;
+        return Worlds.ALL[state.getCurrentWorld()].name;
     }
 
     @Override
@@ -57,14 +57,30 @@ public class ManagersActivity extends ListScreenActivity {
                     row = LayoutInflater.from(ManagersActivity.this).inflate(R.layout.list_item_manager, parent, false);
                     applyFont(row);
                     ((ImageView) row.findViewById(R.id.manager_picture)).setImageDrawable(BirdIcon.drawable(getResources()));
+                    wireListener(row);
                 }
-                bind(row, position);
+                bindRow(row, position);
                 return row;
             }
         };
     }
 
-    private void bind(View row, final int position) {
+    /** Set once per row view; the position is read from the row's tag at click time. */
+    private void wireListener(final View row) {
+        row.findViewById(R.id.rescue_button).setOnClickListener(v -> {
+            int position = (Integer) row.getTag();
+            boolean hired = position == Worlds.GARDENS_PER_WORLD
+                    ? state.hireTravelManager(world)
+                    : state.hireManager(world, position);
+            if (hired) {
+                adapter.notifyDataSetChanged();
+            }
+        });
+    }
+
+    @Override
+    protected void bindRow(View row, int position) {
+        row.setTag(position);
         Worlds.WorldDef def = Worlds.ALL[world];
         boolean travel = position == Worlds.GARDENS_PER_WORLD;
 
@@ -74,7 +90,7 @@ public class ManagersActivity extends ListScreenActivity {
         double cost;
         if (travel) {
             name = "Guide Bird";
-            description = "Your Lead you the next world.";
+            description = "Leads you to the next world.";
             hired = state.hasTravelManager(world);
             cost = state.travelManagerCost(world);
         } else {
@@ -85,35 +101,24 @@ public class ManagersActivity extends ListScreenActivity {
             cost = state.managerCost(world, position);
         }
 
-        ((TextView) row.findViewById(R.id.manager_name)).setText(FontManager.sanitizeForFont(name));
-        ((TextView) row.findViewById(R.id.manager_description)).setText(FontManager.sanitizeForFont(description));
+        ViewUpdates.setText((TextView) row.findViewById(R.id.manager_name), FontManager.sanitizeForFont(name));
+        ViewUpdates.setText((TextView) row.findViewById(R.id.manager_description), FontManager.sanitizeForFont(description));
 
         View button = row.findViewById(R.id.rescue_button);
         TextView label = row.findViewById(R.id.rescue_label);
         TextView costText = row.findViewById(R.id.rescue_cost);
 
         if (hired) {
-            label.setText(R.string.rescued);
-            costText.setText("");
-            button.setBackgroundColor(getResources().getColor(R.color.surface_1));
-            button.setOnClickListener(null);
-            button.setClickable(false);
+            ViewUpdates.setText(label, getString(R.string.rescued));
+            ViewUpdates.setText(costText, "");
+            ViewUpdates.setBackgroundColor(button, getResources().getColor(R.color.surface_1));
             return;
         }
 
         boolean affordable = state.getMoney() >= cost;
-        label.setText(R.string.rescue);
-        costText.setText(NumberFormatter.money(cost));
-        button.setBackgroundColor(getResources().getColor(affordable ? R.color.accent : R.color.surface_0));
-        button.setClickable(affordable);
-        final boolean isTravel = travel;
-        button.setOnClickListener(affordable ? v -> {
-            if (isTravel) {
-                state.hireTravelManager(world);
-            } else {
-                state.hireManager(world, position);
-            }
-            adapter.notifyDataSetChanged();
-        } : null);
+        ViewUpdates.setText(label, getString(R.string.rescue));
+        ViewUpdates.setText(costText, NumberFormatter.money(cost));
+        ViewUpdates.setBackgroundColor(button,
+                getResources().getColor(affordable ? R.color.accent : R.color.disabled));
     }
 }

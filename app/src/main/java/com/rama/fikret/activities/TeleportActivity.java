@@ -23,6 +23,11 @@ public class TeleportActivity extends ListScreenActivity {
     }
 
     @Override
+    protected void bindRow(android.view.View row, int position) {
+        // static rows, nothing to refresh
+    }
+
+    @Override
     protected BaseAdapter createAdapter() {
         return new BaseAdapter() {
             @Override
