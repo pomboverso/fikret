@@ -3,21 +3,59 @@
     android:id="@+id/root"
     style="@style/VerticalList"
     android:layout_height="match_parent"
-    android:background="@color/base"
+    android:background="@color/base_farm"
     android:paddingLeft="16dp"
     android:paddingTop="16dp"
     android:paddingRight="16dp"
     android:paddingBottom="16dp">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/app_name" />
+    <LinearLayout style="@style/HorizontalList">
 
-    <Button
-        android:id="@+id/play_button"
+        <FrameLayout
+            android:id="@+id/menu"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                style="@style/Icon32"
+                android:contentDescription="@string/app_name"
+                android:src="@drawable/px_menu" />
+        </FrameLayout>
+
+        <View style="@style/SeparatorListHorizontal" />
+
+        <TextView
+            android:id="@+id/money"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:singleLine="true"
+            android:text="0"
+            android:textColor="@color/text"
+            android:textSize="24sp" />
+
+        <Button
+            android:id="@+id/multiplier"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@color/accent"
+            android:paddingLeft="8dp"
+            android:paddingTop="4dp"
+            android:paddingRight="8dp"
+            android:paddingBottom="4dp"
+            android:text="x1"
+            android:textColor="@color/base" />
+    </LinearLayout>
+
+    <View style="@style/SeparatorListVertical" />
+
+    <ListView
+        android:id="@+id/garden_list"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/play" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="8dp"
+        android:scrollbars="none" />
 
 </LinearLayout>

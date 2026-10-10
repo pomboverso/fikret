@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/Dialog_Root">
+
+    <TextView
+        android:id="@+id/menu_map"
+        style="@style/BTN"
+        android:text="@string/menu_map" />
+
+    <View style="@style/SeparatorListVertical" />
+
+    <TextView
+        android:id="@+id/menu_managers"
+        style="@style/BTN"
+        android:text="@string/menu_managers" />
+
+    <View style="@style/SeparatorListVertical" />
+
+    <TextView
+        android:id="@+id/menu_upgrades"
+        style="@style/BTN"
+        android:text="@string/menu_upgrades" />
+
+    <View style="@style/SeparatorListVertical" />
+
+    <TextView
+        android:id="@+id/menu_ascend"
+        style="@style/BTN"
+        android:text="@string/menu_ascend" />
+
+    <View style="@style/SeparatorListVertical" />
+
+    <TextView
+        android:id="@+id/menu_achievements"
+        style="@style/BTN"
+        android:text="@string/menu_achievements" />
+
+    <View
+        android:id="@+id/menu_teleport_gap"
+        style="@style/SeparatorListVertical" />
+
+    <TextView
+        android:id="@+id/menu_teleport"
+        style="@style/BTN"
+        android:text="@string/menu_teleport" />
+
+</LinearLayout>

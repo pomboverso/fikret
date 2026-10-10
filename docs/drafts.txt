@@ -1,4 +1,4 @@
------- concept
+------ concept I
 The game is inspired in Castle of the Winds 1993 and a little bit in metroid, the idea is that it's gonna be a goose that can use different spells to beat enemies (similar to the one from castle of the winds) and the goose its gonna be looking for the missing birds which each one will give him a special ability
 
 It will be similar to metroid where in order to get to certain areas you need special birds that will give you the ability to navigate those paths.
@@ -65,3 +65,4 @@ this means that the whole map is grass bottom left corner, the decimals indicate
 7 8 9
 4 5 6
 1 2 3
+

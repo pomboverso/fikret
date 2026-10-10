@@ -5,26 +5,55 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 
-/**
- * A bitmap cut into a fixed grid of equally-sized frames.
- *
- * Frame size is computed from the decoded bitmap's own dimensions divided
- * by the known column/row count, instead of being hardcoded in pixels.
- * Vector drawables get rasterized into different-sized PNGs per screen
- * density at build time (since minSdk is below 21), so this keeps tile
- * slicing correct no matter which density bucket ends up loaded.
- */
 public class SpriteSheet {
     private final Bitmap bitmap;
+    private final int columns;
+    private final int rows;
     private final int frameWidth;
     private final int frameHeight;
 
     public SpriteSheet(Resources res, int resId, int columns, int rows) {
-        BitmapFactory.Options opts = new BitmapFactory.Options();
-        opts.inScaled = false;
-        this.bitmap = BitmapFactory.decodeResource(res, resId, opts);
+        this(decode(res, resId), columns, rows);
+    }
+
+    private SpriteSheet(Bitmap bitmap, int columns, int rows) {
+        this.bitmap = bitmap;
+        this.columns = columns;
+        this.rows = rows;
         this.frameWidth = bitmap.getWidth() / columns;
         this.frameHeight = bitmap.getHeight() / rows;
+    }
+
+    public static SpriteSheet withSquareCells(Resources res, int resId, int rows) {
+        Bitmap bitmap = decode(res, resId);
+        int cell = bitmap.getHeight() / rows;
+        int columns = Math.max(1, Math.round(bitmap.getWidth() / (float) cell));
+        return new SpriteSheet(bitmap, columns, rows);
+    }
+
+    public static SpriteSheet withSquareCellsByColumns(Resources res, int resId, int columns) {
+        Bitmap bitmap = decode(res, resId);
+        int cell = bitmap.getWidth() / columns;
+        int rows = Math.max(1, Math.round(bitmap.getHeight() / (float) cell));
+        return new SpriteSheet(bitmap, columns, rows);
+    }
+
+    private static Bitmap decode(Resources res, int resId) {
+        BitmapFactory.Options opts = new BitmapFactory.Options();
+        opts.inScaled = false;
+        Bitmap bitmap = BitmapFactory.decodeResource(res, resId, opts);
+        if (bitmap == null) {
+            throw new IllegalStateException("Could not decode drawable resource id " + resId);
+        }
+        return bitmap;
+    }
+
+    public int getColumns() {
+        return columns;
+    }
+
+    public int getRows() {
+        return rows;
     }
 
     public Rect frameRect(int col, int row) {

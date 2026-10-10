@@ -111,6 +111,22 @@
             android:exported="false" />
 
         <activity
+            android:name=".activities.ManagersActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".activities.UpgradesActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".activities.TeleportActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".activities.ComingSoonActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".activities.Main"
             android:excludeFromRecents="true"
             android:exported="true"

@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">Fikret</string>
     <string name="play">Play</string>
-    <string name="app_desc">A bird-rescue adventure</string>
+    <string name="app_desc">An idle garden adventure</string>
     <string name="app_version">%1$s v%2$d</string>
     <string name="app_claims_ads_desc">No Ads</string>
     <string name="app_claims_background_tasks_desc">No Background Tasks</string>
@@ -10,4 +10,24 @@
     <string name="app_claims_trackers_desc">No Trackers</string>
 
     <string name="license_gpl3" translatable="false">GPL 3.0</string>
+
+
+
+    <string name="menu_map">Map</string>
+    <string name="menu_managers">Supervisor</string>
+    <string name="menu_upgrades">Upgrades</string>
+    <string name="menu_ascend">Ascend</string>
+    <string name="ascend_have">Lake points</string>
+    <string name="ascend_bonus">Profit bonus</string>
+    <string name="ascend_gain">On ascend</string>
+    <string name="ascend_warning">Ascending restarts the lake: money, gardens, supervisors, discount managers and upgrades are lost. Lake points, accountants and guide birds stay.</string>
+    <string name="ascend_confirm">Ascend</string>
+    <string name="cancel">Cancel</string>
+    <string name="menu_achievements">Achievements</string>
+    <string name="menu_teleport">Teleport</string>
+    <string name="coming_soon">Coming soon</string>
+    <string name="rescue">Rescue</string>
+    <string name="activate">Activate</string>
+    <string name="rescued">Rescued</string>
+    <string name="buy_max">Max</string>
 </resources>

@@ -1,51 +1,60 @@
 package com.rama.fikret.game;
 
-import com.rama.fikret.R;
-
-/**
- * Registry of every tile "biome" a map can be built from.
- *
- * The numeric {@link #id} is the TENS digit of a raw map cell value (see
- * {@link MapCell}). Every tile type owns a 3x3 spritesheet ("atlas") where
- * each of the 9 sub-images corresponds to a numpad position:
- *
- * <pre>
- * 7 8 9
- * 4 5 6
- * 1 2 3
- * </pre>
- *
- * so a single cell can render as a corner, an edge, or the plain center
- * piece of that biome, depending on its position digit.
- *
- * To add a new biome (water, lava, ground, snow...) just add another enum
- * constant here with its own id and drawable - nothing else needs to change,
- * GameView reads this list to know what to load.
- */
 public enum TileType {
-    GRASS(1, R.drawable.gm_grass, 3, 3);
+    NONE(0, false),
+    GRASS(1, false),
+    WATER(2, true),
+    SAND(3, false),
+    SOIL(4, false),
+    DEEP_GRASS(5, false),
+    DEEP_WATER(6, true),
+    SNOW(7, false),
+    ICE(8, false),
+    VOLCANIC_SOIL(9, false),
+    LAVA(10, true),
+    ACID_SOIL(11, false),
+    ACID_LAKE(12, true),
+    BUBBLEGUM(13, false),
+    BUBBLEGUM_LAKE(14, true),
+    SPACE_PURPLE_SOIL(15, false),
+    SPACE_LAKE(16, true),
+    NIGHTMARE_BLOOD_LAKE(17, true);
+
+    public static final int BLOCK_SIZE = 3;
+    public static final int TYPES_PER_COLUMN = 10;
+    public static final int TYPE_COLUMNS = 2;
+
+    public static final int SHEET_COLUMNS = TYPE_COLUMNS * BLOCK_SIZE;
+    public static final int SHEET_ROWS = TYPES_PER_COLUMN * BLOCK_SIZE;
 
     public final int id;
-    public final int atlasRes;
-    public final int atlasColumns;
-    public final int atlasRows;
+    public final boolean liquid;
+    public final int blockCol;
+    public final int blockRow;
 
-    TileType(int id, int atlasRes, int atlasColumns, int atlasRows) {
+    TileType(int id, boolean liquid) {
         this.id = id;
-        this.atlasRes = atlasRes;
-        this.atlasColumns = atlasColumns;
-        this.atlasRows = atlasRows;
+        this.liquid = liquid;
+        if (id <= 0) {
+            this.blockCol = -1;
+            this.blockRow = -1;
+        } else {
+            int index = id - 1;
+            this.blockCol = (index / TYPES_PER_COLUMN) * BLOCK_SIZE;
+            this.blockRow = (index % TYPES_PER_COLUMN) * BLOCK_SIZE;
+        }
     }
 
-    /** Looks up a tile type by its tens-digit id, falling back to the first
-     *  registered type (grass) for 0 or any unknown id, so old/short codes
-     *  never crash the renderer. */
+    public boolean isWater() {
+        return this == WATER || this == DEEP_WATER;
+    }
+
     public static TileType fromId(int id) {
         for (TileType t : values()) {
             if (t.id == id) {
                 return t;
             }
         }
-        return values()[0];
+        return NONE;
     }
 }

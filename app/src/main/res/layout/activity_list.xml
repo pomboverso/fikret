@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    style="@style/VerticalList"
+    android:layout_height="match_parent"
+    android:background="@color/base_farm"
+    android:paddingLeft="16dp"
+    android:paddingTop="16dp"
+    android:paddingRight="16dp"
+    android:paddingBottom="16dp">
+
+    <LinearLayout style="@style/HorizontalList">
+
+        <FrameLayout
+            android:id="@+id/back"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            >
+
+            <ImageView
+                style="@style/Icon24"
+                android:contentDescription="@null"
+                android:src="@drawable/px_times" />
+        </FrameLayout>
+
+        <View style="@style/SeparatorListHorizontal" />
+
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:singleLine="true"
+            android:textColor="@color/accent"
+            android:textSize="@dimen/h2" />
+
+        <TextView
+            android:id="@+id/money"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:textColor="@color/text"
+            android:textSize="20sp" />
+    </LinearLayout>
+
+    <View style="@style/SeparatorListVertical" />
+
+    <TextView
+        android:id="@+id/subtitle"
+        style="@style/Text" />
+
+    <View style="@style/SeparatorListVertical" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <ListView
+            android:id="@+id/list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:divider="@android:color/transparent"
+            android:dividerHeight="8dp"
+            android:scrollbars="none" />
+
+        <TextView
+            android:id="@+id/empty"
+            style="@style/H2_center"
+            android:layout_gravity="center"
+            android:text="@string/coming_soon" />
+    </FrameLayout>
+
+</LinearLayout>

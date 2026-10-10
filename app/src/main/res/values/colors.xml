@@ -14,9 +14,6 @@
     <!-- UI -->
     <color name="border">#585B72</color>
 
-    <!-- Accents -->
-    <color name="accent">#CBA6F7</color>
-
     <!-- Semantic -->
     <color name="success">#A6E3A2</color>
     <color name="warning">#FFD701</color>
@@ -25,5 +22,10 @@
 
     <!-- Links -->
     <color name="link">#89DCEC</color>
+    
 
+    <color name="base_farm">#495e92</color>
+    <color name="progress_bg">#4b5775</color>
+    <color name="progress_fill">#69b680</color>
+    <color name="accent">#88a3e5</color>
 </resources>
