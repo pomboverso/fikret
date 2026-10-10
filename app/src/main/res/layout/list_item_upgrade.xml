@@ -6,7 +6,7 @@
         android:layout_width="65dp"
         android:layout_height="65dp"
         android:background="@drawable/px_circle"
-        android:backgroundTint="@color/surface_0"
+        android:backgroundTint="@color/icon_bg"
         android:padding="10dp">
 
         <ImageView

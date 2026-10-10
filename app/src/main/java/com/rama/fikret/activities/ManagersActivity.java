@@ -182,7 +182,7 @@ public class ManagersActivity extends ListScreenActivity {
                 double cost = state.accountantCost(world, g);
                 String garden = def.gardens[g].name;
                 name = garden + " accountant";
-                description = "Makes " + garden + " cost 10% less. Paid with lake points.";
+                description = "Makes " + garden + " cost 10% less.";
                 costLabel = NumberFormatter.number(cost);
                 coin = true;
                 affordable = state.getAngels() >= cost;

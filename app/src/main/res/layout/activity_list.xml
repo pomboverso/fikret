@@ -3,7 +3,7 @@
     android:id="@+id/root"
     style="@style/VerticalList"
     android:layout_height="match_parent"
-    android:background="@color/base_farm"
+    android:background="@color/base"
     android:paddingLeft="16dp"
     android:paddingTop="16dp"
     android:paddingRight="16dp"
@@ -18,7 +18,7 @@
             >
 
             <ImageView
-                style="@style/Icon24"
+                style="@style/Icon18"
                 android:contentDescription="@null"
                 android:src="@drawable/px_times" />
         </FrameLayout>
@@ -42,12 +42,6 @@
             android:textColor="@color/text"
             android:textSize="20sp" />
     </LinearLayout>
-
-    <View style="@style/SeparatorListVertical" />
-
-    <TextView
-        android:id="@+id/subtitle"
-        style="@style/Text" />
 
     <View style="@style/SeparatorListVertical" />
 

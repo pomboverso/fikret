@@ -106,6 +106,13 @@
         <item name="android:singleLine">true</item>
     </style>
 
+    <style name="Icon18">
+        <item name="android:layout_width">18dp</item>
+        <item name="android:layout_height">18dp</item>
+        <item name="android:layout_gravity">center</item>
+        <item name="android:tint">@color/text</item>
+    </style>
+
     <style name="Icon24">
         <item name="android:layout_width">24dp</item>
         <item name="android:layout_height">24dp</item>

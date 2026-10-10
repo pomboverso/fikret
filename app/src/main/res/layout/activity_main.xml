@@ -3,7 +3,7 @@
     android:id="@+id/root"
     style="@style/VerticalList"
     android:layout_height="match_parent"
-    android:background="@color/base_farm"
+    android:background="@color/base"
     android:paddingLeft="16dp"
     android:paddingTop="16dp"
     android:paddingRight="16dp"
@@ -32,7 +32,7 @@
             android:singleLine="true"
             android:text="0"
             android:textColor="@color/text"
-            android:textSize="24sp" />
+            android:textSize="@dimen/h2" />
 
         <Button
             android:id="@+id/multiplier"

@@ -4,6 +4,7 @@
 
     <TextView
         style="@style/H1"
+        android:gravity="center"
         android:text="@string/menu_ascend" />
 
     <View style="@style/SeparatorListVertical" />
