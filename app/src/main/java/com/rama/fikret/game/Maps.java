@@ -172,7 +172,7 @@ public final class Maps {
     public static Stage get(int stageId) {
         switch (stageId) {
             case BEACH:
-                return beach();
+                return lake();
             case FOREST:
                 return forest();
             case CAVE:
@@ -370,7 +370,7 @@ public final class Maps {
         }
     }
 
-    private static Stage beach() {
+    private static Stage lake() {
         int[][] tiles = new int[30][30];
         for (int y = 0; y < 30; y++) {
             Arrays.fill(tiles[y], 25);
@@ -391,7 +391,7 @@ public final class Maps {
                 new int[]{9, 20}, new int[]{9, 21});
 
         tiles[27][2] += hole_down;
-        tiles[1][1] += farm_exit;   // exit to the farm screen
+        tiles[17][15] += farm_exit;
 
         randomizedItemGroup(tiles, 2, 28, 2, 28,
                 new int[]{25011, 25012, 25013, 25014, 25015, 25016, 25017, 25018, 25019},
@@ -405,7 +405,7 @@ public final class Maps {
                 place(lilypond_01, 20, 3),
                 place(lilypond_02, 20, 3));
 
-        return new Stage(tiles, 2, 2);
+        return new Stage(tiles, 18, 15);
     }
 
     private static Stage forest() {

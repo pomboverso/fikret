@@ -24,9 +24,9 @@
     <View style="@style/SeparatorListVertical" />
 
     <TextView
-        android:id="@+id/menu_ascent"
+        android:id="@+id/menu_ascend"
         style="@style/BTN"
-        android:text="@string/menu_ascent" />
+        android:text="@string/menu_ascend" />
 
     <View style="@style/SeparatorListVertical" />
 

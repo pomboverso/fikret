@@ -21,6 +21,15 @@ public final class ViewUpdates {
     }
 
 
+    /** Sets an image only when it differs from the last one set through this helper. */
+    public static void setImageResource(android.widget.ImageView view, int resId) {
+        if (Integer.valueOf(resId).equals(view.getTag())) {
+            return;
+        }
+        view.setTag(resId);
+        view.setImageResource(resId);
+    }
+
     /** Sets a solid background only when it differs from the last one set through this helper. */
     public static void setBackgroundColor(View view, int color) {
         Object last = view.getTag(com.rama.fikret.R.id.last_background);

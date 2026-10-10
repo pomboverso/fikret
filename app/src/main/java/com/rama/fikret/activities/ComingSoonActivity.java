@@ -2,7 +2,7 @@ package com.rama.fikret.activities;
 
 import android.widget.BaseAdapter;
 
-/** Placeholder for the views that are not built yet (ascent, achievements). */
+/** Placeholder for the views that are not built yet (achievements). */
 public class ComingSoonActivity extends ListScreenActivity {
     public static final String EXTRA_TITLE = "title";
 

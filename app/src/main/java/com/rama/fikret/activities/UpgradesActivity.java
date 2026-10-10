@@ -11,6 +11,7 @@ import com.rama.fikret.R;
 import com.rama.fikret.economy.GameState;
 import com.rama.fikret.economy.NumberFormatter;
 import com.rama.fikret.economy.Worlds;
+import com.rama.fikret.helpers.GardenIcons;
 import com.rama.fikret.helpers.ViewUpdates;
 import com.rama.fikret.managers.FontManager;
 
@@ -18,14 +19,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Every upgrade is its own row, cheapest tier first:
+ * Every upgrade is its own row, in a staircase of rising prices:
  * all the Value upgrades of tier 1, then all the Speed upgrades of tier 1, then tier 2, and so on.
+ * Each row costs more than the one above it (see {@link Worlds#upgradePrice}).
  * Bought upgrades disappear from the list. A tier can only be bought after the one before it.
  */
 public class UpgradesActivity extends ListScreenActivity {
     private static final int[] TYPE_ORDER = {GameState.UPGRADE_VALUE, GameState.UPGRADE_SPEED};
 
-    private int world;
     /** Each entry is {tier, type, garden}. */
     private final List<int[]> rows = new ArrayList<>();
 
@@ -54,7 +55,6 @@ public class UpgradesActivity extends ListScreenActivity {
 
     @Override
     protected BaseAdapter createAdapter() {
-        world = state.getCurrentWorld();
         rebuildRows();
         return new BaseAdapter() {
             @Override
@@ -78,8 +78,6 @@ public class UpgradesActivity extends ListScreenActivity {
                 if (row == null) {
                     row = LayoutInflater.from(UpgradesActivity.this).inflate(R.layout.list_item_upgrade, parent, false);
                     applyFont(row);
-                    // Placeholder picture until each garden has its own art.
-                    ((ImageView) row.findViewById(R.id.garden_picture)).setImageResource(R.drawable.px_lock_open);
                     wireListener(row);
                 }
                 bindRow(row, position);
@@ -115,6 +113,8 @@ public class UpgradesActivity extends ListScreenActivity {
         int g = rows.get(position)[2];
 
         String garden = Worlds.ALL[world].gardens[g].name;
+        ViewUpdates.setImageResource((ImageView) row.findViewById(R.id.garden_picture),
+                GardenIcons.forGarden(world, g));
         boolean speed = type == GameState.UPGRADE_SPEED;
         ViewUpdates.setText((TextView) row.findViewById(R.id.garden_name),
                 FontManager.sanitizeForFont(garden + (speed ? " Speed x2" : " Value x2")));
@@ -124,10 +124,10 @@ public class UpgradesActivity extends ListScreenActivity {
                         : "Doubles how much " + garden + " earns."));
 
         double cost = state.upgradeCostAt(world, g, type, tier);
-        ViewUpdates.setText((TextView) row.findViewById(R.id.activate_cost), NumberFormatter.money(cost));
+        ViewUpdates.setText((TextView) row.findViewById(R.id.activate_cost), NumberFormatter.money(world, cost));
 
         boolean available = state.upgradeLevel(world, g, type) == tier && state.getCount(world, g) > 0;
-        boolean affordable = available && state.getMoney() >= cost;
+        boolean affordable = available && state.getMoney(world) >= cost;
         ViewUpdates.setBackgroundColor(row.findViewById(R.id.activate_button),
                 getResources().getColor(affordable ? R.color.accent : R.color.disabled));
     }

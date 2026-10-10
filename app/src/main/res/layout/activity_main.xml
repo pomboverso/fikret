@@ -30,7 +30,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:singleLine="true"
-            android:text="A$0"
+            android:text="0"
             android:textColor="@color/text"
             android:textSize="24sp" />
 

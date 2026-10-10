@@ -6,12 +6,21 @@ public final class NumberFormatter {
     private NumberFormatter() {
     }
 
-    private static final String[] SUFFIXES = {
-            "", "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc"
-    };
+    /**
+     * One notation everywhere, no K / M / B names: plain digits below this, powers of ten from here.
+     * (1,234 and 999,999 stay as digits; 1,000,000 shows as 1e6, 7.5 * 10^106 as 7.5e106.)
+     */
+    private static final double SCIENTIFIC_FROM = 1e6;
 
-    public static String money(double value) {
-        return Worlds.CURRENCY + number(value);
+    /** Amount in the currency of the given world, e.g. "R$1.5e6". */
+    public static String money(int world, double value) {
+        return Worlds.currencyOf(world) + number(value);
+    }
+
+    /** 7.5e106 style, for numbers whose English names nobody could read. */
+    private static String scientific(double value) {
+        String[] parts = String.format(Locale.US, "%.2e", value).split("e");
+        return trim(parts[0]) + "e" + Integer.parseInt(parts[1]);
     }
 
     public static String number(double value) {
@@ -30,12 +39,10 @@ public final class NumberFormatter {
             }
             return String.format(Locale.US, "%.0f", value);
         }
-        int tier = (int) Math.floor(Math.log10(value) / 3);
-        if (tier >= SUFFIXES.length) {
-            return String.format(Locale.US, "%.2e", value);
+        if (Math.round(value) >= SCIENTIFIC_FROM) {
+            return scientific(value);
         }
-        double scaled = value / Math.pow(1000, tier);
-        return trim(String.format(Locale.US, "%.2f", scaled)) + SUFFIXES[tier];
+        return String.format(Locale.US, "%,d", Math.round(value));
     }
 
     private static String trim(String s) {

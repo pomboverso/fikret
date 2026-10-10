@@ -23,8 +23,7 @@
                 android:id="@+id/garden_icon"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:contentDescription="@null"
-                android:src="@drawable/px_lock" />
+                android:contentDescription="@null" />
         </FrameLayout>
 
         <TextView
@@ -66,7 +65,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:text="A$1" />
+                    android:text="1" />
             </FrameLayout>
         </LinearLayout>
 
@@ -98,7 +97,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/base"
-                    android:text="A$100,000" />
+                    android:text="100,000" />
             </LinearLayout>
 
             <View style="@style/SeparatorListHorizontal" />

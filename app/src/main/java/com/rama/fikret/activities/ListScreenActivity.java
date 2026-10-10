@@ -28,6 +28,7 @@ public abstract class ListScreenActivity extends Activity {
     protected GameState state;
     protected ListView list;
     protected BaseAdapter adapter;
+    protected int world;
     private TextView moneyText;
     private final Handler handler = new Handler();
 
@@ -35,7 +36,7 @@ public abstract class ListScreenActivity extends Activity {
         @Override
         public void run() {
             state.sync();
-            ViewUpdates.setText(moneyText, NumberFormatter.money(state.getMoney()));
+            ViewUpdates.setText(moneyText, NumberFormatter.money(world, state.getMoney(world)));
             refreshRows();
             handler.postDelayed(this, TICK_MS);
         }
@@ -62,6 +63,7 @@ public abstract class ListScreenActivity extends Activity {
         FontManager.apply(root, FontManager.getJersey25(this));
 
         state = GameState.get(this);
+        world = state.getCurrentWorld();
         moneyText = findViewById(R.id.money);
         list = findViewById(R.id.list);
 

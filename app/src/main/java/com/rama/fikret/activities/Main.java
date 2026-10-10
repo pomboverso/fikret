@@ -20,6 +20,7 @@ import com.rama.fikret.economy.GameState;
 import com.rama.fikret.economy.NumberFormatter;
 import com.rama.fikret.economy.Worlds;
 import com.rama.fikret.game.Ability;
+import com.rama.fikret.helpers.GardenIcons;
 import com.rama.fikret.helpers.SystemBars;
 import com.rama.fikret.helpers.ViewUpdates;
 import com.rama.fikret.managers.FontManager;
@@ -30,7 +31,7 @@ import com.rama.fikret.managers.PrefsManager;
  */
 public class Main extends Activity {
     private static final long TICK_MS = 100;
-    private static final int[] MULTIPLIERS = {1, 10, 100, GameState.BUY_MAX};
+    private static final int[] MULTIPLIERS = {1, GameState.BUY_NEXT, GameState.BUY_MAX};
 
     private static int multiplierIndex = 0;
 
@@ -94,14 +95,15 @@ public class Main extends Activity {
         world = state.getCurrentWorld();
         Worlds.WorldDef def = Worlds.ALL[world];
         worldName.setText(FontManager.sanitizeForFont(def.name));
-        moneyText.setText(NumberFormatter.money(state.getMoney()));
+        moneyText.setText(NumberFormatter.money(world, state.getMoney(world)));
         multiplierButton.setText(multiplierLabel());
         refreshRows();
+        updateAscend();
     }
 
     private static String multiplierLabel() {
         int m = MULTIPLIERS[multiplierIndex];
-        return m == GameState.BUY_MAX ? "Max" : "x" + m;
+        return m == GameState.BUY_MAX ? "Max" : m == GameState.BUY_NEXT ? "Next" : "x" + m;
     }
 
     // ---- Menu ---------------------------------------------------------------------------------
@@ -115,7 +117,10 @@ public class Main extends Activity {
         bindMenuItem(dialog, content, R.id.menu_map, new Intent(this, GameActivity.class));
         bindMenuItem(dialog, content, R.id.menu_managers, new Intent(this, ManagersActivity.class));
         bindMenuItem(dialog, content, R.id.menu_upgrades, new Intent(this, UpgradesActivity.class));
-        bindMenuItem(dialog, content, R.id.menu_ascent, comingSoon(R.string.menu_ascent));
+        content.findViewById(R.id.menu_ascend).setOnClickListener(v -> {
+            dialog.dismiss();
+            showAscend();
+        });
         bindMenuItem(dialog, content, R.id.menu_achievements, comingSoon(R.string.menu_achievements));
         bindMenuItem(dialog, content, R.id.menu_teleport, new Intent(this, TeleportActivity.class));
 
@@ -130,6 +135,48 @@ public class Main extends Activity {
     }
 
     private static final boolean TELEPORT_ALWAYS_AVAILABLE = true;
+
+    // ---- Ascend -------------------------------------------------------------------------------
+
+    private Dialog ascendDialog;
+
+    /** Modal with the lake points you have, the ones you would get, and Ascend / Cancel. */
+    private void showAscend() {
+        final Dialog dialog = new Dialog(this, R.style.AppDialog);
+        View content = LayoutInflater.from(this).inflate(R.layout.dialog_ascend, null);
+        FontManager.apply(content, FontManager.getJersey25(this));
+        dialog.setContentView(content);
+
+        content.findViewById(R.id.ascend_cancel).setOnClickListener(v -> dialog.dismiss());
+        content.findViewById(R.id.ascend_confirm).setOnClickListener(v -> {
+            if (state.ascend()) {
+                dialog.dismiss();
+                refresh();
+            }
+        });
+        dialog.setOnDismissListener(d -> ascendDialog = null);
+        ascendDialog = dialog;
+        dialog.show();
+        updateAscend();
+    }
+
+    /** Keeps the open ascend modal in sync with the ticking economy. */
+    private void updateAscend() {
+        if (ascendDialog == null) {
+            return;
+        }
+        state.sync();
+        double have = state.getAngels();
+        double gain = state.pendingAngels();
+        ViewUpdates.setText((TextView) ascendDialog.findViewById(R.id.ascend_have),
+                Worlds.ANGEL_SYMBOL + NumberFormatter.number(have));
+        ViewUpdates.setText((TextView) ascendDialog.findViewById(R.id.ascend_bonus),
+                "+" + NumberFormatter.number(have * Worlds.ANGEL_BONUS * 100) + "%");
+        ViewUpdates.setText((TextView) ascendDialog.findViewById(R.id.ascend_gain),
+                "+" + Worlds.ANGEL_SYMBOL + NumberFormatter.number(gain));
+        ViewUpdates.setBackgroundColor(ascendDialog.findViewById(R.id.ascend_confirm),
+                getResources().getColor(gain > 0 ? R.color.accent : R.color.disabled));
+    }
 
     private Intent comingSoon(int titleRes) {
         return new Intent(this, ComingSoonActivity.class)
@@ -159,12 +206,8 @@ public class Main extends Activity {
         int count = state.getCount(w, g);
         boolean unlocked = state.isUnlocked(w, g);
 
-        int icon = unlocked ? R.drawable.px_lock_open : R.drawable.px_lock;
-        ImageView iconView = row.findViewById(R.id.garden_icon);
-        if (!Integer.valueOf(icon).equals(iconView.getTag())) {
-            iconView.setTag(icon);
-            iconView.setImageResource(icon);
-        }
+        ViewUpdates.setImageResource((ImageView) row.findViewById(R.id.garden_icon),
+                GardenIcons.forGarden(w, g));
         ViewUpdates.setText((TextView) row.findViewById(R.id.garden_count),
                 count + " / " + GameState.nextMilestone(count));
 
@@ -174,7 +217,7 @@ public class Main extends Activity {
             bar.setProgress(progress);
         }
         ViewUpdates.setText((TextView) row.findViewById(R.id.product_value),
-                count > 0 ? NumberFormatter.money(state.revenuePerCycle(w, g)) : "Locked");
+                count > 0 ? NumberFormatter.money(w, state.revenuePerCycle(w, g)) : "Locked");
         ViewUpdates.setText((TextView) row.findViewById(R.id.duration),
                 state.isRunning(w, g) && state.cycleSeconds(w, g) >= 0.25
                         ? NumberFormatter.duration(state.timeLeft(w, g))
@@ -182,12 +225,17 @@ public class Main extends Activity {
 
         int multiplier = MULTIPLIERS[multiplierIndex];
         GameState.Quote quote = state.quote(w, g, multiplier);
-        boolean affordable = unlocked && quote.amount > 0 && quote.cost <= state.getMoney();
-        String label = multiplier == GameState.BUY_MAX
-                ? "Buy Max" + (quote.amount > 0 ? " (" + quote.amount + ")" : "")
-                : "Buy x" + multiplier;
+        boolean affordable = unlocked && quote.amount > 0 && quote.cost <= state.getMoney(w);
+        String label;
+        if (multiplier == GameState.BUY_MAX) {
+            label = "Buy Max" + (quote.amount > 0 ? " (" + quote.amount + ")" : "");
+        } else if (multiplier == GameState.BUY_NEXT) {
+            label = "Buy Next (" + quote.amount + ")";
+        } else {
+            label = "Buy x" + multiplier;
+        }
         ViewUpdates.setText((TextView) row.findViewById(R.id.buy_label), label);
-        ViewUpdates.setText((TextView) row.findViewById(R.id.buy_cost), NumberFormatter.money(quote.cost));
+        ViewUpdates.setText((TextView) row.findViewById(R.id.buy_cost), NumberFormatter.money(w, quote.cost));
         ViewUpdates.setBackgroundColor(row.findViewById(R.id.buy_button),
                 getResources().getColor(affordable ? R.color.accent : R.color.disabled));
     }

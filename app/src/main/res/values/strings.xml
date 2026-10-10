@@ -16,7 +16,13 @@
     <string name="menu_map">Map</string>
     <string name="menu_managers">Supervisor</string>
     <string name="menu_upgrades">Upgrades</string>
-    <string name="menu_ascent">Ascent</string>
+    <string name="menu_ascend">Ascend</string>
+    <string name="ascend_have">Lake points</string>
+    <string name="ascend_bonus">Profit bonus</string>
+    <string name="ascend_gain">On ascend</string>
+    <string name="ascend_warning">Ascending restarts the lake: money, gardens, supervisors, discount managers and upgrades are lost. Lake points, accountants and guide birds stay.</string>
+    <string name="ascend_confirm">Ascend</string>
+    <string name="cancel">Cancel</string>
     <string name="menu_achievements">Achievements</string>
     <string name="menu_teleport">Teleport</string>
     <string name="coming_soon">Coming soon</string>

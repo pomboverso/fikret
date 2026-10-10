@@ -31,9 +31,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private int stageId;
     /** One idle bird per hired manager; they stay where they are and never chase. */
     private final List<Bird> managerBirds = new ArrayList<>();
-    /** The bird of the "travel" manager: the only one that chases the player once touched. */
-    private Bird travelBird;
-    private final int[] travelChase = new int[2];
+    /**
+     * The guide birds (one per farm whose guide bird was hired): the only birds that chase the
+     * player. They follow it into every stage, so switching farms never leaves them behind.
+     * They queue up: the first chases the goose, each next one chases the one before it.
+     */
+    private final List<Bird> guideBirds = new ArrayList<>();
+    /** Tile each guide bird is heading to (the last tile its leader stood on), same order as guideBirds. */
+    private final List<int[]> guideChase = new ArrayList<>();
     private int worldIndex = -1;
     private int[] startPosition;
     private int holeGooseRow, holeGooseCol;
@@ -457,7 +462,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         checkHoleTransition();
         updateTeleport(deltaMs);
         updateSonar(deltaMs);
-        updateTravelBird(deltaMs);
+        updateGuideBirds(deltaMs);
         updatePanReset(deltaMs);
         updateCamera(deltaMs);
         if (stage.hasBlizzard) {
@@ -603,10 +608,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
     private void moveGooseTo(int row, int col) {
         goose.teleportTo(row, col);
-        if (travelBird != null && travelBird.isFollowing()) {
-            travelBird.teleportTo(row, col);
-            travelChase[0] = row;
-            travelChase[1] = col;
+        for (int i = 0; i < guideBirds.size(); i++) {
+            guideBirds.get(i).teleportTo(row, col);
+            guideChase.get(i)[0] = row;
+            guideChase.get(i)[1] = col;
         }
         holeGooseRow = row;
         holeGooseCol = col;
@@ -762,40 +767,48 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     /** Rebuilds every bird of the current stage from the hired managers. */
     private void placeBirds() {
         managerBirds.clear();
-        travelBird = null;
-        if (worldIndex < 0 || goose == null) {
+        guideBirds.clear();
+        guideChase.clear();
+        if (goose == null) {
             return;
         }
         GameState state = GameState.get(getContext());
 
-        // Manager birds float around the liquid at random; with no liquid they use the whole map.
-        List<int[]> spots = candidateSpots(true);
-        if (spots.isEmpty()) {
-            spots = candidateSpots(false);
-        }
-        Random random = new Random();
-        for (int g = 0; g < Worlds.GARDENS_PER_WORLD && !spots.isEmpty(); g++) {
-            if (!state.hasManager(worldIndex, g)) {
-                continue;
+        // Manager birds belong to their farm: they only exist inside it. They float around the
+        // liquid at random; with no liquid they use the whole map.
+        if (worldIndex >= 0) {
+            List<int[]> spots = candidateSpots(true);
+            if (spots.isEmpty()) {
+                spots = candidateSpots(false);
             }
-            int[] spot = spots.remove(random.nextInt(spots.size()));
-            Bird bird = new Bird(getResources(), spot[0], spot[1]);
-            bird.setSwimming(map.getCell(spot[0], spot[1]).isLiquid());
-            managerBirds.add(bird);
+            Random random = new Random();
+            for (int g = 0; g < Worlds.GARDENS_PER_WORLD && !spots.isEmpty(); g++) {
+                if (!state.hasManager(worldIndex, g)) {
+                    continue;
+                }
+                int[] spot = spots.remove(random.nextInt(spots.size()));
+                Bird bird = new Bird(getResources(), spot[0], spot[1]);
+                bird.setSwimming(map.getCell(spot[0], spot[1]).isLiquid());
+                managerBirds.add(bird);
+            }
         }
 
-        // The guide bird shows up right away next to the goose and chases it from the start.
-        if (state.hasTravelManager(worldIndex)) {
-            List<int[]> used = new ArrayList<>();
-            used.add(new int[]{goose.getRow(), goose.getCol()});
+        // Guide birds come along from every farm (caves and nests too), right next to the goose.
+        List<int[]> used = new ArrayList<>();
+        used.add(new int[]{goose.getRow(), goose.getCol()});
+        for (int w = 0; w < Worlds.ALL.length; w++) {
+            if (!state.hasTravelManager(w)) {
+                continue;
+            }
             int[] spot = findFreeSpotNear(goose.getRow(), goose.getCol(), used);
             if (spot == null) {
                 spot = new int[]{goose.getRow(), goose.getCol()};
             }
-            travelBird = new Bird(getResources(), spot[0], spot[1]);
-            travelBird.startFollowing();
-            travelChase[0] = goose.getRow();
-            travelChase[1] = goose.getCol();
+            used.add(spot);
+            Bird bird = new Bird(getResources(), spot[0], spot[1]);
+            bird.startFollowing();
+            guideBirds.add(bird);
+            guideChase.add(new int[]{goose.getRow(), goose.getCol()});
         }
     }
 
@@ -860,19 +873,25 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         return false;
     }
 
-    private void updateTravelBird(long deltaMs) {
-        if (travelBird == null) {
-            return;
-        }
-        if (travelBird.isFollowing()) {
-            if (goose.getRow() != travelChase[0] || goose.getCol() != travelChase[1]) {
-                travelBird.moveTowards(travelChase[0], travelChase[1]);
+    private void updateGuideBirds(long deltaMs) {
+        int leaderRow = goose.getRow();
+        int leaderCol = goose.getCol();
+        for (int i = 0; i < guideBirds.size(); i++) {
+            Bird bird = guideBirds.get(i);
+            int[] chase = guideChase.get(i);
+            if (bird.isFollowing()) {
+                if (leaderRow != chase[0] || leaderCol != chase[1]) {
+                    bird.moveTowards(chase[0], chase[1]);
+                }
+                chase[0] = leaderRow;
+                chase[1] = leaderCol;
             }
-            travelChase[0] = goose.getRow();
-            travelChase[1] = goose.getCol();
+            bird.update(deltaMs);
+            bird.setSwimming(isOverLiquid(bird.getX(), bird.getY()));
+            // The bird behind this one chases the tile this one is on.
+            leaderRow = bird.getRow();
+            leaderCol = bird.getCol();
         }
-        travelBird.update(deltaMs);
-        travelBird.setSwimming(isOverLiquid(travelBird.getX(), travelBird.getY()));
     }
 
     /** Where the goose stands, so leaving to a menu and coming back keeps the position. */
@@ -969,11 +988,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
 
         drawBirds(canvas, managerBirds, tileSize);
-        if (travelBird != null) {
-            reusableDst.set(Math.round(travelBird.getX()) - cameraX, Math.round(travelBird.getY()) - cameraY,
-                    Math.round(travelBird.getX()) - cameraX + tileSize, Math.round(travelBird.getY()) - cameraY + tileSize);
-            travelBird.draw(canvas, reusableDst);
-        }
+        drawBirds(canvas, guideBirds, tileSize);
         drawSonar(canvas, visibleW, visibleH);
 
         if (goose != null) {

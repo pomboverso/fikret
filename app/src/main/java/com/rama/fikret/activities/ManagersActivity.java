@@ -14,12 +14,25 @@ import com.rama.fikret.game.BirdIcon;
 import com.rama.fikret.helpers.ViewUpdates;
 import com.rama.fikret.managers.FontManager;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * One row per manager of the current farm: picture, name + description, and the rescue button.
- * Rows 1-10 are the garden managers; row 11 is the one that opens the way to the next world.
+ * One row per manager still available in the current farm: picture, name + description, and the
+ * rescue button. Whatever has been bought disappears from the list, like in the upgrades screen.
+ *
+ * Order: the ten garden managers, the accountants (bought with angels), the discount managers
+ * (bought with money) and, last, the guide bird that opens the way to the next world. The
+ * accountants and discount managers only exist in the farms that define them.
  */
 public class ManagersActivity extends ListScreenActivity {
-    private int world;
+    private static final int KIND_MANAGER = 0;
+    private static final int KIND_GUIDE = 1;
+    private static final int KIND_ACCOUNTANT = 2;
+    private static final int KIND_DISCOUNT = 3;
+
+    /** Each entry is {kind, garden}; the garden is unused for the guide bird. */
+    private final List<int[]> rows = new ArrayList<>();
 
     @Override
     protected String screenTitle() {
@@ -31,18 +44,45 @@ public class ManagersActivity extends ListScreenActivity {
         return Worlds.ALL[state.getCurrentWorld()].name;
     }
 
+    private void rebuildRows() {
+        rows.clear();
+        for (int g = 0; g < Worlds.GARDENS_PER_WORLD; g++) {
+            if (!state.hasManager(world, g)) {
+                rows.add(new int[]{KIND_MANAGER, g});
+            }
+        }
+        if (state.hasAccountantList(world)) {
+            for (int g = 0; g < Worlds.GARDENS_PER_WORLD; g++) {
+                if (!state.hasAccountant(world, g)) {
+                    rows.add(new int[]{KIND_ACCOUNTANT, g});
+                }
+            }
+        }
+        if (state.hasDiscountList(world)) {
+            for (int g = 0; g < Worlds.GARDENS_PER_WORLD; g++) {
+                if (!state.hasDiscount(world, g)) {
+                    rows.add(new int[]{KIND_DISCOUNT, g});
+                }
+            }
+        }
+        // The guide bird always closes the list.
+        if (!state.hasTravelManager(world)) {
+            rows.add(new int[]{KIND_GUIDE, 0});
+        }
+    }
+
     @Override
     protected BaseAdapter createAdapter() {
-        world = state.getCurrentWorld();
+        rebuildRows();
         return new BaseAdapter() {
             @Override
             public int getCount() {
-                return Worlds.GARDENS_PER_WORLD + 1;
+                return rows.size();
             }
 
             @Override
             public Object getItem(int position) {
-                return position;
+                return rows.get(position);
             }
 
             @Override
@@ -69,10 +109,29 @@ public class ManagersActivity extends ListScreenActivity {
     private void wireListener(final View row) {
         row.findViewById(R.id.rescue_button).setOnClickListener(v -> {
             int position = (Integer) row.getTag();
-            boolean hired = position == Worlds.GARDENS_PER_WORLD
-                    ? state.hireTravelManager(world)
-                    : state.hireManager(world, position);
+            if (position >= rows.size()) {
+                return;
+            }
+            int kind = rows.get(position)[0];
+            int g = rows.get(position)[1];
+            boolean hired;
+            switch (kind) {
+                case KIND_GUIDE:
+                    hired = state.hireTravelManager(world);
+                    break;
+                case KIND_ACCOUNTANT:
+                    hired = state.hireAccountant(world, g);
+                    break;
+                case KIND_DISCOUNT:
+                    hired = state.hireDiscountManager(world, g);
+                    break;
+                default:
+                    hired = state.hireManager(world, g);
+                    break;
+            }
             if (hired) {
+                // The bought one leaves the list.
+                rebuildRows();
                 adapter.notifyDataSetChanged();
             }
         });
@@ -81,44 +140,60 @@ public class ManagersActivity extends ListScreenActivity {
     @Override
     protected void bindRow(View row, int position) {
         row.setTag(position);
+        if (position >= rows.size()) {
+            return;
+        }
+        int kind = rows.get(position)[0];
+        int g = rows.get(position)[1];
         Worlds.WorldDef def = Worlds.ALL[world];
-        boolean travel = position == Worlds.GARDENS_PER_WORLD;
 
         String name;
         String description;
-        boolean hired;
-        double cost;
-        if (travel) {
-            name = "Guide Bird";
-            description = "Leads you to the next world.";
-            hired = state.hasTravelManager(world);
-            cost = state.travelManagerCost(world);
-        } else {
-            String garden = def.gardens[position].name;
-            name = garden + " supervisor";
-            description = "Harvests your " + garden + " automatically.";
-            hired = state.hasManager(world, position);
-            cost = state.managerCost(world, position);
+        String costLabel;
+        boolean affordable;
+        switch (kind) {
+            case KIND_GUIDE: {
+                double cost = state.travelManagerCost(world);
+                name = "Guide Bird";
+                description = "Leads you to the next world.";
+                costLabel = NumberFormatter.money(world, cost);
+                affordable = state.getMoney(world) >= cost;
+                break;
+            }
+            case KIND_ACCOUNTANT: {
+                double cost = state.accountantCost(world, g);
+                String garden = def.gardens[g].name;
+                name = garden + " accountant";
+                description = "Makes " + garden + " cost 10% less. Paid with lake points (LP).";
+                costLabel = Worlds.ANGEL_SYMBOL + NumberFormatter.number(cost);
+                affordable = state.getAngels() >= cost;
+                break;
+            }
+            case KIND_DISCOUNT: {
+                double cost = state.discountCost(world, g);
+                String garden = def.gardens[g].name;
+                name = garden + " discount";
+                description = "Makes " + garden + " cost 99.999% less.";
+                costLabel = NumberFormatter.money(world, cost);
+                affordable = state.getMoney(world) >= cost;
+                break;
+            }
+            default: {
+                double cost = state.managerCost(world, g);
+                String garden = def.gardens[g].name;
+                name = garden + " supervisor";
+                description = "Harvests your " + garden + " automatically.";
+                costLabel = NumberFormatter.money(world, cost);
+                affordable = state.getMoney(world) >= cost;
+                break;
+            }
         }
 
         ViewUpdates.setText((TextView) row.findViewById(R.id.manager_name), FontManager.sanitizeForFont(name));
         ViewUpdates.setText((TextView) row.findViewById(R.id.manager_description), FontManager.sanitizeForFont(description));
-
-        View button = row.findViewById(R.id.rescue_button);
-        TextView label = row.findViewById(R.id.rescue_label);
-        TextView costText = row.findViewById(R.id.rescue_cost);
-
-        if (hired) {
-            ViewUpdates.setText(label, getString(R.string.rescued));
-            ViewUpdates.setText(costText, "");
-            ViewUpdates.setBackgroundColor(button, getResources().getColor(R.color.surface_1));
-            return;
-        }
-
-        boolean affordable = state.getMoney() >= cost;
-        ViewUpdates.setText(label, getString(R.string.rescue));
-        ViewUpdates.setText(costText, NumberFormatter.money(cost));
-        ViewUpdates.setBackgroundColor(button,
+        ViewUpdates.setText((TextView) row.findViewById(R.id.rescue_label), getString(R.string.rescue));
+        ViewUpdates.setText((TextView) row.findViewById(R.id.rescue_cost), costLabel);
+        ViewUpdates.setBackgroundColor(row.findViewById(R.id.rescue_button),
                 getResources().getColor(affordable ? R.color.accent : R.color.disabled));
     }
 }
