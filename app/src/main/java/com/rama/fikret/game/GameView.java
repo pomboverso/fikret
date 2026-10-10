@@ -29,15 +29,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private Goose goose;
     private Stage stage;
     private int stageId;
-    /** One idle bird per hired manager; they stay where they are and never chase. */
     private final List<Bird> managerBirds = new ArrayList<>();
-    /**
-     * The guide birds (one per farm whose guide bird was hired): the only birds that chase the
-     * player. They follow it into every stage, so switching farms never leaves them behind.
-     * They queue up: the first chases the goose, each next one chases the one before it.
-     */
     private final List<Bird> guideBirds = new ArrayList<>();
-    /** Tile each guide bird is heading to (the last tile its leader stood on), same order as guideBirds. */
     private final List<int[]> guideChase = new ArrayList<>();
     private int worldIndex = -1;
     private int[] startPosition;
@@ -54,7 +47,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private static final long TELEPORT_PHASE_MS = 200;
     private static final long CAMERA_GLIDE_MIN_MS = 250;
     private static final long CAMERA_GLIDE_MAX_MS = 600;
-    private static final float CAMERA_GLIDE_SPEED = 4f;   // world units per ms; longer jumps take longer, within the limits above
+    private static final float CAMERA_GLIDE_SPEED = 4f;
     private enum TeleportKind { HOME }
     private TeleportKind teleportKind;
     private boolean teleportArrived;
@@ -210,7 +203,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-        // Nothing to do yet: the camera reads getWidth()/getHeight() live each frame.
     }
 
     @Override
@@ -486,7 +478,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
         panResetElapsedMs += deltaMs;
         float t = Math.min(1f, panResetElapsedMs / (float) PAN_RESET_DURATION_MS);
-        float eased = 1f - (1f - t) * (1f - t); // ease-out quad
+        float eased = 1f - (1f - t) * (1f - t);
         panOffsetX = panResetStartX * (1f - eased);
         panOffsetY = panResetStartY * (1f - eased);
         if (t >= 1f) {
@@ -754,17 +746,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         return map.isLiquidAt(spriteX + GameMap.TILE_SIZE / 2f, spriteY + GameMap.TILE_SIZE / 2f);
     }
 
-    // ---- Birds ------------------------------------------------------------------------------
-
-    /** The hole to the next world only exists once the world's travel manager has been hired. */
     private boolean isHoleDownUnlocked() {
         if (worldIndex < 0) {
-            return true;   // caves, nests and other non-farm stages keep their doors
+            return true;
         }
         return GameState.get(getContext()).hasTravelManager(worldIndex);
     }
 
-    /** Rebuilds every bird of the current stage from the hired managers. */
     private void placeBirds() {
         managerBirds.clear();
         guideBirds.clear();
@@ -774,8 +762,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
         GameState state = GameState.get(getContext());
 
-        // Manager birds belong to their farm: they only exist inside it. They float around the
-        // liquid at random; with no liquid they use the whole map.
         if (worldIndex >= 0) {
             List<int[]> spots = candidateSpots(true);
             if (spots.isEmpty()) {
@@ -812,7 +798,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
-    /** Empty cells of the map (no item on them), optionally only the liquid ones. */
     private List<int[]> candidateSpots(boolean liquidOnly) {
         List<int[]> result = new ArrayList<>();
         for (int r = 0; r < map.getRows(); r++) {
@@ -841,7 +826,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         return null;
     }
 
-    /** Closest empty dry tile to (row, col), scanning outwards in rings; deterministic. */
     private int[] findFreeSpotNear(int row, int col, List<int[]> used) {
         int maxRadius = Math.max(map.getRows(), map.getCols());
         for (int radius = 1; radius <= maxRadius; radius++) {
@@ -888,13 +872,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
             bird.update(deltaMs);
             bird.setSwimming(isOverLiquid(bird.getX(), bird.getY()));
-            // The bird behind this one chases the tile this one is on.
             leaderRow = bird.getRow();
             leaderCol = bird.getCol();
         }
     }
 
-    /** Where the goose stands, so leaving to a menu and coming back keeps the position. */
     public int[] getGoosePosition() {
         Goose g = goose;
         return g == null ? null : new int[]{g.getRow(), g.getCol()};

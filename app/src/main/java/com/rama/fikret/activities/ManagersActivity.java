@@ -17,21 +17,12 @@ import com.rama.fikret.managers.FontManager;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * One row per manager still available in the current farm: picture, name + description, and the
- * rescue button. Whatever has been bought disappears from the list, like in the upgrades screen.
- *
- * Order: the ten garden managers, the accountants (bought with angels), the discount managers
- * (bought with money) and, last, the guide bird that opens the way to the next world. The
- * accountants and discount managers only exist in the farms that define them.
- */
 public class ManagersActivity extends ListScreenActivity {
     private static final int KIND_MANAGER = 0;
     private static final int KIND_GUIDE = 1;
     private static final int KIND_ACCOUNTANT = 2;
     private static final int KIND_DISCOUNT = 3;
 
-    /** Each entry is {kind, garden}; the garden is unused for the guide bird. */
     private final List<int[]> rows = new ArrayList<>();
 
     @Override
@@ -106,7 +97,6 @@ public class ManagersActivity extends ListScreenActivity {
         };
     }
 
-    /** Set once per row view; the position is read from the row's tag at click time. */
     private void wireListener(final View row) {
         row.findViewById(R.id.rescue_button).setOnClickListener(v -> {
             int position = (Integer) row.getTag();
@@ -138,7 +128,6 @@ public class ManagersActivity extends ListScreenActivity {
         });
     }
 
-    /** Puts the lake coin in front of a cost label (or takes it away), only when that changes. */
     private void setCoin(TextView cost, boolean coin) {
         Object last = cost.getTag(R.id.last_coin);
         if (last instanceof Boolean && (Boolean) last == coin) {

@@ -161,7 +161,6 @@ public final class Maps {
             {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
     };
 
-    /** Only the arctic still has a nest: the secret farm that sonar uncovers. */
     public static boolean hasNest(int stageId) {
         return stageId == ARCTIC;
     }

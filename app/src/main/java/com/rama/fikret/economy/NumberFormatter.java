@@ -6,18 +6,12 @@ public final class NumberFormatter {
     private NumberFormatter() {
     }
 
-    /**
-     * One notation everywhere, no K / M / B names: plain digits below this, powers of ten from here.
-     * (1,234 and 999,999 stay as digits; 1,000,000 shows as 1e6, 7.5 * 10^106 as 7.5e106.)
-     */
     private static final double SCIENTIFIC_FROM = 1e6;
 
-    /** Amount in the currency of the given world, e.g. "BRL 1.5e6". */
     public static String money(int world, double value) {
         return Worlds.currencyOf(world) + " " + number(value);
     }
 
-    /** 7.5e106 style, for numbers whose English names nobody could read. */
     private static String scientific(double value) {
         String[] parts = String.format(Locale.US, "%.2e", value).split("e");
         return trim(parts[0]) + "e" + Integer.parseInt(parts[1]);
@@ -59,7 +53,6 @@ public final class NumberFormatter {
         return s.substring(0, end);
     }
 
-    /** h:mm:ss, or m:ss, or 0.0s for very short times. */
     public static String duration(double seconds) {
         if (seconds < 0) {
             seconds = 0;

@@ -8,7 +8,6 @@ import android.graphics.drawable.Drawable;
 
 import com.rama.fikret.R;
 
-/** The idle bird frame as a drawable, used as the manager's picture until real portraits exist. */
 public final class BirdIcon {
     private static final int ATLAS_COLUMNS = 2;
     private static final int ATLAS_ROWS = 4;
@@ -26,7 +25,7 @@ public final class BirdIcon {
             frame = Bitmap.createBitmap(sheet.getBitmap(), r.left, r.top, r.width(), r.height());
         }
         BitmapDrawable drawable = new BitmapDrawable(res, frame);
-        drawable.setFilterBitmap(false);   // keep the pixel art crisp
+        drawable.setFilterBitmap(false);
         return drawable;
     }
 }

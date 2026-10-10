@@ -15,13 +15,6 @@ import com.rama.fikret.helpers.SystemBars;
 import com.rama.fikret.helpers.ViewUpdates;
 import com.rama.fikret.managers.FontManager;
 
-/**
- * Shared shell for the menu screens: back button, title, live money counter and a list.
- *
- * The visible rows are refreshed ten times a second by calling {@link #bindRow} on them directly.
- * The adapter is only notified when the list itself changes (for example after a purchase),
- * because re-laying out a ListView in the middle of a press cancels the press on the buttons.
- */
 public abstract class ListScreenActivity extends Activity {
     private static final long TICK_MS = 100;
 
@@ -46,10 +39,8 @@ public abstract class ListScreenActivity extends Activity {
 
     protected abstract BaseAdapter createAdapter();
 
-    /** Updates the texts and colours of one row. Must not change the row's size or listeners. */
     protected abstract void bindRow(View row, int position);
 
-    /** Optional line under the header (for example which farm the list belongs to). */
     protected String subtitle() {
         return "";
     }

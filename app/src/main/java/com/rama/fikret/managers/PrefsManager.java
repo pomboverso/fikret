@@ -65,7 +65,6 @@ public class PrefsManager {
                 .commit();
     }
 
-    /** Remembers where the player stands so coming back from a menu puts them in the same spot. */
     public void setArrivalPosition(int row, int col) {
         prefs.edit().putString(KEY_ARRIVAL, pair(row, col)).commit();
     }

@@ -51,7 +51,6 @@ public class GameMap {
         return !cells[row][col].item.blocksMovement;
     }
 
-    /** Every liquid can be swum in, so walkable now only means "not blocked by a solid item". */
     public boolean isWalkable(int row, int col) {
         return isPassable(row, col);
     }

@@ -18,16 +18,8 @@ import com.rama.fikret.managers.FontManager;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Every upgrade is its own row, in a staircase of rising prices:
- * all the Value upgrades of tier 1, then all the Speed upgrades of tier 1, then tier 2, and so on.
- * Each row costs more than the one above it (see {@link Worlds#upgradePrice}).
- * Bought upgrades disappear from the list. A tier can only be bought after the one before it.
- */
 public class UpgradesActivity extends ListScreenActivity {
     private static final int[] TYPE_ORDER = {GameState.UPGRADE_VALUE, GameState.UPGRADE_SPEED};
-
-    /** Each entry is {tier, type, garden}. */
     private final List<int[]> rows = new ArrayList<>();
 
     @Override

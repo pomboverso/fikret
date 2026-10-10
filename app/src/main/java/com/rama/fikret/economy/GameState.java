@@ -8,13 +8,8 @@ import com.rama.fikret.managers.PrefsManager;
 
 import java.util.Locale;
 
-/**
- * The whole idle economy. Time is wall-clock based: {@link #sync()} advances every garden by the
- * time elapsed since the last call, so the same code covers live play and offline progress.
- */
 public final class GameState {
     public static final int BUY_MAX = -1;
-    /** Buy exactly what is missing to reach the next milestone (25, 50, 100, 200, ...). */
     public static final int BUY_NEXT = -2;
     public static final int UPGRADE_SPEED = 0;
     public static final int UPGRADE_VALUE = 1;
@@ -33,12 +28,12 @@ public final class GameState {
     private static final class Garden {
         int count;
         boolean manager;
-        boolean accountant;   // price x0.9 (bought with angels)
-        boolean discount;     // price / 100,000
+        boolean accountant;
+        boolean discount;
         int speedLevel;
         int valueLevel;
-        double elapsed;     // seconds into the current cycle
-        boolean running;    // only meaningful for gardens without a manager
+        double elapsed;
+        boolean running;
     }
 
     private static final class World {
@@ -52,7 +47,6 @@ public final class GameState {
         }
     }
 
-    /** Result of asking "what would buying N cost". */
     public static final class Quote {
         public final int amount;
         public final double cost;
@@ -65,13 +59,9 @@ public final class GameState {
 
     private final PrefsManager prefs;
     private final World[] worlds = new World[Worlds.ALL.length];
-    /** One purse per farm: each farm has its own currency, they never mix. */
     private final double[] money = new double[Worlds.ALL.length];
-    /** Angels ("lake points"): the only thing that survives an ascent. Spent on accountants. */
     private double angels = 0;
-    /** Everything ever earned in the angel farm. Never reset: it is what angels are computed from. */
     private double lifetimeEarnings = 0;
-    /** Angels ever claimed by ascending, spent or not. Angels already claimed are not paid twice. */
     private double angelsClaimed = 0;
     private long lastSync;
     private int currentWorld = 0;
@@ -86,11 +76,8 @@ public final class GameState {
         if (lastSync <= 0) {
             lastSync = System.currentTimeMillis();
         }
-        // Offline progress: load() restored the saved timestamp, so this credits the time away.
         sync();
     }
-
-    // ---- Time ---------------------------------------------------------------------------------
 
     public synchronized void sync() {
         long now = System.currentTimeMillis();
@@ -138,9 +125,6 @@ public final class GameState {
         }
     }
 
-    // ---- Read-only numbers --------------------------------------------------------------------
-
-    /** Money of one farm, in that farm's own currency. */
     public synchronized double getMoney(int w) {
         return money[w];
     }
@@ -164,7 +148,6 @@ public final class GameState {
             return 0;
         }
         double cycle = cycleSeconds(w, g);
-        // Gardens faster than a display frame would just flicker; show them full.
         if (cycle < 0.25) {
             return 1;
         }
@@ -203,27 +186,18 @@ public final class GameState {
         return revenuePerCycle(w, g) / cycleSeconds(w, g);
     }
 
-    // ---- Angels -------------------------------------------------------------------------------
-
-    /** Profit multiplier from the angels you hold: +2% each, only in the angel farm. */
     public synchronized double angelBonus(int w) {
         return w == Worlds.ANGEL_WORLD ? 1 + Worlds.ANGEL_BONUS * angels : 1;
     }
 
-    /** Total angels a lifetime of earnings is worth, e.g. 150 billion is worth 1. */
     public static double angelsForEarnings(double lifetime) {
         return Math.floor(Math.sqrt(Math.max(0, lifetime) / Worlds.ANGEL_DIVISOR));
     }
 
-    /** Angels you would receive right now by ascending (already claimed ones are not paid again). */
     public synchronized double pendingAngels() {
         return Math.max(0, angelsForEarnings(lifetimeEarnings) - angelsClaimed);
     }
 
-    /**
-     * Ascends: claims the pending angels and restarts the angel farm (money, gardens, supervisors,
-     * discount managers, upgrades). Angels, accountants (bought with angels) and the guide bird stay.
-     */
     public synchronized boolean ascend() {
         sync();
         double gain = pendingAngels();
@@ -247,8 +221,6 @@ public final class GameState {
         return true;
     }
 
-    // ---- Milestones (free x2 speed, like Adventure Capitalist) -------------------------------
-
     public static int milestonesReached(int count) {
         int m = 0;
         if (count >= 25) m++;
@@ -265,14 +237,10 @@ public final class GameState {
         return (count / 100 + 1) * 100;
     }
 
-    // ---- Gardens ------------------------------------------------------------------------------
-
-    /** The first garden is always open; the next ones open once the previous one is owned. */
     public boolean isUnlocked(int w, int g) {
         return g == 0 || worlds[w].gardens[g].count > 0 || worlds[w].gardens[g - 1].count > 0;
     }
 
-    /** Accountant and discount manager of a garden make its price lower (they stack). */
     public double priceMultiplier(int w, int g) {
         Garden garden = worlds[w].gardens[g];
         double m = 1;
@@ -285,10 +253,6 @@ public final class GameState {
         return m;
     }
 
-    /**
-     * Cost of buying {@code amount} gardens. {@link #BUY_MAX} means as many as affordable and
-     * {@link #BUY_NEXT} means as many as it takes to reach the next milestone, affordable or not.
-     */
     public synchronized Quote quote(int w, int g, int amount) {
         Worlds.GardenDef def = Worlds.ALL[w].gardens[g];
         int owned = worlds[w].gardens[g].count;
@@ -326,7 +290,6 @@ public final class GameState {
         return true;
     }
 
-    /** Starts a cycle on a garden that has no manager. */
     public synchronized boolean harvest(int w, int g) {
         sync();
         Garden garden = worlds[w].gardens[g];
@@ -337,8 +300,6 @@ public final class GameState {
         garden.elapsed = 0;
         return true;
     }
-
-    // ---- Managers -----------------------------------------------------------------------------
 
     public boolean hasManager(int w, int g) {
         return worlds[w].gardens[g].manager;
@@ -357,7 +318,6 @@ public final class GameState {
         }
         money[w] -= cost;
         garden.manager = true;
-        // A cycle that was started by hand simply keeps going; otherwise it starts from zero.
         if (!garden.running) {
             garden.elapsed = 0;
         }
@@ -366,7 +326,6 @@ public final class GameState {
         return true;
     }
 
-    /** Hiring any manager of a world grants the ability tied to that world (if there is one). */
     private void unlockAbilityFor(int w) {
         Ability ability = Ability.forStage(Worlds.ALL[w].stageId);
         if (ability != null) {
@@ -374,7 +333,6 @@ public final class GameState {
         }
     }
 
-    /** Developer mode hands out every guide bird without touching the saved progress. */
     public boolean hasTravelManager(int w) {
         return DeveloperMode.ENABLED || worlds[w].travelManager;
     }
@@ -396,7 +354,6 @@ public final class GameState {
         return true;
     }
 
-    /** True when any farm has its guide bird: those birds follow the player into every farm. */
     public boolean hasAnyTravelManager() {
         for (int w = 0; w < worlds.length; w++) {
             if (hasTravelManager(w)) {
@@ -405,8 +362,6 @@ public final class GameState {
         }
         return false;
     }
-
-    // ---- Accountants (angels) and discount managers (money) -----------------------------------
 
     public boolean hasAccountantList(int w) {
         return Worlds.ALL[w].accountantCosts != null;
@@ -424,12 +379,10 @@ public final class GameState {
         return worlds[w].gardens[g].discount;
     }
 
-    /** Price of the accountant of garden g, in angels. */
     public double accountantCost(int w, int g) {
         return Worlds.ALL[w].accountantCosts[g];
     }
 
-    /** Price of the discount manager of garden g, in the farm's money. */
     public double discountCost(int w, int g) {
         return Worlds.ALL[w].discountCosts[g];
     }
@@ -466,8 +419,6 @@ public final class GameState {
         return true;
     }
 
-    // ---- Upgrades -----------------------------------------------------------------------------
-
     public int upgradeLevel(int w, int g, int type) {
         Garden garden = worlds[w].gardens[g];
         return type == UPGRADE_SPEED ? garden.speedLevel : garden.valueLevel;
@@ -481,7 +432,6 @@ public final class GameState {
         return upgradeCostAt(w, g, type, upgradeLevel(w, g, type));
     }
 
-    /** Price of the upgrade of a given tier (0 = the first one) for a garden. */
     public double upgradeCostAt(int w, int g, int type, int tier) {
         return Worlds.upgradePrice(w, tier, type == UPGRADE_SPEED, g);
     }
@@ -506,13 +456,10 @@ public final class GameState {
         return true;
     }
 
-    // ---- Which farm the player is in ----------------------------------------------------------
-
     public int getCurrentWorld() {
         return currentWorld;
     }
 
-    /** Called whenever the map changes stage; non-farm stages (caves, nests) are ignored. */
     public synchronized void onStageEntered(int stageId) {
         int index = Worlds.indexOfStage(stageId);
         if (index >= 0 && index != currentWorld) {
@@ -521,12 +468,9 @@ public final class GameState {
         }
     }
 
-    // ---- Persistence --------------------------------------------------------------------------
-
     public synchronized void save() {
         StringBuilder sb = new StringBuilder();
         for (int w = 0; w < money.length; w++) {
-            // "money" is the lake purse (the only one old saves have), the others are "money.<world>".
             sb.append(w == 0 ? "money" : "money." + w).append('=')
                     .append(Double.doubleToLongBits(money[w])).append('\n');
         }

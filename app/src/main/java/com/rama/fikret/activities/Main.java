@@ -28,9 +28,6 @@ import com.rama.fikret.helpers.ViewUpdates;
 import com.rama.fikret.managers.FontManager;
 import com.rama.fikret.managers.PrefsManager;
 
-/**
- * Home screen: the gardens of the farm you are currently in.
- */
 public class Main extends Activity {
     private static final long TICK_MS = 100;
     private static final int[] MULTIPLIERS = {1, GameState.BUY_NEXT, GameState.BUY_MAX};
@@ -106,8 +103,6 @@ public class Main extends Activity {
         return m == GameState.BUY_MAX ? "Max" : m == GameState.BUY_NEXT ? "Next" : "x" + m;
     }
 
-    // ---- Menu ---------------------------------------------------------------------------------
-
     private void showMenu() {
         final Dialog dialog = new Dialog(this, R.style.AppDialog);
         View content = LayoutInflater.from(this).inflate(R.layout.dialog_menu, null);
@@ -124,7 +119,6 @@ public class Main extends Activity {
         bindMenuItem(dialog, content, R.id.menu_achievements, comingSoon(R.string.menu_achievements));
         bindMenuItem(dialog, content, R.id.menu_teleport, new Intent(this, TeleportActivity.class));
 
-        // Developer mode can always travel; otherwise it opens up with the teleport ability.
         boolean teleportAvailable = DeveloperMode.ENABLED
                 || PrefsManager.getInstance(this).hasAbility(Ability.TELEPORT_HOME);
         int visibility = teleportAvailable ? View.VISIBLE : View.GONE;
@@ -134,11 +128,8 @@ public class Main extends Activity {
         dialog.show();
     }
 
-    // ---- Ascend -------------------------------------------------------------------------------
-
     private Dialog ascendDialog;
 
-    /** Modal with the lake points you have, the ones you would get, and Ascend / Cancel. */
     private void showAscend() {
         final Dialog dialog = new Dialog(this, R.style.AppDialog);
         View content = LayoutInflater.from(this).inflate(R.layout.dialog_ascend, null);
@@ -152,7 +143,6 @@ public class Main extends Activity {
                 refresh();
             }
         });
-        // The lake coin goes in front of the point counts (the labels already say "lake points").
         int coinSize = Math.round(((TextView) content.findViewById(R.id.ascend_have)).getTextSize());
         for (int id : new int[]{R.id.ascend_have, R.id.ascend_gain}) {
             TextView value = content.findViewById(id);
@@ -165,7 +155,6 @@ public class Main extends Activity {
         updateAscend();
     }
 
-    /** Keeps the open ascend modal in sync with the ticking economy. */
     private void updateAscend() {
         if (ascendDialog == null) {
             return;
@@ -195,9 +184,6 @@ public class Main extends Activity {
         });
     }
 
-    // ---- Gardens list -------------------------------------------------------------------------
-
-    /** Updates the rows that are on screen without making the ListView re-layout or re-bind them. */
     private void refreshRows() {
         int first = gardenList.getFirstVisiblePosition();
         for (int i = 0; i < gardenList.getChildCount(); i++) {
@@ -274,7 +260,6 @@ public class Main extends Activity {
         }
     }
 
-    /** Click listeners are set once per row view; they read the current position from the row's tag. */
     private void wireListeners(final View row) {
         row.findViewById(R.id.buy_button).setOnClickListener(v -> {
             int g = (Integer) row.getTag();

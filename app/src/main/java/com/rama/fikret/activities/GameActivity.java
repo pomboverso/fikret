@@ -11,10 +11,6 @@ import com.rama.fikret.game.GameView;
 import com.rama.fikret.game.Maps;
 import com.rama.fikret.managers.PrefsManager;
 
-/**
- * The map. Only used to walk between farms. Controls: swipe/keys to move, double tap for sonar,
- * long press for dive, and the hole that leads back to the farm screen.
- */
 public class GameActivity extends Activity {
     public static final String EXTRA_STAGE = "stage";
 

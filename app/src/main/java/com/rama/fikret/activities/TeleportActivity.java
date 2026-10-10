@@ -14,7 +14,6 @@ import com.rama.fikret.game.Stage;
 import com.rama.fikret.managers.FontManager;
 import com.rama.fikret.managers.PrefsManager;
 
-/** Lists every stage. Handy for debugging; later it will unlock once the nightmare world is reached. */
 public class TeleportActivity extends ListScreenActivity {
 
     @Override
