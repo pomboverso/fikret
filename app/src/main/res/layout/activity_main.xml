@@ -3,7 +3,7 @@
     android:id="@+id/root"
     style="@style/VerticalList"
     android:layout_height="match_parent"
-    android:background="@color/base"
+    android:background="@color/base_farm"
     android:paddingLeft="16dp"
     android:paddingTop="16dp"
     android:paddingRight="16dp"
@@ -46,13 +46,6 @@
             android:text="x1"
             android:textColor="@color/base" />
     </LinearLayout>
-
-    <View style="@style/SeparatorListVertical" />
-
-    <TextView
-        android:id="@+id/world_name"
-        style="@style/H3"
-        android:textColor="@color/accent" />
 
     <View style="@style/SeparatorListVertical" />
 

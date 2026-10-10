@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/garden_list_item"
-    android:focusable="false"
+    style="@style/HorizontalList"
     android:clickable="false"
-    style="@style/HorizontalList">
+    android:focusable="false">
 
     <LinearLayout
         style="@style/VerticalList"
@@ -30,8 +30,7 @@
             android:id="@+id/garden_count"
             style="@style/Text"
             android:layout_width="wrap_content"
-            android:text="0 / 25"
-            android:textSize="16sp" />
+            android:textSize="12sp" />
     </LinearLayout>
 
     <View style="@style/SeparatorListHorizontal" />
@@ -56,7 +55,7 @@
                     android:id="@+id/progress_bar"
                     style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="match_parent"
-                    android:layout_height="32dp"
+                    android:layout_height="24dp"
                     android:max="1000"
                     android:progressDrawable="@drawable/progress_garden" />
 
@@ -65,7 +64,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:text="1" />
+                    android:textSize="12dp"
+                    android:textColor="@color/base" />
             </FrameLayout>
         </LinearLayout>
 
@@ -90,23 +90,23 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/base"
-                    android:text="Buy x1" />
+                    android:textSize="12dp" />
 
                 <TextView
                     android:id="@+id/buy_cost"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/base"
-                    android:text="100,000" />
+                    android:textSize="12dp" />
             </LinearLayout>
 
             <View style="@style/SeparatorListHorizontal" />
 
             <TextView
                 android:id="@+id/duration"
-                android:layout_width="wrap_content"
+                android:layout_width="52dp"
                 android:layout_height="wrap_content"
-                android:gravity="right"
+                android:gravity="center"
                 android:text="" />
         </LinearLayout>
     </LinearLayout>

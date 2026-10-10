@@ -3,6 +3,19 @@
     <attr name="text" format="string" />
     <attr name="icon" format="reference" />
 
+    <!-- Colours of the farm art (coin.xml, supervisor.xml). Each farm sets them through a Farm_* style. -->
+    <attr name="coinBase" format="color" />
+    <attr name="coinOutline" format="color" />
+    <attr name="coinLight" format="color" />
+    <attr name="coinMid" format="color" />
+    <attr name="coinEdge" format="color" />
+    <attr name="supervisorOutline" format="color" />
+    <attr name="supervisorBody" format="color" />
+    <attr name="supervisorBeak" format="color" />
+    <attr name="supervisorFeet" format="color" />
+    <attr name="supervisorLight" format="color" />
+    <attr name="supervisorShade" format="color" />
+
     <declare-styleable name="WdCollapsibleSection">
         <attr name="header" format="string" />
         <attr name="key" format="string" />

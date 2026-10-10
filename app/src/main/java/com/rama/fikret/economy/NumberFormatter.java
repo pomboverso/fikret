@@ -12,9 +12,9 @@ public final class NumberFormatter {
      */
     private static final double SCIENTIFIC_FROM = 1e6;
 
-    /** Amount in the currency of the given world, e.g. "R$1.5e6". */
+    /** Amount in the currency of the given world, e.g. "BRL 1.5e6". */
     public static String money(int world, double value) {
-        return Worlds.currencyOf(world) + number(value);
+        return Worlds.currencyOf(world) + " " + number(value);
     }
 
     /** 7.5e106 style, for numbers whose English names nobody could read. */

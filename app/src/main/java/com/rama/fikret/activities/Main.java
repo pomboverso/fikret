@@ -20,6 +20,8 @@ import com.rama.fikret.economy.GameState;
 import com.rama.fikret.economy.NumberFormatter;
 import com.rama.fikret.economy.Worlds;
 import com.rama.fikret.game.Ability;
+import com.rama.fikret.helpers.DeveloperMode;
+import com.rama.fikret.helpers.FarmArt;
 import com.rama.fikret.helpers.GardenIcons;
 import com.rama.fikret.helpers.SystemBars;
 import com.rama.fikret.helpers.ViewUpdates;
@@ -63,7 +65,6 @@ public class Main extends Activity {
 
         state = GameState.get(this);
         moneyText = findViewById(R.id.money);
-        worldName = findViewById(R.id.world_name);
         multiplierButton = findViewById(R.id.multiplier);
 
         findViewById(R.id.menu).setOnClickListener(v -> showMenu());
@@ -94,7 +95,6 @@ public class Main extends Activity {
     private void refresh() {
         world = state.getCurrentWorld();
         Worlds.WorldDef def = Worlds.ALL[world];
-        worldName.setText(FontManager.sanitizeForFont(def.name));
         moneyText.setText(NumberFormatter.money(world, state.getMoney(world)));
         multiplierButton.setText(multiplierLabel());
         refreshRows();
@@ -124,8 +124,8 @@ public class Main extends Activity {
         bindMenuItem(dialog, content, R.id.menu_achievements, comingSoon(R.string.menu_achievements));
         bindMenuItem(dialog, content, R.id.menu_teleport, new Intent(this, TeleportActivity.class));
 
-        // Teleport is a debug aid for now; later it only opens up once the nightmare world is reached.
-        boolean teleportAvailable = TELEPORT_ALWAYS_AVAILABLE
+        // Developer mode can always travel; otherwise it opens up with the teleport ability.
+        boolean teleportAvailable = DeveloperMode.ENABLED
                 || PrefsManager.getInstance(this).hasAbility(Ability.TELEPORT_HOME);
         int visibility = teleportAvailable ? View.VISIBLE : View.GONE;
         content.findViewById(R.id.menu_teleport).setVisibility(visibility);
@@ -133,8 +133,6 @@ public class Main extends Activity {
 
         dialog.show();
     }
-
-    private static final boolean TELEPORT_ALWAYS_AVAILABLE = true;
 
     // ---- Ascend -------------------------------------------------------------------------------
 
@@ -154,6 +152,13 @@ public class Main extends Activity {
                 refresh();
             }
         });
+        // The lake coin goes in front of the point counts (the labels already say "lake points").
+        int coinSize = Math.round(((TextView) content.findViewById(R.id.ascend_have)).getTextSize());
+        for (int id : new int[]{R.id.ascend_have, R.id.ascend_gain}) {
+            TextView value = content.findViewById(id);
+            value.setCompoundDrawables(FarmArt.coin(this, Worlds.ANGEL_WORLD, coinSize), null, null, null);
+            value.setCompoundDrawablePadding(coinSize / 4);
+        }
         dialog.setOnDismissListener(d -> ascendDialog = null);
         ascendDialog = dialog;
         dialog.show();
@@ -169,11 +174,11 @@ public class Main extends Activity {
         double have = state.getAngels();
         double gain = state.pendingAngels();
         ViewUpdates.setText((TextView) ascendDialog.findViewById(R.id.ascend_have),
-                Worlds.ANGEL_SYMBOL + NumberFormatter.number(have));
+                NumberFormatter.number(have));
         ViewUpdates.setText((TextView) ascendDialog.findViewById(R.id.ascend_bonus),
                 "+" + NumberFormatter.number(have * Worlds.ANGEL_BONUS * 100) + "%");
         ViewUpdates.setText((TextView) ascendDialog.findViewById(R.id.ascend_gain),
-                "+" + Worlds.ANGEL_SYMBOL + NumberFormatter.number(gain));
+                "+" + NumberFormatter.number(gain));
         ViewUpdates.setBackgroundColor(ascendDialog.findViewById(R.id.ascend_confirm),
                 getResources().getColor(gain > 0 ? R.color.accent : R.color.disabled));
     }

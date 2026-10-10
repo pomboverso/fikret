@@ -2,4 +2,6 @@
 <resources>
     <!-- Used as a tag key by ViewUpdates to remember the last background colour. -->
     <item name="last_background" type="id" />
+    <!-- Remembers whether a cost label currently shows the coin in front of it. -->
+    <item name="last_coin" type="id" />
 </resources>

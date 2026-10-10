@@ -14,22 +14,23 @@ public final class Worlds {
 
     public static final int GARDENS_PER_WORLD = 10;
 
-    /**
-     * Every farm has its own money and its own economy: nothing earned in one farm can be spent in
-     * another. Dominican peso for the lake, Brazilian real for the forest.
-     */
     /** The farm whose earnings turn into angels when ascending (and whose profits angels boost). */
     public static final int ANGEL_WORLD = 0;
     /** Total angels earned = floor(sqrt(lifetime earnings / ANGEL_DIVISOR)); 4 billion / 9 * 100. */
     public static final double ANGEL_DIVISOR = 4e11 / 9;
     /** Each unspent angel adds +2% to the profits of the angel farm. */
     public static final double ANGEL_BONUS = 0.02;
-    /** Angels ("lake points") are shown like a currency: LP10. */
-    public static final String ANGEL_SYMBOL = "LP";
-    public static final String CURRENCY_LAKE = "RD$";
-    public static final String CURRENCY_FOREST = "R$";
+
+    /**
+     * Every farm has its own money and its own economy: nothing earned in one farm can be spent in
+     * another. Currencies are shown with their three-letter ISO code: Dominican peso for the lake,
+     * Brazilian real for the forest. Angels ("lake points") are not money: they are written out as
+     * words, or shown with the lake's coin picture.
+     */
+    public static final String CURRENCY_LAKE = "DOP";
+    public static final String CURRENCY_FOREST = "BRL";
     /** Indonesian rupiah, for the volcano farm once it gets its own WorldDef. */
-    public static final String CURRENCY_VOLCANO = "Rp";
+    public static final String CURRENCY_VOLCANO = "IDR";
 
     // ---- Placeholder balancing (not provided yet, tune freely) -------------------------------
 

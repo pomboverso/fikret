@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      One colour set per farm for the coin and the supervisor vectors. They are applied as a theme
+      overlay (see FarmArt), so the drawables never carry a fixed colour. Lake is the original art;
+      Forest and Volcano are placeholder palettes to be tuned.
+    -->
+    <style name="Farm_Lake">
+        <item name="coinBase">#f1ae20</item>
+        <item name="coinOutline">#d88f04</item>
+        <item name="coinLight">#ffecc6</item>
+        <item name="coinMid">#fec654</item>
+        <item name="coinEdge">#e89c00</item>
+        <item name="supervisorOutline">#27232a</item>
+        <item name="supervisorBody">#e3e2a8</item>
+        <item name="supervisorBeak">#f87b1b</item>
+        <item name="supervisorFeet">#652e03</item>
+        <item name="supervisorLight">#f4eece</item>
+        <item name="supervisorShade">#d0b16c</item>
+    </style>
+
+    <style name="Farm_Forest">
+        <item name="coinBase">#3fae4a</item>
+        <item name="coinOutline">#1f7a2e</item>
+        <item name="coinLight">#d9f5dc</item>
+        <item name="coinMid">#6fd27a</item>
+        <item name="coinEdge">#2b9a3c</item>
+        <item name="supervisorOutline">#232a27</item>
+        <item name="supervisorBody">#a8d98a</item>
+        <item name="supervisorBeak">#f8c81b</item>
+        <item name="supervisorFeet">#4b3203</item>
+        <item name="supervisorLight">#d7efc4</item>
+        <item name="supervisorShade">#6aa84f</item>
+    </style>
+
+    <style name="Farm_Volcano">
+        <item name="coinBase">#e8481f</item>
+        <item name="coinOutline">#a82d0c</item>
+        <item name="coinLight">#ffd6c6</item>
+        <item name="coinMid">#ff7a54</item>
+        <item name="coinEdge">#c9380f</item>
+        <item name="supervisorOutline">#2a2323</item>
+        <item name="supervisorBody">#e3a89b</item>
+        <item name="supervisorBeak">#ffd01b</item>
+        <item name="supervisorFeet">#3d1303</item>
+        <item name="supervisorLight">#f4cec3</item>
+        <item name="supervisorShade">#b8654f</item>
+    </style>
+</resources>

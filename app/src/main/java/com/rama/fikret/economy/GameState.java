@@ -3,6 +3,7 @@ package com.rama.fikret.economy;
 import android.content.Context;
 
 import com.rama.fikret.game.Ability;
+import com.rama.fikret.helpers.DeveloperMode;
 import com.rama.fikret.managers.PrefsManager;
 
 import java.util.Locale;
@@ -373,8 +374,9 @@ public final class GameState {
         }
     }
 
+    /** Developer mode hands out every guide bird without touching the saved progress. */
     public boolean hasTravelManager(int w) {
-        return worlds[w].travelManager;
+        return DeveloperMode.ENABLED || worlds[w].travelManager;
     }
 
     public double travelManagerCost(int w) {
@@ -396,8 +398,8 @@ public final class GameState {
 
     /** True when any farm has its guide bird: those birds follow the player into every farm. */
     public boolean hasAnyTravelManager() {
-        for (World world : worlds) {
-            if (world.travelManager) {
+        for (int w = 0; w < worlds.length; w++) {
+            if (hasTravelManager(w)) {
                 return true;
             }
         }

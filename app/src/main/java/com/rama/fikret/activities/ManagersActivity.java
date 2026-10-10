@@ -10,7 +10,7 @@ import android.widget.TextView;
 import com.rama.fikret.R;
 import com.rama.fikret.economy.NumberFormatter;
 import com.rama.fikret.economy.Worlds;
-import com.rama.fikret.game.BirdIcon;
+import com.rama.fikret.helpers.FarmArt;
 import com.rama.fikret.helpers.ViewUpdates;
 import com.rama.fikret.managers.FontManager;
 
@@ -96,7 +96,8 @@ public class ManagersActivity extends ListScreenActivity {
                 if (row == null) {
                     row = LayoutInflater.from(ManagersActivity.this).inflate(R.layout.list_item_manager, parent, false);
                     applyFont(row);
-                    ((ImageView) row.findViewById(R.id.manager_picture)).setImageDrawable(BirdIcon.drawable(getResources()));
+                    ((ImageView) row.findViewById(R.id.manager_picture))
+                            .setImageDrawable(FarmArt.supervisor(ManagersActivity.this, world));
                     wireListener(row);
                 }
                 bindRow(row, position);
@@ -137,6 +138,22 @@ public class ManagersActivity extends ListScreenActivity {
         });
     }
 
+    /** Puts the lake coin in front of a cost label (or takes it away), only when that changes. */
+    private void setCoin(TextView cost, boolean coin) {
+        Object last = cost.getTag(R.id.last_coin);
+        if (last instanceof Boolean && (Boolean) last == coin) {
+            return;
+        }
+        cost.setTag(R.id.last_coin, coin);
+        if (coin) {
+            int size = Math.round(cost.getTextSize());
+            cost.setCompoundDrawables(FarmArt.coin(this, Worlds.ANGEL_WORLD, size), null, null, null);
+            cost.setCompoundDrawablePadding(size / 4);
+        } else {
+            cost.setCompoundDrawables(null, null, null, null);
+        }
+    }
+
     @Override
     protected void bindRow(View row, int position) {
         row.setTag(position);
@@ -150,6 +167,7 @@ public class ManagersActivity extends ListScreenActivity {
         String name;
         String description;
         String costLabel;
+        boolean coin = false;   // lake points are shown with the lake coin in front
         boolean affordable;
         switch (kind) {
             case KIND_GUIDE: {
@@ -164,8 +182,9 @@ public class ManagersActivity extends ListScreenActivity {
                 double cost = state.accountantCost(world, g);
                 String garden = def.gardens[g].name;
                 name = garden + " accountant";
-                description = "Makes " + garden + " cost 10% less. Paid with lake points (LP).";
-                costLabel = Worlds.ANGEL_SYMBOL + NumberFormatter.number(cost);
+                description = "Makes " + garden + " cost 10% less. Paid with lake points.";
+                costLabel = NumberFormatter.number(cost);
+                coin = true;
                 affordable = state.getAngels() >= cost;
                 break;
             }
@@ -192,7 +211,9 @@ public class ManagersActivity extends ListScreenActivity {
         ViewUpdates.setText((TextView) row.findViewById(R.id.manager_name), FontManager.sanitizeForFont(name));
         ViewUpdates.setText((TextView) row.findViewById(R.id.manager_description), FontManager.sanitizeForFont(description));
         ViewUpdates.setText((TextView) row.findViewById(R.id.rescue_label), getString(R.string.rescue));
-        ViewUpdates.setText((TextView) row.findViewById(R.id.rescue_cost), costLabel);
+        TextView costView = (TextView) row.findViewById(R.id.rescue_cost);
+        ViewUpdates.setText(costView, costLabel);
+        setCoin(costView, coin);
         ViewUpdates.setBackgroundColor(row.findViewById(R.id.rescue_button),
                 getResources().getColor(affordable ? R.color.accent : R.color.disabled));
     }

@@ -39,7 +39,7 @@
 
     <LinearLayout
         android:id="@+id/rescue_button"
-        android:layout_width="64dp"
+        android:layout_width="96dp"
         android:layout_height="wrap_content"
         android:background="@color/accent"
         android:gravity="center"
