@@ -37,9 +37,6 @@ public enum ItemType {
     WALL_ACID(40, 2, 6, true),
     WALL_BLOOD(41, 2, 7, true),
 
-    // share a cell with another item
-    HOLE_DOWN_NEST(13, 0, 0, false),
-
     FARM_BUTTON(42, 2, 8, false),
 
     // logic-only, never drawn

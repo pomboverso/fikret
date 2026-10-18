@@ -428,7 +428,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 changeStage(stageId + 1);
             }
         } else if (cell.item == ItemType.HOLE_UP) {
-            return (stageId - 1);
+            changeStage(stageId - 1);
         }
     }
 

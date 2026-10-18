@@ -135,23 +135,6 @@ public final class Maps {
             {1, 3},
     };
 
-    private static final int[][] NEST_WALLS = {
-            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-            {1, 0, 0, 1, 1, 0, 1, 0, 0, 1},
-            {1, 0, 0, 0, 0, 0, 0, 0, 1, 1},
-            {1, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-            {1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
-            {1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
-            {1, 1, 1, 0, 0, 0, 0, 0, 1, 1},
-            {1, 0, 0, 0, 0, 0, 0, 0, 1, 1},
-            {1, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-    };
-
-    public static boolean hasNest(int stageId) {
-        return stageId == ARCTIC;
-    }
-
     private Maps() {
     }
 
@@ -689,8 +672,7 @@ public final class Maps {
                 75
         );
 
-        drawPond(tiles, 1, 1, SNOW, POND_3, WATER, DEEP_WATER);
-
+        drawPond(tiles, 1, 1, SNOW, POND_3, ICE);
 
         drawPond(tiles, 24, 25, SNOW, POND_1, ICE);
         drawPond(tiles, 2, 14, SNOW, POND_3, ICE);
@@ -723,6 +705,7 @@ public final class Maps {
         tiles[17][17] += alien_stone_4;
 
         tiles[26][26] += hole_down;
+        tiles[3][4] += hole_up;
 
         return new Stage(tiles, 2, 2, true);
     }
@@ -915,11 +898,11 @@ public final class Maps {
                 35, 35170, 35171, 35172, 35173, 35174, 35175, 35176, 35177, 35178, 35179
         );
 
+        tiles[2][2] += hole_up;
+
         randomizedItemGroup(tiles, 2, 28, 2, 28, new int[]{35},
                 place(flower_floor_pink, 50, 2),
                 place(plant, 20, 2));
-
-        tiles[2][2] += hole_up;
 
         return new Stage(tiles, 2, 2);
     }
