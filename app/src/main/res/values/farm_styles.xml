@@ -88,7 +88,7 @@
         <item name="coinEdge">#8ae800</item>
         <item name="supervisorOutline">#27232a</item>
         <item name="supervisorBody">#b9d522</item>
-        <item name="supervisorBeak">#8c37b2</item>
+        <item name="supervisorBeak">#ffd01b</item>
         <item name="supervisorFeet">#511752</item>
         <item name="supervisorLight">#c5df37</item>
         <item name="supervisorShade">#a7c01f</item>
@@ -128,7 +128,7 @@
         <item name="coinEdge">#e80063</item>
         <item name="supervisorOutline">#27232a</item>
         <item name="supervisorBody">#dd6fdf</item>
-        <item name="supervisorBeak">#b237ae</item>
+        <item name="supervisorBeak">#ffd01b</item>
         <item name="supervisorFeet">#652e03</item>
         <item name="supervisorLight">#e99ae6</item>
         <item name="supervisorShade">#d43ece</item>
@@ -148,7 +148,7 @@
         <item name="coinEdge">#720cdc</item>
         <item name="supervisorOutline">#27232a</item>
         <item name="supervisorBody">#a76fcc</item>
-        <item name="supervisorBeak">#9437d4</item>
+        <item name="supervisorBeak">#ffd01b</item>
         <item name="supervisorFeet">#652e03</item>
         <item name="supervisorLight">#b88bd6</item>
         <item name="supervisorShade">#9856c3</item>
