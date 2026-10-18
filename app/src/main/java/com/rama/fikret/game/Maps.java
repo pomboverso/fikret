@@ -480,10 +480,10 @@ public final class Maps {
                 45
         );
 
-        drawPond(tiles, 19, 14, SOIL, POND_6, VOLCANIC_SOIL);
+        drawPond(tiles, 25, 25, SOIL, POND_6, VOLCANIC_SOIL);
 
         tiles[2][2] += hole_up;
-        tiles[20][15] += hole_down;
+        tiles[26][26] += hole_down;
 
         randomizedItemGroup(tiles, 2, 28, 2, 28, new int[]{45},
                 place(gem, 30, 1),
@@ -541,14 +541,14 @@ public final class Maps {
         );
 
         drawPond(tiles, 1, 1, LAVA, POND_6, VOLCANIC_SOIL);
-        drawPond(tiles, 24, 25, LAVA, POND_1, VOLCANIC_SOIL);
+        drawPond(tiles, 24, 25, LAVA, POND_1, ACID_SOIL);
         drawPond(tiles, 2, 14, LAVA, POND_3, VOLCANIC_SOIL);
         drawPond(tiles, 10, 3, LAVA, POND_5, VOLCANIC_SOIL);
         drawPond(tiles, 22, 2, LAVA, POND_2, VOLCANIC_SOIL);
         drawPond(tiles, 22, 15, LAVA, POND_4, VOLCANIC_SOIL);
 
         tiles[2][2] += hole_up;
-        tiles[3][16] += hole_down;
+        tiles[26][26] += hole_down;
 
         randomizedItemGroup(tiles, 2, 28, 2, 28, new int[]{105},
                 place(lava_stones_01, 50, 2),
@@ -612,14 +612,14 @@ public final class Maps {
         );
 
         drawPond(tiles, 1, 1, ACID_LAKE, POND_6, ACID_SOIL);
-        drawPond(tiles, 24, 25, ACID_LAKE, POND_1, ACID_SOIL);
         drawPond(tiles, 2, 14, ACID_LAKE, POND_3, ACID_SOIL);
         drawPond(tiles, 10, 3, ACID_LAKE, POND_5, ACID_SOIL);
         drawPond(tiles, 22, 2, ACID_LAKE, POND_2, ACID_SOIL);
         drawPond(tiles, 22, 15, ACID_LAKE, POND_4, ACID_SOIL);
+        drawPond(tiles, 24, 25, ACID_LAKE, POND_1, ICE);
 
         tiles[2][2] += hole_up;
-        tiles[3][16] += hole_down;
+        tiles[26][26] += hole_down;
 
         return new Stage(tiles, 2, 2);
     }
@@ -663,26 +663,26 @@ public final class Maps {
                 {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, // 29
         };
 
-        drawWalls(
-                tiles,
-                0,
-                0,
-                ARCTIC_WALLS,
-                wall_arctic,
-                75
-        );
+        drawPond(tiles, 0, 0, SNOW, POND_2, ICE);
 
-        drawPond(tiles, 1, 1, SNOW, POND_3, ICE);
-
-        drawPond(tiles, 24, 25, SNOW, POND_1, ICE);
         drawPond(tiles, 2, 14, SNOW, POND_3, ICE);
         drawPond(tiles, 10, 3, SNOW, POND_5, ICE);
         drawPond(tiles, 22, 2, SNOW, POND_2, ICE);
         drawPond(tiles, 22, 15, SNOW, POND_4, ICE);
         drawPond(tiles, 15, 23, SNOW, POND_3, ICE);
         drawPond(tiles, 5, 22, SNOW, POND_4, ICE);
-
         drawPond(tiles, 13, 13, SNOW, POND_8, ICE);
+
+        drawPond(tiles, 24, 25, SNOW, POND_1, BUBBLEGUM);
+
+        drawWalls(
+                tiles,
+                0,
+                0,
+                ARCTIC_WALLS,
+                wall_arctic,
+                75, 75081, 75082, 75083, 75084, 75085, 75086, 75087, 75088, 75088, 75089
+        );
 
         tiles[10][10] += alien_stone_1;
         tiles[11][10] += alien_stone_2;
@@ -705,7 +705,7 @@ public final class Maps {
         tiles[17][17] += alien_stone_4;
 
         tiles[26][26] += hole_down;
-        tiles[3][4] += hole_up;
+        tiles[2][2] += hole_up;
 
         return new Stage(tiles, 2, 2, true);
     }
@@ -720,10 +720,10 @@ public final class Maps {
         drawPond(tiles, 1, 24, BUBBLEGUM_LAKE, POND_6, BUBBLEGUM);
         drawPond(tiles, 24, 1, BUBBLEGUM_LAKE, POND_6, BUBBLEGUM);
         drawPond(tiles, 15, 15, BUBBLEGUM_LAKE, POND_2, BUBBLEGUM);
-        drawPond(tiles, 24, 25, BUBBLEGUM_LAKE, POND_1, BUBBLEGUM);
         drawPond(tiles, 2, 14, BUBBLEGUM_LAKE, POND_3, BUBBLEGUM);
         drawPond(tiles, 10, 3, BUBBLEGUM_LAKE, POND_5, BUBBLEGUM);
         drawPond(tiles, 22, 15, BUBBLEGUM_LAKE, POND_4, BUBBLEGUM);
+        drawPond(tiles, 24, 25, BUBBLEGUM_LAKE, POND_1, SPACE_SOIL);
 
         int[][] BUBBLEGUM_WALLS = {
                 {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, // 0
@@ -767,11 +767,8 @@ public final class Maps {
                 145, 145131, 145132, 145133, 145134, 145135, 145136, 145137, 145138, 145139
         );
 
-//        randomizedItemGroup(tiles, 2, 28, 2, 28, new int[]{145},
-//                place(bubblegum_wave, 50, 2));
-
         tiles[2][2] += hole_up;
-        tiles[4][16] += hole_down;
+        tiles[26][26] += hole_down;
 
         return new Stage(tiles, 2, 2);
     }
@@ -787,12 +784,12 @@ public final class Maps {
         drawPond(tiles, 22, 2, SPACE_SOIL, POND_3, SPACE_LAKE);
         drawPond(tiles, 3, 20, SPACE_SOIL, POND_6, SPACE_LAKE);
         drawPond(tiles, 24, 13, SPACE_SOIL, POND_1, SPACE_LAKE);
-        drawPond(tiles, 26, 26, SPACE_SOIL, POND_6, VOLCANIC_SOIL);
+        drawPond(tiles, 26, 26, SPACE_SOIL, POND_6, SAND);
 
         tiles[2][2] += hole_up;
         tiles[27][27] += hole_down;
 
-        int[][] SAPCE_WALLS = {
+        int[][] SPACE_WALLS = {
                 {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, // 0
                 {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 1
                 {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // 2
@@ -829,7 +826,7 @@ public final class Maps {
                 tiles,
                 0,
                 0,
-                SAPCE_WALLS,
+                SPACE_WALLS,
                 wall_space,
                 155, 155161, 155162, 155163, 155164, 155165, 155166, 155167, 155168, 155169
         );
@@ -848,7 +845,7 @@ public final class Maps {
             Arrays.fill(tiles[y], 35);
         }
 
-        drawPond(tiles, 2, 2, SAND, POND_2, BLOOD_LAKE);
+        drawPond(tiles, 0, 0, SAND, POND_2, BLOOD_LAKE);
         drawPond(tiles, 10, 6, SAND, POND_3, BLOOD_LAKE);
         drawPond(tiles, 24, 24, SAND, POND_4, BLOOD_LAKE);
         drawPond(tiles, 3, 18, SAND, POND_5, BLOOD_LAKE);
