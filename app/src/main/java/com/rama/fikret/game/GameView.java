@@ -513,13 +513,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         return teleportKind != null;
     }
 
-    private void startTeleport(TeleportKind kind) {
-        teleportKind = kind;
-        teleportArrived = false;
-        teleportTimerMs = 0;
-        goose.setTeleporting(true);
-    }
-
     private void updateTeleport(long deltaMs) {
         if (!isTeleporting()) {
             return;

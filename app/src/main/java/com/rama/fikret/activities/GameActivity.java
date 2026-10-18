@@ -68,18 +68,17 @@ public class GameActivity extends Activity {
         Rect src = items.frameRect(ItemType.FARM_BUTTON.spriteCol, ItemType.FARM_BUTTON.spriteRow);
         Bitmap icon = Bitmap.createBitmap(items.getBitmap(), src.left, src.top, src.width(), src.height());
         BitmapDrawable drawable = new BitmapDrawable(getResources(), icon);
-        drawable.setFilterBitmap(false); // keep the pixel art crisp
+        drawable.setFilterBitmap(false);
 
         float density = getResources().getDisplayMetrics().density;
         GradientDrawable background = new GradientDrawable();
         background.setShape(GradientDrawable.RECTANGLE);
-        background.setCornerRadius(8 * density);
-        background.setColor(0x99000000);
-        background.setStroke(Math.round(2 * density), 0xCCFFFFFF);
+        background.setColor(0x99ffebb3);
+        background.setStroke(4, 0xFFe6a89f);
 
         ImageButton button = new ImageButton(this);
         button.setImageDrawable(drawable);
-        button.setBackground(background);
+        button.setBackgroundDrawable(background);
         button.setScaleType(ImageView.ScaleType.FIT_CENTER);
         int pad = Math.round(8 * density);
         button.setPadding(pad, pad, pad, pad);
