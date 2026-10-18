@@ -18,7 +18,6 @@ public final class Maps {
     static int wall_acid = 40000000;
     static int wall_blood = 41000000;
 
-    static int farm_exit = 39000000;
     static int flower_floor_pink = 14000000;
     static int flower_floor_blue = 15000000;
     static int flower_floor_yellow = 16000000;
@@ -31,9 +30,6 @@ public final class Maps {
     static int lava_stones_03 = 26000000;
     static int lilypond_01 = 27000000;
     static int lilypond_02 = 28000000;
-    static int dive_to_arctic = 29000000;
-    static int dive_to_beach_cave = 30000000;
-    static int dive_to_beach = 31000000;
     static int wall_space = 32000000;
     static int alien_stone_1 = 33000000;
     static int alien_stone_2 = 34000000;
@@ -69,11 +65,6 @@ public final class Maps {
     public static final int BUBBLEGUM_LAND = 6;
     public static final int SPACE = 7;
     public static final int NIGHTMARE = 8;
-
-    public static final int NEST_OFFSET = 100;
-
-
-    public static final int ARCTIC_NEST = ARCTIC + NEST_OFFSET;
 
     private static final int[][] POND_1 = {
             {0, 7, 0},
@@ -357,12 +348,6 @@ public final class Maps {
         }
     }
 
-    private static void markDiveWarp(int[][] tiles, int warpItem, int[]... cells) {
-        for (int[] cell : cells) {
-            tiles[cell[0]][cell[1]] += warpItem;
-        }
-    }
-
     private static Stage lake() {
         int[][] tiles = new int[30][30];
         for (int y = 0; y < 30; y++) {
@@ -377,14 +362,8 @@ public final class Maps {
         drawPond(tiles, 17, 23, WATER, POND_3, GRASS);
         drawPond(tiles, 24, 0, WATER, POND_4, GRASS);
 
-        markDiveWarp(tiles, dive_to_arctic,
-                new int[]{6, 20}, new int[]{6, 21},
-                new int[]{7, 20}, new int[]{7, 21},
-                new int[]{8, 20}, new int[]{8, 21},
-                new int[]{9, 20}, new int[]{9, 21});
 
         tiles[27][2] += hole_down;
-        tiles[17][15] += farm_exit;
 
         randomizedItemGroup(tiles, 2, 28, 2, 28,
                 new int[]{25011, 25012, 25013, 25014, 25015, 25016, 25017, 25018, 25019},
@@ -407,11 +386,9 @@ public final class Maps {
             Arrays.fill(tiles[y], 55);
         }
 
-        drawPond(tiles, 21, 7, DEEP_GRASS, POND_1, SOIL);
         drawPond(tiles, 25, 24, DEEP_GRASS, POND_6, SOIL);
         tiles[2][2] += hole_up;
-        tiles[23][8] += hole_down;
-        tiles[26][25] += farm_exit;
+        tiles[26][25] += hole_down;
 
         int[][] FOREST_WALLS = {
                 {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, // 0
@@ -467,7 +444,7 @@ public final class Maps {
 
         randomizedItemGroup(tiles, 2, 28, 2, 28,
                 new int[]{55041, 55042, 55043, 55044, 55046, 55047, 55048, 55049, 45},
-                place(gem, 7, 2));
+                place(gem, 3, 2));
 
         return new Stage(tiles, 2, 2);
     }
@@ -520,11 +497,9 @@ public final class Maps {
                 45
         );
 
-        drawPond(tiles, 8, 4, SOIL, POND_1, VOLCANIC_SOIL);
         drawPond(tiles, 19, 14, SOIL, POND_6, VOLCANIC_SOIL);
 
         tiles[2][2] += hole_up;
-        tiles[10][5] += farm_exit;
         tiles[20][15] += hole_down;
 
         randomizedItemGroup(tiles, 2, 28, 2, 28, new int[]{45},
@@ -591,7 +566,6 @@ public final class Maps {
 
         tiles[2][2] += hole_up;
         tiles[3][16] += hole_down;
-        tiles[26][26] += farm_exit;
 
         randomizedItemGroup(tiles, 2, 28, 2, 28, new int[]{105},
                 place(lava_stones_01, 50, 2),
@@ -662,8 +636,7 @@ public final class Maps {
         drawPond(tiles, 22, 15, ACID_LAKE, POND_4, ACID_SOIL);
 
         tiles[2][2] += hole_up;
-//        tiles[3][16] += hole_down;
-        tiles[26][26] += farm_exit;
+        tiles[3][16] += hole_down;
 
         return new Stage(tiles, 2, 2);
     }
@@ -718,9 +691,6 @@ public final class Maps {
 
         drawPond(tiles, 1, 1, SNOW, POND_3, WATER, DEEP_WATER);
 
-        markDiveWarp(tiles, dive_to_beach,
-                new int[]{3, 3}, new int[]{3, 4},
-                new int[]{4, 3}, new int[]{4, 4});
 
         drawPond(tiles, 24, 25, SNOW, POND_1, ICE);
         drawPond(tiles, 2, 14, SNOW, POND_3, ICE);
@@ -753,10 +723,8 @@ public final class Maps {
         tiles[17][17] += alien_stone_4;
 
         tiles[26][26] += hole_down;
-        tiles[13][13] += farm_exit;
 
-        return new Stage(tiles, 2, 2, true)
-                .withSonarReveal(new SonarReveal(13, 13, ItemType.HOLE_DOWN_NEST, 10, 10, 17, 17));
+        return new Stage(tiles, 2, 2, true);
     }
 
     private static Stage bubblegum_land() {
@@ -821,7 +789,6 @@ public final class Maps {
 
         tiles[2][2] += hole_up;
         tiles[4][16] += hole_down;
-        tiles[25][2] += farm_exit;
 
         return new Stage(tiles, 2, 2);
     }
@@ -840,8 +807,7 @@ public final class Maps {
         drawPond(tiles, 26, 26, SPACE_SOIL, POND_6, VOLCANIC_SOIL);
 
         tiles[2][2] += hole_up;
-        tiles[13][16] += farm_exit;
-        tiles[28][27] += hole_down;
+        tiles[27][27] += hole_down;
 
         int[][] SAPCE_WALLS = {
                 {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, // 0
@@ -896,16 +862,16 @@ public final class Maps {
     private static Stage nightmare() {
         int[][] tiles = new int[30][30];
         for (int y = 0; y < 30; y++) {
-            Arrays.fill(tiles[y], 95);
+            Arrays.fill(tiles[y], 35);
         }
 
-        drawPond(tiles, 2, 2, VOLCANIC_SOIL, POND_2, BLOOD_LAKE);
-        drawPond(tiles, 10, 6, VOLCANIC_SOIL, POND_3, BLOOD_LAKE);
-        drawPond(tiles, 24, 24, VOLCANIC_SOIL, POND_4, BLOOD_LAKE);
-        drawPond(tiles, 3, 18, VOLCANIC_SOIL, POND_5, BLOOD_LAKE);
-        drawPond(tiles, 15, 13, VOLCANIC_SOIL, POND_2, BLOOD_LAKE);
-        drawPond(tiles, 17, 23, VOLCANIC_SOIL, POND_3, BLOOD_LAKE);
-        drawPond(tiles, 24, 0, VOLCANIC_SOIL, POND_4, BLOOD_LAKE);
+        drawPond(tiles, 2, 2, SAND, POND_2, BLOOD_LAKE);
+        drawPond(tiles, 10, 6, SAND, POND_3, BLOOD_LAKE);
+        drawPond(tiles, 24, 24, SAND, POND_4, BLOOD_LAKE);
+        drawPond(tiles, 3, 18, SAND, POND_5, BLOOD_LAKE);
+        drawPond(tiles, 15, 13, SAND, POND_2, BLOOD_LAKE);
+        drawPond(tiles, 17, 23, SAND, POND_3, BLOOD_LAKE);
+        drawPond(tiles, 24, 0, SAND, POND_4, BLOOD_LAKE);
 
         int[][] NIGHTMARE_WALLS = {
                 {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, // 0
@@ -946,11 +912,14 @@ public final class Maps {
                 0,
                 NIGHTMARE_WALLS,
                 wall_blood,
-                95, 95170, 95171, 95172, 95173, 95174, 95175, 95176, 95177, 95178, 95179
+                35, 35170, 35171, 35172, 35173, 35174, 35175, 35176, 35177, 35178, 35179
         );
 
-        tiles[1][2] += hole_up;
-        tiles[1][28] += farm_exit;
+        randomizedItemGroup(tiles, 2, 28, 2, 28, new int[]{35},
+                place(flower_floor_pink, 50, 2),
+                place(plant, 20, 2));
+
+        tiles[2][2] += hole_up;
 
         return new Stage(tiles, 2, 2);
     }

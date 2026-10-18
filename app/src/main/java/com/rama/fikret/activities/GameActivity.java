@@ -1,15 +1,25 @@
 package com.rama.fikret.activities;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 
 import com.rama.fikret.economy.GameState;
 import com.rama.fikret.game.GameView;
+import com.rama.fikret.game.ItemSheet;
+import com.rama.fikret.game.ItemType;
+import com.rama.fikret.game.SpriteSheet;
 import com.rama.fikret.game.Maps;
 import com.rama.fikret.helpers.SystemBars;
 import com.rama.fikret.managers.PrefsManager;
@@ -39,7 +49,6 @@ public class GameActivity extends Activity {
             startPosition = prefs.getArrivalPosition();
         }
         gameView = new GameView(this, stageId, startPosition);
-        gameView.setOnExitListener(() -> runOnUiThread(() -> finish()));
 
         if (getIntent().getBooleanExtra(EXTRA_TELEPORT_ARRIVAL, false)) {
             gameView.playArrivalAnimation();
@@ -48,9 +57,45 @@ public class GameActivity extends Activity {
         FrameLayout container = new FrameLayout(this);
         container.addView(gameView, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        container.addView(createFarmButton(), farmButtonParams());
         setContentView(container);
         SystemBars.applyInsets(container);
         gameView.requestFocus();
+    }
+
+    private ImageButton createFarmButton() {
+        SpriteSheet items = ItemSheet.get(getResources());
+        Rect src = items.frameRect(ItemType.FARM_BUTTON.spriteCol, ItemType.FARM_BUTTON.spriteRow);
+        Bitmap icon = Bitmap.createBitmap(items.getBitmap(), src.left, src.top, src.width(), src.height());
+        BitmapDrawable drawable = new BitmapDrawable(getResources(), icon);
+        drawable.setFilterBitmap(false); // keep the pixel art crisp
+
+        float density = getResources().getDisplayMetrics().density;
+        GradientDrawable background = new GradientDrawable();
+        background.setShape(GradientDrawable.RECTANGLE);
+        background.setCornerRadius(8 * density);
+        background.setColor(0x99000000);
+        background.setStroke(Math.round(2 * density), 0xCCFFFFFF);
+
+        ImageButton button = new ImageButton(this);
+        button.setImageDrawable(drawable);
+        button.setBackground(background);
+        button.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        int pad = Math.round(8 * density);
+        button.setPadding(pad, pad, pad, pad);
+        button.setContentDescription("Back to farm");
+        button.setOnClickListener(v -> finish());
+        return button;
+    }
+
+    private FrameLayout.LayoutParams farmButtonParams() {
+        float density = getResources().getDisplayMetrics().density;
+        int size = Math.round(56 * density);
+        int margin = Math.round(16 * density);
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(size, size,
+                Gravity.BOTTOM | Gravity.END);
+        lp.setMargins(margin, margin, margin, margin);
+        return lp;
     }
 
     @Override

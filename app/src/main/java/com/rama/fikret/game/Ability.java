@@ -1,8 +1,6 @@
 package com.rama.fikret.game;
 
 public enum Ability {
-    DIVE_DEEP_WATER(Maps.NUCLEAR),
-    SONAR(Maps.BUBBLEGUM_LAND),
     TELEPORT_HOME(Maps.NIGHTMARE);
 
     public final int stageId;

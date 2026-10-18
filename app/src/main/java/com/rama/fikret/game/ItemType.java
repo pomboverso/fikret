@@ -40,14 +40,10 @@ public enum ItemType {
     // share a cell with another item
     HOLE_DOWN_NEST(13, 0, 0, false),
 
-    // the way back to the farm screen; looks like a hole going down
-    FARM_EXIT(39, 0, 0, false),
+    FARM_BUTTON(42, 2, 8, false),
 
     // logic-only, never drawn
-    BIRD(4, -1, -1, false),
-    DIVE_TO_ARCTIC(29, -1, -1, false),
-    DIVE_TO_BEACH_CAVE(30, -1, -1, false),
-    DIVE_TO_BEACH(31, -1, -1, false);
+    BIRD(4, -1, -1, false);
 
     public static final int SHEET_COLUMNS = 3;
     public static final int SHEET_ROWS = 10;

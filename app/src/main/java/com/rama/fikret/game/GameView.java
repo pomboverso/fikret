@@ -10,7 +10,6 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.view.ViewConfiguration;
 
 import com.rama.fikret.R;
 import com.rama.fikret.economy.GameState;
@@ -18,7 +17,6 @@ import com.rama.fikret.economy.Worlds;
 import com.rama.fikret.managers.PrefsManager;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
@@ -39,11 +37,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private SpriteSheet itemSheet;
     private final Paint backgroundPaint = new Paint();
 
-    private static final float SONAR_SPEED = 1.5f;
-    private static final long SONAR_PING_MS = 600;
-    private static final float SONAR_STROKE = 3f;
-    private static final float SONAR_ECHO_GAP = 1f;
-    private static final int SONAR_RINGS = 1;
     private static final long TELEPORT_PHASE_MS = 200;
     private static final long ARRIVAL_POSE_MS = 500;
     private static final long CAMERA_GLIDE_MIN_MS = 250;
@@ -54,16 +47,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private TeleportKind teleportKind;
     private boolean teleportArrived;
     private long teleportTimerMs;
-    private static final long TAP_MAX_MS = 300;
-    private static final float TAP_SLOP_DP = 14f;
 
-    private final Paint sonarPaint = new Paint();
-    private final List<SonarReveal> sonarPendingReveals = new ArrayList<>();
-    private boolean sonarActive;
-    private float sonarX;
-    private float sonarY;
-    private float sonarMaxRadius;
-    private long sonarElapsedMs;
     private final Rect reusableSrc = new Rect();
     private final Rect reusableDst = new Rect();
     private final SwipeJoystick joystick;
@@ -85,38 +69,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private boolean panResetting;
     private long panResetElapsedMs;
     private float panResetStartX, panResetStartY;
-    public interface OnExitListener {
-        void onExitToFarm();
-    }
-
-    private OnExitListener exitListener;
-
-    public void setOnExitListener(OnExitListener listener) {
-        this.exitListener = listener;
-    }
-
     private volatile boolean keyLeft, keyRight, keyUp, keyDown;
     private volatile int activeNumpadKeyCode = 0;
     private volatile int numpadDx, numpadDy;
     private volatile int stickDx, stickDy;
     private boolean pinching;
-    private boolean tapCandidate;
-    private float tapDownX, tapDownY;
-    private float tapSlopPx;
-    private long lastTapTime;
-    private float lastTapX, lastTapY;
-    private boolean longPressFired;
-    private final Runnable longPressRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if (tapCandidate && !pinching) {
-                longPressFired = true;
-                tapCandidate = false;
-                joystick.end();
-                dive();
-            }
-        }
-    };
 
     public GameView(Context context) {
         this(context, Maps.BEACH);
@@ -133,11 +90,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         setFocusableInTouchMode(true);
 
         backgroundPaint.setColor(Color.BLACK);
-        sonarPaint.setStyle(Paint.Style.STROKE);
-        sonarPaint.setAntiAlias(true);
-        sonarPaint.setColor(0xFF7FE8FF);
         float density = getResources().getDisplayMetrics().density;
-        tapSlopPx = TAP_SLOP_DP * density;
         joystick = new SwipeJoystick(density);
         blizzard = new Blizzard();
 
@@ -162,7 +115,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         map = new GameMap(stage.tiles);
         worldIndex = Worlds.indexOfStage(stageId);
         GameState.get(context).onStageEntered(stageId);
-        applyRevealedItems();
         loadTileSheets();
         loadItemSheet();
     }
@@ -237,16 +189,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         switch (event.getAction() & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN:
                 pinching = false;
-                tapCandidate = true;
-                longPressFired = false;
-                tapDownX = event.getX();
-                tapDownY = event.getY();
                 joystick.begin(event.getX(), event.getY());
-                postDelayed(longPressRunnable, ViewConfiguration.getLongPressTimeout());
                 return true;
             case MotionEvent.ACTION_POINTER_DOWN:
-                tapCandidate = false;
-                removeCallbacks(longPressRunnable);
                 pinching = true;
                 panResetting = false;
                 joystick.end();
@@ -264,40 +209,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     panAnchorX = avgX;
                     panAnchorY = avgY;
                 } else if (!pinching) {
-                    if (distance(event.getX(), event.getY(), tapDownX, tapDownY) > tapSlopPx) {
-                        tapCandidate = false;
-                        removeCallbacks(longPressRunnable);
-                    }
                     joystick.move(event.getX(), event.getY());
                 }
                 return true;
             case MotionEvent.ACTION_POINTER_UP:
                 return true;
             case MotionEvent.ACTION_UP:
-                boolean isTap = tapCandidate
-                        && event.getEventTime() - event.getDownTime() <= TAP_MAX_MS
-                        && distance(event.getX(), event.getY(), tapDownX, tapDownY) <= tapSlopPx;
-                tapCandidate = false;
                 pinching = false;
                 joystick.end();
-                removeCallbacks(longPressRunnable);
-                if (isTap && !longPressFired) {
-                    boolean second = lastTapTime > 0
-                            && event.getEventTime() - lastTapTime <= ViewConfiguration.getDoubleTapTimeout()
-                            && distance(event.getX(), event.getY(), lastTapX, lastTapY) <= tapSlopPx * 4;
-                    if (second) {
-                        lastTapTime = 0;
-                        sonar();
-                    } else {
-                        lastTapTime = event.getEventTime();
-                        lastTapX = event.getX();
-                        lastTapY = event.getY();
-                    }
-                }
                 return true;
             case MotionEvent.ACTION_CANCEL:
-                removeCallbacks(longPressRunnable);
-                tapCandidate = false;
                 pinching = false;
                 joystick.end();
                 return true;
@@ -459,7 +380,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         goose.setSwimming(isOverLiquid(goose.getX(), goose.getY()));
         checkHoleTransition();
         updateTeleport(deltaMs);
-        updateSonar(deltaMs);
         updateGuideBirds(deltaMs);
         updatePanReset(deltaMs);
         updateCamera(deltaMs);
@@ -508,29 +428,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 changeStage(stageId + 1);
             }
         } else if (cell.item == ItemType.HOLE_UP) {
-            changeStage(isNestStage(stageId) ? stageId - Maps.NEST_OFFSET : stageId - 1);
-        } else if (cell.item == ItemType.HOLE_DOWN_NEST) {
-            if (Maps.hasNest(stageId)) {
-                changeStage(stageId + Maps.NEST_OFFSET);
-            }
-        } else if (cell.item == ItemType.FARM_EXIT) {
-            if (exitListener != null) {
-                exitListener.onExitToFarm();
-            }
+            return (stageId - 1);
         }
-    }
-
-    private static int diveTarget(ItemType item) {
-        if (item == ItemType.DIVE_TO_ARCTIC) {
-            return Maps.ARCTIC;
-        } else if (item == ItemType.DIVE_TO_BEACH) {
-            return Maps.BEACH;
-        }
-        return -1;
-    }
-
-    private static boolean isNestStage(int stageId) {
-        return stageId >= Maps.NEST_OFFSET;
     }
 
     private void changeStage(int newStageId) {
@@ -555,8 +454,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         map = new GameMap(stage.tiles);
         worldIndex = Worlds.indexOfStage(stageId);
         GameState.get(getContext()).onStageEntered(stageId);
-        applyRevealedItems();
-        resetSonar();
         cancelCameraGlide();
 
         int spawnRow = stage.spawnRow;
@@ -583,21 +480,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         resetPan();
     }
 
-    private void applyRevealedItems() {
-        PrefsManager prefs = PrefsManager.getInstance(getContext());
-        for (int i = 0; i < stage.sonarReveals.size(); i++) {
-            SonarReveal reveal = stage.sonarReveals.get(i);
-            if (prefs.isSonarRevealed(stageId, reveal.row, reveal.col)) {
-                map.addItem(reveal.row, reveal.col, reveal.item);
-            }
-        }
-    }
-
-    private void resetSonar() {
-        sonarActive = false;
-        sonarPendingReveals.clear();
-    }
-
     private void resetPan() {
         panOffsetX = 0f;
         panOffsetY = 0f;
@@ -616,20 +498,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         resetPan();
     }
 
-    public boolean teleportHome() {
-        if (!PrefsManager.getInstance(getContext()).hasAbility(Ability.TELEPORT_HOME)) {
-            return false;
-        }
-        synchronized (getHolder()) {
-            if (goose == null || isTeleporting()) {
-                return false;
-            }
-            startTeleport(TeleportKind.HOME);
-            return true;
-        }
-    }
-
-    /** Plays the teleport pose for half a second once the goose appears (used when teleporting in from the menu). */
     public void playArrivalAnimation() {
         pendingArrival = true;
     }
@@ -681,84 +549,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         } else {
             changeStage(Maps.BEACH, true);
         }
-    }
-
-    public boolean dive() {
-        if (!PrefsManager.getInstance(getContext()).hasAbility(Ability.DIVE_DEEP_WATER)) {
-            return false;
-        }
-        synchronized (getHolder()) {
-            if (goose == null || isTeleporting()) {
-                return false;
-            }
-            MapCell cell = map.getCell(goose.getRow(), goose.getCol());
-            int target = cell == null ? -1 : diveTarget(cell.item);
-            if (target < 0) {
-                return false;
-            }
-            changeStage(target);
-            return true;
-        }
-    }
-
-    public boolean sonar() {
-        if (!PrefsManager.getInstance(getContext()).hasAbility(Ability.SONAR)) {
-            return false;
-        }
-        synchronized (getHolder()) {
-            if (goose == null || sonarActive) {
-                return false;
-            }
-            float half = GameMap.TILE_SIZE / 2f;
-            sonarX = goose.getX() + half;
-            sonarY = goose.getY() + half;
-            float farX = Math.max(sonarX, map.getWidthPx() - sonarX);
-            float farY = Math.max(sonarY, map.getHeightPx() - sonarY);
-            sonarMaxRadius = (float) Math.sqrt(farX * farX + farY * farY);
-
-            sonarPendingReveals.clear();
-            for (int i = 0; i < stage.sonarReveals.size(); i++) {
-                SonarReveal reveal = stage.sonarReveals.get(i);
-                MapCell cell = map.getCell(reveal.row, reveal.col);
-                if (cell != null && !cell.hasItem() && reveal.zoneContains(goose.getRow(), goose.getCol())) {
-                    sonarPendingReveals.add(reveal);
-                }
-            }
-            sonarElapsedMs = 0;
-            sonarActive = true;
-            return true;
-        }
-    }
-
-    private void updateSonar(long deltaMs) {
-        if (!sonarActive) {
-            return;
-        }
-        sonarElapsedMs += deltaMs;
-        float radius = sonarElapsedMs * SONAR_SPEED;
-
-        float half = GameMap.TILE_SIZE / 2f;
-        for (Iterator<SonarReveal> it = sonarPendingReveals.iterator(); it.hasNext(); ) {
-            SonarReveal reveal = it.next();
-            float dx = reveal.col * GameMap.TILE_SIZE + half - sonarX;
-            float dy = reveal.row * GameMap.TILE_SIZE + half - sonarY;
-            if (Math.sqrt(dx * dx + dy * dy) <= radius) {
-                if (map.addItem(reveal.row, reveal.col, reveal.item)) {
-                    PrefsManager.getInstance(getContext()).setSonarRevealed(stageId, reveal.row, reveal.col);
-                }
-                it.remove();
-            }
-        }
-
-        if (sonarElapsedMs >= sonarMaxRadius / SONAR_SPEED + SONAR_PING_MS) {
-            resetSonar();
-        }
-    }
-
-    private static float distance(float x1, float y1, float x2, float y2) {
-        float dx = x1 - x2;
-        float dy = y1 - y2;
-        return (float) Math.sqrt(dx * dx + dy * dy);
     }
 
     private boolean isOverLiquid(float spriteX, float spriteY) {
@@ -951,7 +741,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         drawBirds(canvas, managerBirds, tileSize);
         drawBirds(canvas, guideBirds, tileSize);
-        drawSonar(canvas, visibleW, visibleH);
 
         if (goose != null) {
             int screenX = Math.round(goose.getX()) - cameraX;
@@ -966,42 +755,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             blizzard.draw(canvas, canvas.getWidth(), canvas.getHeight());
         }
         joystick.draw(canvas);
-    }
-
-    private void drawSonar(Canvas canvas, float visibleW, float visibleH) {
-        if (!sonarActive) {
-            return;
-        }
-        float cx = sonarX - cameraX;
-        float cy = sonarY - cameraY;
-        float radius = sonarElapsedMs * SONAR_SPEED;
-
-        if (radius <= sonarMaxRadius) {
-            float fade = 1f - radius / sonarMaxRadius;
-            for (int i = 0; i < SONAR_RINGS; i++) {
-                float r = radius - i * SONAR_ECHO_GAP;
-                if (r <= 0f) {
-                    break;
-                }
-                float stroke = SONAR_STROKE / (1f + i * 0.5f);
-                if (!ringOnScreen(cx, cy, r, stroke, visibleW, visibleH)) {
-                    continue;
-                }
-                sonarPaint.setAlpha((int) (220f * (0.3f + 0.7f * fade) / (1f + i * 1.5f)));
-                sonarPaint.setStrokeWidth(stroke);
-                canvas.drawCircle(cx, cy, r, sonarPaint);
-            }
-        }
-    }
-
-    private static boolean ringOnScreen(float cx, float cy, float r, float stroke, float w, float h) {
-        float nearX = cx < 0f ? -cx : (cx > w ? cx - w : 0f);
-        float nearY = cy < 0f ? -cy : (cy > h ? cy - h : 0f);
-        float farX = Math.max(Math.abs(cx), Math.abs(cx - w));
-        float farY = Math.max(Math.abs(cy), Math.abs(cy - h));
-        double near = Math.sqrt(nearX * nearX + nearY * nearY);
-        double far = Math.sqrt(farX * farX + farY * farY);
-        return r + stroke >= near && r - stroke <= far;
     }
 
     private void drawBirds(Canvas canvas, List<Bird> birds, int tileSize) {

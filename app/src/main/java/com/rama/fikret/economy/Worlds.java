@@ -288,8 +288,6 @@ public final class Worlds {
                 return "Space";
             case Maps.NIGHTMARE:
                 return "Nightmare";
-            case Maps.ARCTIC_NEST:
-                return "Arctic secret farm";
             default:
                 return "Stage " + stageId;
         }
@@ -297,6 +295,6 @@ public final class Worlds {
 
     public static final int[] ALL_STAGE_IDS = {
             Maps.BEACH, Maps.FOREST, Maps.CAVE, Maps.VOLCANO, Maps.NUCLEAR, Maps.ARCTIC,
-            Maps.BUBBLEGUM_LAND, Maps.SPACE, Maps.NIGHTMARE, Maps.ARCTIC_NEST
+            Maps.BUBBLEGUM_LAND, Maps.SPACE, Maps.NIGHTMARE
     };
 }
