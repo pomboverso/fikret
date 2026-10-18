@@ -12,7 +12,6 @@
         <item name="supervisorFeet">#652e03</item>
         <item name="supervisorLight">#f4eece</item>
         <item name="supervisorShade">#d0b16c</item>
-
         <item name="iconBg">#68A</item>
         <item name="progressBg">#457</item>
         <item name="progressFill">#6B8</item>
@@ -28,12 +27,11 @@
         <item name="coinMid">#6fd27a</item>
         <item name="coinEdge">#2b9a3c</item>
         <item name="supervisorOutline">#232a27</item>
-        <item name="supervisorBody">#a8d98a</item>
+        <item name="supervisorBody">#26b739</item>
         <item name="supervisorBeak">#f8c81b</item>
         <item name="supervisorFeet">#4b3203</item>
-        <item name="supervisorLight">#d7efc4</item>
-        <item name="supervisorShade">#6aa84f</item>
-
+        <item name="supervisorLight">#38d64d</item>
+        <item name="supervisorShade">#1e902d</item>
         <item name="iconBg">#6A5</item>
         <item name="progressBg">#463</item>
         <item name="progressFill">#9C5</item>
@@ -49,12 +47,11 @@
         <item name="coinMid">#ff7a54</item>
         <item name="coinEdge">#c9380f</item>
         <item name="supervisorOutline">#2a2323</item>
-        <item name="supervisorBody">#e3a89b</item>
+        <item name="supervisorBody">#dc5555</item>
         <item name="supervisorBeak">#ffd01b</item>
         <item name="supervisorFeet">#3d1303</item>
-        <item name="supervisorLight">#f4cec3</item>
-        <item name="supervisorShade">#b8654f</item>
-
+        <item name="supervisorLight">#e37979</item>
+        <item name="supervisorShade">#d84242</item>
         <item name="iconBg">#D74</item>
         <item name="progressBg">#732</item>
         <item name="progressFill">#FA3</item>
@@ -62,6 +59,7 @@
         <item name="btnBg">#FD6</item>
         <item name="timeBg">#842</item>
     </style>
+
     <style name="Farm_Cave">
         <item name="coinBase">#c2844f</item>
         <item name="coinOutline">#a86734</item>
@@ -69,12 +67,11 @@
         <item name="coinMid">#d8a57a</item>
         <item name="coinEdge">#b46e34</item>
         <item name="supervisorOutline">#27232a</item>
-        <item name="supervisorBody">#d6ceb5</item>
+        <item name="supervisorBody">#b78e26</item>
         <item name="supervisorBeak">#ffd01b</item>
         <item name="supervisorFeet">#652e03</item>
-        <item name="supervisorLight">#ebe4d7</item>
-        <item name="supervisorShade">#ba9d82</item>
-
+        <item name="supervisorLight">#d7ab3d</item>
+        <item name="supervisorShade">#997720</item>
         <item name="iconBg">#A86</item>
         <item name="progressBg">#654</item>
         <item name="progressFill">#DC8</item>
@@ -90,12 +87,11 @@
         <item name="coinMid">#b9fe54</item>
         <item name="coinEdge">#8ae800</item>
         <item name="supervisorOutline">#27232a</item>
-        <item name="supervisorBody">#b9e3a8</item>
-        <item name="supervisorBeak">#c88bf0</item>
-        <item name="supervisorFeet">#652e03</item>
-        <item name="supervisorLight">#def4ce</item>
-        <item name="supervisorShade">#a6d06c</item>
-
+        <item name="supervisorBody">#b9d522</item>
+        <item name="supervisorBeak">#8c37b2</item>
+        <item name="supervisorFeet">#511752</item>
+        <item name="supervisorLight">#c5df37</item>
+        <item name="supervisorShade">#a7c01f</item>
         <item name="iconBg">#AD5</item>
         <item name="progressBg">#563</item>
         <item name="progressFill">#DF6</item>
@@ -111,12 +107,11 @@
         <item name="coinMid">#77cfeb</item>
         <item name="coinEdge">#1facd8</item>
         <item name="supervisorOutline">#27232a</item>
-        <item name="supervisorBody">#bacbe0</item>
-        <item name="supervisorBeak">#f87b1b</item>
-        <item name="supervisorFeet">#652e03</item>
-        <item name="supervisorLight">#deebf3</item>
-        <item name="supervisorShade">#83b6c8</item>
-
+        <item name="supervisorBody">#6fc6df</item>
+        <item name="supervisorBeak">#376eb2</item>
+        <item name="supervisorFeet">#171b52</item>
+        <item name="supervisorLight">#9ad7e9</item>
+        <item name="supervisorShade">#3eb3d4</item>
         <item name="iconBg">#8BC</item>
         <item name="progressBg">#468</item>
         <item name="progressFill">#AEE</item>
@@ -132,12 +127,11 @@
         <item name="coinMid">#fe549d</item>
         <item name="coinEdge">#e80063</item>
         <item name="supervisorOutline">#27232a</item>
-        <item name="supervisorBody">#e3a8af</item>
-        <item name="supervisorBeak">#f87b1b</item>
+        <item name="supervisorBody">#dd6fdf</item>
+        <item name="supervisorBeak">#b237ae</item>
         <item name="supervisorFeet">#652e03</item>
-        <item name="supervisorLight">#f4ced8</item>
-        <item name="supervisorShade">#d06c95</item>
-
+        <item name="supervisorLight">#e99ae6</item>
+        <item name="supervisorShade">#d43ece</item>
         <item name="iconBg">#E9B</item>
         <item name="progressBg">#745</item>
         <item name="progressFill">#FBD</item>
@@ -153,12 +147,11 @@
         <item name="coinMid">#a75cf6</item>
         <item name="coinEdge">#720cdc</item>
         <item name="supervisorOutline">#27232a</item>
-        <item name="supervisorBody">#d5abe0</item>
-        <item name="supervisorBeak">#ffd01b</item>
+        <item name="supervisorBody">#a76fcc</item>
+        <item name="supervisorBeak">#9437d4</item>
         <item name="supervisorFeet">#652e03</item>
-        <item name="supervisorLight">#e6d0f2</item>
-        <item name="supervisorShade">#9f71cb</item>
-
+        <item name="supervisorLight">#b88bd6</item>
+        <item name="supervisorShade">#9856c3</item>
         <item name="iconBg">#A8D</item>
         <item name="progressBg">#547</item>
         <item name="progressFill">#CAF</item>
@@ -173,13 +166,12 @@
         <item name="coinLight">#ffc6cc</item>
         <item name="coinMid">#fe5464</item>
         <item name="coinEdge">#e80016</item>
-        <item name="supervisorOutline">#27232a</item>
-        <item name="supervisorBody">#e3b5a8</item>
+        <item name="supervisorOutline">#2a2323</item>
+        <item name="supervisorBody">#a4271a</item>
         <item name="supervisorBeak">#ffd01b</item>
-        <item name="supervisorFeet">#652e03</item>
-        <item name="supervisorLight">#f4d1ce</item>
-        <item name="supervisorShade">#d06c74</item>
-
+        <item name="supervisorFeet">#3d1303</item>
+        <item name="supervisorLight">#c82f20</item>
+        <item name="supervisorShade">#8c2116</item>
         <item name="iconBg">#D77</item>
         <item name="progressBg">#733</item>
         <item name="progressFill">#F88</item>
