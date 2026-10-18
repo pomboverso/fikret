@@ -19,14 +19,12 @@ import com.rama.fikret.R;
 import com.rama.fikret.economy.GameState;
 import com.rama.fikret.economy.NumberFormatter;
 import com.rama.fikret.economy.Worlds;
-import com.rama.fikret.game.Ability;
 import com.rama.fikret.helpers.DeveloperMode;
 import com.rama.fikret.helpers.FarmArt;
 import com.rama.fikret.helpers.GardenIcons;
 import com.rama.fikret.helpers.SystemBars;
 import com.rama.fikret.helpers.ViewUpdates;
 import com.rama.fikret.managers.FontManager;
-import com.rama.fikret.managers.PrefsManager;
 
 public class Main extends Activity {
     private static final long TICK_MS = 100;
@@ -125,8 +123,8 @@ public class Main extends Activity {
         bindMenuItem(dialog, content, R.id.menu_teleport, new Intent(this, TeleportActivity.class));
         bindMenuItem(dialog, content, R.id.menu_about, new Intent(this, About.class));
 
-        boolean teleportAvailable = DeveloperMode.ENABLED
-                || PrefsManager.getInstance(this).hasAbility(Ability.TELEPORT_HOME);
+        // Teleport is always there once there is somewhere to teleport to.
+        boolean teleportAvailable = DeveloperMode.availableFarms() > 1;
         int visibility = teleportAvailable ? View.VISIBLE : View.GONE;
         content.findViewById(R.id.menu_teleport).setVisibility(visibility);
         content.findViewById(R.id.menu_teleport_gap).setVisibility(visibility);
@@ -175,7 +173,7 @@ public class Main extends Activity {
         ViewUpdates.setText((TextView) ascendDialog.findViewById(R.id.ascend_gain),
                 "+" + NumberFormatter.number(gain));
         ViewUpdates.setBackgroundColor(ascendDialog.findViewById(R.id.ascend_confirm),
-                gain > 0 ? ViewUpdates.themeColor(this, R.attr.accent) : getResources().getColor(R.color.disabled, getTheme()));
+                gain > 0 ? ViewUpdates.themeColor(this, R.attr.accent) : ViewUpdates.color(this, R.color.disabled));
     }
 
     private Intent comingSoon(int titleRes) {
@@ -234,7 +232,7 @@ public class Main extends Activity {
         ViewUpdates.setText((TextView) row.findViewById(R.id.buy_label), label);
         ViewUpdates.setText((TextView) row.findViewById(R.id.buy_cost), NumberFormatter.money(w, quote.cost));
         ViewUpdates.setBackgroundColor(row.findViewById(R.id.buy_button),
-                affordable ? ViewUpdates.themeColor(this, R.attr.btnBg) : getResources().getColor(R.color.disabled, getTheme()));
+                affordable ? ViewUpdates.themeColor(this, R.attr.btnBg) : ViewUpdates.color(this, R.color.disabled));
     }
 
     private final class GardenAdapter extends BaseAdapter {

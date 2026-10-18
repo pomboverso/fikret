@@ -37,6 +37,14 @@ public final class ViewUpdates {
                 && tv.type <= android.util.TypedValue.TYPE_LAST_COLOR_INT) {
             return tv.data;
         }
-        return context.getResources().getColor(attrOrColorRes, context.getTheme());
+        return color(context, attrOrColorRes);
+    }
+
+    @SuppressWarnings("deprecation")
+    public static int color(android.content.Context context, int colorRes) {
+        if (android.os.Build.VERSION.SDK_INT >= 23) {
+            return context.getResources().getColor(colorRes, context.getTheme());
+        }
+        return context.getResources().getColor(colorRes);
     }
 }

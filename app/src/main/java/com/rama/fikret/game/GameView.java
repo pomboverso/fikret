@@ -14,6 +14,7 @@ import android.view.SurfaceView;
 import com.rama.fikret.R;
 import com.rama.fikret.economy.GameState;
 import com.rama.fikret.economy.Worlds;
+import com.rama.fikret.helpers.DeveloperMode;
 import com.rama.fikret.managers.PrefsManager;
 
 import java.util.ArrayList;
@@ -424,7 +425,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             return;
         }
         if (cell.item == ItemType.HOLE_DOWN) {
-            if (isHoleDownUnlocked()) {
+            if (isHoleDownUnlocked() && DeveloperMode.isStageAvailable(stageId + 1)) {
                 changeStage(stageId + 1);
             }
         } else if (cell.item == ItemType.HOLE_UP) {
@@ -581,7 +582,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
 
-        for (int w = 0; w < Worlds.ALL.length; w++) {
+        for (int w = 0; w < DeveloperMode.availableFarms(); w++) {
             if (!state.hasTravelManager(w)) {
                 continue;
             }

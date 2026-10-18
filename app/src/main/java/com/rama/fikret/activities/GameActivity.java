@@ -10,7 +10,6 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -35,8 +34,7 @@ public class GameActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        SystemBars.applyFullscreen(this);
 
         int stageId;
         int[] startPosition = null;
@@ -57,9 +55,11 @@ public class GameActivity extends Activity {
         FrameLayout container = new FrameLayout(this);
         container.addView(gameView, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        container.addView(createFarmButton(), farmButtonParams());
+        ImageButton farmButton = createFarmButton();
+        container.addView(farmButton, farmButtonParams());
         setContentView(container);
-        SystemBars.applyInsets(container);
+        // The game draws under the notch and system bars; only the button stays clear of them.
+        SystemBars.applyInsetsAsMargins(farmButton);
         gameView.requestFocus();
     }
 

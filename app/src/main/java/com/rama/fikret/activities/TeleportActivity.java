@@ -11,6 +11,7 @@ import com.rama.fikret.R;
 import com.rama.fikret.economy.Worlds;
 import com.rama.fikret.game.Maps;
 import com.rama.fikret.game.Stage;
+import com.rama.fikret.helpers.DeveloperMode;
 import com.rama.fikret.managers.PrefsManager;
 
 public class TeleportActivity extends ListScreenActivity {
@@ -30,7 +31,7 @@ public class TeleportActivity extends ListScreenActivity {
         return new BaseAdapter() {
             @Override
             public int getCount() {
-                return Worlds.ALL_STAGE_IDS.length;
+                return DeveloperMode.availableFarms();
             }
 
             @Override
