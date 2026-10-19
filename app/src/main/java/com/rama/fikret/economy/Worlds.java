@@ -227,7 +227,8 @@ public final class Worlds {
         return new WorldDef(stageId, name, currency,
                 buildFromLake(names, currencyScale, timeScale, coefficientOffset),
                 scaled(PLACEHOLDER_MANAGER_COSTS, currencyScale), GUIDE_BIRD_COST * currencyScale,
-                null, null, true, START_MONEY * currencyScale);
+                LAKE_ACCOUNTANT_COSTS, scaled(LAKE_DISCOUNT_COSTS, currencyScale), true,
+                START_MONEY * currencyScale);
     }
 
     private static final double[][][][] UPGRADE_PRICES = buildUpgradePrices();

@@ -12,6 +12,7 @@
     <LinearLayout style="@style/HorizontalList">
 
         <TextView
+            android:id="@+id/ascend_have_label"
             style="@style/Text"
             android:layout_width="0dp"
             android:layout_weight="1"

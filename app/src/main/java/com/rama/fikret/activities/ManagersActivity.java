@@ -135,7 +135,7 @@ public class ManagersActivity extends ListScreenActivity {
         cost.setTag(R.id.last_coin, coin);
         if (coin) {
             int size = Math.round(cost.getTextSize());
-            cost.setCompoundDrawables(FarmArt.coin(this, Worlds.ANGEL_WORLD, size), null, null, null);
+            cost.setCompoundDrawables(FarmArt.coin(this, world, size), null, null, null);
             cost.setCompoundDrawablePadding(size / 4);
         } else {
             cost.setCompoundDrawables(null, null, null, null);
@@ -155,7 +155,7 @@ public class ManagersActivity extends ListScreenActivity {
         String name;
         String description;
         String costLabel;
-        boolean coin = false;   // lake points are shown with the lake coin in front
+        boolean coin = false;   // the farm's points are shown with the farm's coin in front
         boolean affordable;
         switch (kind) {
             case KIND_GUIDE: {
@@ -173,7 +173,7 @@ public class ManagersActivity extends ListScreenActivity {
                 description = "Makes " + garden + " cost 10% less.";
                 costLabel = NumberFormatter.number(cost);
                 coin = true;
-                affordable = state.getAngels() >= cost;
+                affordable = state.getAngels(world) >= cost;
                 break;
             }
             case KIND_DISCOUNT: {

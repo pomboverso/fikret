@@ -142,15 +142,17 @@ public class Main extends Activity {
 
         content.findViewById(R.id.ascend_cancel).setOnClickListener(v -> dialog.dismiss());
         content.findViewById(R.id.ascend_confirm).setOnClickListener(v -> {
-            if (state.ascend()) {
+            if (state.ascend(state.getCurrentWorld())) {
                 dialog.dismiss();
                 refresh();
             }
         });
+        ((TextView) content.findViewById(R.id.ascend_have_label))
+                .setText(Worlds.ALL[state.getCurrentWorld()].name + " points");
         int coinSize = Math.round(((TextView) content.findViewById(R.id.ascend_have)).getTextSize());
         for (int id : new int[]{R.id.ascend_have, R.id.ascend_gain}) {
             TextView value = content.findViewById(id);
-            value.setCompoundDrawables(FarmArt.coin(this, Worlds.ANGEL_WORLD, coinSize), null, null, null);
+            value.setCompoundDrawables(FarmArt.coin(this, state.getCurrentWorld(), coinSize), null, null, null);
             value.setCompoundDrawablePadding(coinSize / 4);
         }
         dialog.setOnDismissListener(d -> ascendDialog = null);
@@ -164,8 +166,8 @@ public class Main extends Activity {
             return;
         }
         state.sync();
-        double have = state.getAngels();
-        double gain = state.pendingAngels();
+        double have = state.getAngels(state.getCurrentWorld());
+        double gain = state.pendingAngels(state.getCurrentWorld());
         ViewUpdates.setText((TextView) ascendDialog.findViewById(R.id.ascend_have),
                 NumberFormatter.number(have));
         ViewUpdates.setText((TextView) ascendDialog.findViewById(R.id.ascend_bonus),

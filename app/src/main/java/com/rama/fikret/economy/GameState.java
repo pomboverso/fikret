@@ -60,9 +60,9 @@ public final class GameState {
     private final PrefsManager prefs;
     private final World[] worlds = new World[Worlds.ALL.length];
     private final double[] money = new double[Worlds.ALL.length];
-    private double angels = 0;
-    private double lifetimeEarnings = 0;
-    private double angelsClaimed = 0;
+    private final double[] angels = new double[Worlds.ALL.length];
+    private final double[] lifetimeEarnings = new double[Worlds.ALL.length];
+    private final double[] angelsClaimed = new double[Worlds.ALL.length];
     private long lastSync;
     private int currentWorld = 0;
 
@@ -120,17 +120,15 @@ public final class GameState {
 
     private void earn(int w, double amount) {
         money[w] += amount;
-        if (w == Worlds.ANGEL_WORLD) {
-            lifetimeEarnings += amount;
-        }
+        lifetimeEarnings[w] += amount;
     }
 
     public synchronized double getMoney(int w) {
         return money[w];
     }
 
-    public synchronized double getAngels() {
-        return angels;
+    public synchronized double getAngels(int w) {
+        return angels[w];
     }
 
     public int getCount(int w, int g) {
@@ -187,26 +185,28 @@ public final class GameState {
     }
 
     public synchronized double angelBonus(int w) {
-        return w == Worlds.ANGEL_WORLD ? 1 + Worlds.ANGEL_BONUS * angels : 1;
+        return 1 + Worlds.ANGEL_BONUS * angels[w];
     }
 
-    public static double angelsForEarnings(double lifetime) {
-        return Math.floor(Math.sqrt(Math.max(0, lifetime) / Worlds.ANGEL_DIVISOR));
+    /** Points a farm has earned in total, with its earnings converted to Lake money first. */
+    public static double angelsForEarnings(int w, double lifetime) {
+        double lakeMoney = Math.max(0, lifetime) * Worlds.START_MONEY / Worlds.ALL[w].startMoney;
+        return Math.floor(Math.sqrt(lakeMoney / Worlds.ANGEL_DIVISOR));
     }
 
-    public synchronized double pendingAngels() {
-        return Math.max(0, angelsForEarnings(lifetimeEarnings) - angelsClaimed);
+    public synchronized double pendingAngels(int w) {
+        return Math.max(0, angelsForEarnings(w, lifetimeEarnings[w]) - angelsClaimed[w]);
     }
 
-    public synchronized boolean ascend() {
+    /** Restarts farm {@code w} in exchange for that farm's points. Accountants and guide birds stay. */
+    public synchronized boolean ascend(int w) {
         sync();
-        double gain = pendingAngels();
+        double gain = pendingAngels(w);
         if (gain <= 0) {
             return false;
         }
-        angels += gain;
-        angelsClaimed += gain;
-        int w = Worlds.ANGEL_WORLD;
+        angels[w] += gain;
+        angelsClaimed[w] += gain;
         money[w] = Worlds.ALL[w].startMoney;
         for (Garden garden : worlds[w].gardens) {
             garden.count = 0;
@@ -394,10 +394,10 @@ public final class GameState {
             return false;
         }
         double cost = accountantCost(w, g);
-        if (angels < cost) {
+        if (angels[w] < cost) {
             return false;
         }
-        angels -= cost;
+        angels[w] -= cost;
         garden.accountant = true;
         save();
         return true;
@@ -474,9 +474,17 @@ public final class GameState {
             sb.append(w == 0 ? "money" : "money." + w).append('=')
                     .append(Double.doubleToLongBits(money[w])).append('\n');
         }
-        sb.append("angels=").append(Double.doubleToLongBits(angels)).append('\n');
-        sb.append("lifetime=").append(Double.doubleToLongBits(lifetimeEarnings)).append('\n');
-        sb.append("claimed=").append(Double.doubleToLongBits(angelsClaimed)).append('\n');
+        for (int w = 0; w < angels.length; w++) {
+            sb.append(w == 0 ? "angels" : "angels." + w).append('=')
+                    .append(Double.doubleToLongBits(angels[w])).append('\n');
+        }
+        // Farm 0 keeps the original key names so older saves still load.
+        for (int w = 0; w < lifetimeEarnings.length; w++) {
+            sb.append(w == 0 ? "lifetime" : "lifetime." + w).append('=')
+                    .append(Double.doubleToLongBits(lifetimeEarnings[w])).append('\n');
+            sb.append(w == 0 ? "claimed" : "claimed." + w).append('=')
+                    .append(Double.doubleToLongBits(angelsClaimed[w])).append('\n');
+        }
         sb.append("time=").append(lastSync).append('\n');
         sb.append("world=").append(currentWorld).append('\n');
         for (int w = 0; w < worlds.length; w++) {
@@ -512,12 +520,21 @@ public final class GameState {
                     if (w >= 0 && w < money.length) {
                         money[w] = Double.longBitsToDouble(Long.parseLong(value));
                     }
-                } else if (key.equals("angels")) {
-                    angels = Double.longBitsToDouble(Long.parseLong(value));
-                } else if (key.equals("lifetime")) {
-                    lifetimeEarnings = Double.longBitsToDouble(Long.parseLong(value));
-                } else if (key.equals("claimed")) {
-                    angelsClaimed = Double.longBitsToDouble(Long.parseLong(value));
+                } else if (key.equals("angels") || key.startsWith("angels.")) {
+                    int w = key.equals("angels") ? 0 : Integer.parseInt(key.substring(7));
+                    if (w >= 0 && w < angels.length) {
+                        angels[w] = Double.longBitsToDouble(Long.parseLong(value));
+                    }
+                } else if (key.equals("lifetime") || key.startsWith("lifetime.")) {
+                    int w = key.equals("lifetime") ? 0 : Integer.parseInt(key.substring(9));
+                    if (w >= 0 && w < lifetimeEarnings.length) {
+                        lifetimeEarnings[w] = Double.longBitsToDouble(Long.parseLong(value));
+                    }
+                } else if (key.equals("claimed") || key.startsWith("claimed.")) {
+                    int w = key.equals("claimed") ? 0 : Integer.parseInt(key.substring(8));
+                    if (w >= 0 && w < angelsClaimed.length) {
+                        angelsClaimed[w] = Double.longBitsToDouble(Long.parseLong(value));
+                    }
                 } else if (key.equals("time")) {
                     lastSync = Long.parseLong(value);
                 } else if (key.equals("world")) {
