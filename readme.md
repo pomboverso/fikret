@@ -1,3 +1,5 @@
+![Fikret Preview](./docs/preview.svg)
+
 # Fikret
 
 **An idle farm game about a goose who travels to other worlds rescuing birds.**
@@ -7,12 +9,6 @@ Buy gardens, let them grow while you're away, hire the birds you rescue to run t
 | Lake | Farm | Supervisors | Forest | Space |
 | - | - | - | - | - |
 | ![Lake](./fastlane/metadata/android/en-US/images/phoneScreenshots/1.png) | ![Farm](./fastlane/metadata/android/en-US/images/phoneScreenshots/2.png) | ![Supervisors](./fastlane/metadata/android/en-US/images/phoneScreenshots/3.png) | ![Forest](./fastlane/metadata/android/en-US/images/phoneScreenshots/4.png) | ![Space](./fastlane/metadata/android/en-US/images/phoneScreenshots/5.png) |
-
-- **Tiny:** the APK is around 120 KB.
-- **No permissions:** the manifest actively strips every permission (internet, storage, camera, location, notifications and more) so none can ever sneak in.
-- **No ads, no trackers, no background tasks, works fully offline.**
-- **Plain Java:** no Kotlin, no AndroidX, no third-party libraries.
-- **Android 5.0+** (`minSdk 21`, `targetSdk 37`).
 
 ---
 
@@ -42,6 +38,16 @@ Fikret rescues birds, and the birds become your staff:
 ## Ascending
 
 Ascending restarts the Farm in exchange for **Farm points**, each worth a profit bonus. Money, gardens, supervisors, discount managers and upgrades are lost; Farm points, accountants and guide birds stay.
+
+---
+
+## Technical Specifications
+
+- **Tiny:** the APK is around 120 KB.
+- **No permissions:** the manifest actively strips every permission (internet, storage, camera, location, notifications and more) so none can ever sneak in.
+- **No ads, no trackers, no background tasks, works fully offline.**
+- **Plain Java:** no Kotlin, no AndroidX, no third-party libraries.
+- **Android 5.0+** (`minSdk 21`, `targetSdk 37`).
 
 ---
 
