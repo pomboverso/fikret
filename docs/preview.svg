@@ -15,21 +15,21 @@
     </symbol>
 
     <symbol id="bird-solid-r">
-      <path fill="#e3e2a8" d="M3.704 0v.53H.529v.528H0V3.705h.53v.528h.528v.53h3.705v-.53h.529v-1.058h.529v-1.06h.53V.53h-.53V0H4.233z"/>
+      <path fill="#e3e2a8" d="M3.704 0v.53H.529v.528H0V3.705h.53v.528h.528v.53h3.705v-.53h.529v-.529h.529V2.645h.53V.53h-.53V0H4.233z"/>
       <path fill="#e3e2a8" d="M4.763 1.058h.529v.53h-.53z"/>
       <path fill="#dfc896" d="M4.763 3.175v.53h-.53v.528H3.175v.53h1.588v-.53h.529v-.529h.529v-.53h-.53z"/>
       <path fill="#f87b1b" d="M6.351 1.058v1.059h1.058v-.53h-.53v-.529z"/>
       <path fill="#27232a" d="M4.763 1.058v1.059h.529V1.058z"/>
-      <path fill="#f4eece" d="M.529 .529V1.059H0v1.058h.53v-.53h.528v-.529h1.588v-.529H1.058z"/>
+      <path fill="#f4eece" d="M.529.529v.53H0v1.058h.53v-.53h.528v-.529h1.588v-.529H1.058z"/>
     </symbol>
 
     <symbol id="bird-l">
-      <use href="#bird-solid-l" transform="translate(0 9) scale(1 -1)" opacity="0.4"/>
+      <use href="#bird-solid-l" transform="translate(0 9.4) scale(1 -1)" opacity="0.4"/>
       <use href="#bird-solid-l" />
     </symbol>
 
     <symbol id="bird-r">
-      <use href="#bird-solid-r" transform="translate(0 9) scale(1 -1)" opacity="0.4"/>
+      <use href="#bird-solid-r" transform="translate(0 9.4) scale(1 -1)" opacity="0.4"/>
       <use href="#bird-solid-r" />
     </symbol>
   </defs>
