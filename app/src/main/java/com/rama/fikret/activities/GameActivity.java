@@ -58,7 +58,6 @@ public class GameActivity extends Activity {
         ImageButton farmButton = createFarmButton();
         container.addView(farmButton, farmButtonParams());
         setContentView(container);
-        // The game draws under the notch and system bars; only the button stays clear of them.
         SystemBars.applyInsetsAsMargins(farmButton);
         gameView.requestFocus();
     }

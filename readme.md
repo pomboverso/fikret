@@ -68,5 +68,3 @@ Ascending restarts the Farm in exchange for **Farm points**, each worth a profit
     <img src="https://rama-io.github.io/img/github.svg" alt="Get Fikret From GitHub">
   </a>
 </p>
-
----
