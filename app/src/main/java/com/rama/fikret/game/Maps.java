@@ -36,7 +36,8 @@ public final class Maps {
     static int alien_stone_3 = 35000000;
     static int alien_stone_4 = 36000000;
     static int wall_bubblegum = 37000000;
-    static int bubblegum_wave = 38000000;
+    static int bubbles_1 = 38000000;
+    static int bubbles_2 = 43000000;
 
     static final int GRASS = 1;
     static final int WATER = 2;
@@ -769,6 +770,10 @@ public final class Maps {
 
         tiles[2][2] += hole_up;
         tiles[26][26] += hole_down;
+
+        randomizedItemGroup(tiles, 2, 28, 2, 28, new int[]{145},
+                place(bubbles_1, 30, 4),
+                place(bubbles_2, 50, 2));
 
         return new Stage(tiles, 2, 2);
     }

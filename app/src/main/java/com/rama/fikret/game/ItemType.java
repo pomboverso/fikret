@@ -33,9 +33,10 @@ public enum ItemType {
     LILYPOND_02(28, 2, 2, false),
     WALL_SPACE(32, 2, 3, true),
     WALL_BUBBLEGUM(37, 2, 4, true),
-    BUBBLEGUM_WAVE(38, 2, 5, false),
+    BUBBLES_1(38, 2, 5, false),
     WALL_ACID(40, 2, 6, true),
     WALL_BLOOD(41, 2, 7, true),
+    BUBBLES_2(43, 2, 9, false),
 
     FARM_BUTTON(42, 2, 8, false),
 
