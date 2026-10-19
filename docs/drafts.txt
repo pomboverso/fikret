@@ -66,3 +66,166 @@ this means that the whole map is grass bottom left corner, the decimals indicate
 4 5 6
 1 2 3
 
+------ farm
+
+-- Lake (DR)
+- {name: Yuca, value: 3.7, coefficient: 1.07, time: 0.6, revenue: 1, cash_second: 1.67, initial_cost: 0.26}
+- {name: Mango, value: 60, coefficient: 1.15, time: 3, revenue: 60, cash_second: 20, initial_cost: 1}
+- {name: Cajuil, value: 720, coefficient: 1.14, time: 6, revenue: 540, cash_second: 90, initial_cost: 0.75}
+- {name: Guayaba, value: 8640, coefficient: 1.13, time: 12, revenue: 4320, cash_second: 360, initial_cost: 0.5}
+- {name: Carambola, value: 103680, coefficient: 1.12, time: 24, revenue: 51840, cash_second: 2160, initial_cost: 0.5}
+- {name: Jobo, value: 1244160, coefficient: 1.11, time: 96, revenue: 622080, cash_second: 6480, initial_cost: 0.5}
+- {name: Papaya, value: 14929920, coefficient: 1.1, time: 384, revenue: 7464960, cash_second: 19440, initial_cost: 0.5}
+- {name: Yautía, value: 179159040, coefficient: 1.09, time: 1536, revenue: 89579520, cash_second: 58320, initial_cost: 0.5}
+- {name: Mamey, value: 2149908480, coefficient: 1.08, time: 6144, revenue: 1074954240, cash_second: 174960, initial_cost: 0.5}
+- {name: Guanabana, value: 25789901760, coefficient: 1.07, time: 36864, revenue: 29668737024, cash_second: 804816, initial_cost: 1.15}
+
+-- Forest (Brazil) : green
+Abacaxi
+Maracujá
+Pitanga
+Jabuticaba
+Açaí
+Cupuaçu
+Guaraná
+Acerola
+Bacaba
+Tucumã
+
+----- underground: vietnam : light brown
+Nhãn
+Vải
+Bưởi
+Sấu
+Trám đen
+Dâu da đất
+Thị
+Táo mèo
+Mắc mật
+Bứa
+
+---- fire farm: indonesia since it has the more active volcanos : orange
+Salak
+Durian
+Manggis
+Rambutan
+Duku
+Kepel
+Matoa
+Duwet
+Gandaria
+Kemang
+
+----- toxic land: china : light green
+杨梅 (Yángméi)
+枣 (Zǎo)
+猕猴桃 (Míhóutáo)
+五味子 (Wǔwèizǐ)
+山楂 (Shānzhā)
+黄皮 (Huángpí)
+悬钩子 (Xuángōuzi)
+野梨 (Yělí)
+柿 (Shì)
+酸枣 (Suānzǎo)
+
+----- arctic: russia : light pale blue / ice blue
+Морошка
+Брусника
+Черника
+Голубика
+Водяника
+Княженика
+Костяника
+Жимолость
+Рябина
+Шиповник
+
+----- bubblegum: bahamas / light pink
+Guana berry — Byrsonima lucida
+Governor’s plum — Flacourtia indica
+Darling plum — Reynosia septentrionalis
+Pigeon plum — Coccoloba diversifolia
+Coco plum — Chrysobalanus icaco
+Sea grape — Coccoloba uvifera
+Saffron plum — Chrysophyllum oliviforme
+Andros wild guava — Psidium androsianum
+Sapodilla — Manilkara zapota
+Sugar apple — Annona squamosa
+
+----- outer space: japan : light purple
+アケビ (Akebi) — akebia fruit
+サルナシ (Sarunashi) — hardy kiwi
+ヤマブドウ (Yamabudō) — Japanese wild grape
+シークヮーサー (Shīkwāsā) — Okinawan citrus
+スダチ (Sudachi) — Japanese sour citrus
+カボス (Kabosu) — aromatic Japanese citrus
+ユズ (Yuzu) — fragrant citrus
+ヤマモモ (Yamamomo) — Japanese bayberry
+ムベ (Mube) — evergreen akebia fruit
+ハスカップ (Haskappu) — haskap berry, especially associated with Hokkaido
+
+----- blood farm: spain : light red
+Granada
+Cereza
+Uva tinta
+Higo
+Madroño
+Tomate
+Pimiento choricero
+Remolacha
+Lombarda
+Frambuesa
+
+------ MAP
+
+------ EEDDCBBA
+
+A: Direction
+B: Tile
+C: Background Tile Direction
+D: Background Tile
+E: Item
+
+------ Direction
+1: Bottom Left
+2: Bottom Center
+3: Bottom Right
+4: Center Left
+5: Center Center
+6: Center Right
+7: Top Left
+8: Top Center
+9: Top Right
+
+------ Tiles
+00: Nothing
+01: Grass
+02: Water
+03: Sand
+04: Soil
+05: Deep Grass
+06: Deep Water
+07: Snow
+08: Ice
+09: Volcanic Soil
+10: Lava
+11: Acid soil
+12: Acid lake
+13: Bubblegun
+14: Bubblegun Lake
+15: Space Purple Soil
+16: Space Lake
+17: Nightmare Blood Lake
+
+------ Items
+00: Nothing
+01: Stone
+02: Hole Down
+03: Hole Up
+
+------ Example
+00 01 5 02 9
+No object + [Grass in the background]::middle + [Water on top]::top-right-corner
+
+01 00 0 01 5
+Stone on top of grass

@@ -1,76 +1,55 @@
 <svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="1200" height="630" viewBox="0 0 63.5 33.337"> 
+  
+  <metadata>
+    https://github.com/rama-io
+  </metadata>
+
+  <defs>
+    <symbol id="bird-solid-l">
+      <path fill="#e3e2a8" d="M1.588 0v.53h-.528v2.117h.53v1.058h.528v.53h.53v.528h2.646v-.529h.529v-.529H6.88V2.647h.53v-.53h-.53v-.529h.53v-.529h-.53V.53H3.704V0H2.118z"/>
+      <path fill="#e3e2a8" d="M2.117 1.06h.53v.528h-.53z"/>
+      <path fill="#dfc896" d="M6.88 1.588v.53h-.53v.529h-.528v.529h-.53v.529h-.529v.53h-.529v.528h2.117v-.529h.529v-.529h.53V1.588z"/>
+      <path fill="#f87b1b" d="M.53 1.06v.528H0v.53h1.06V1.059z"/>
+      <path fill="#27232a" d="M2.117 1.06v1.058h.53V1.059z"/>
+      <path fill="#f4eece" d="M1.588 2.647v1.058h.53V2.647z"/>
+    </symbol>
+
+    <symbol id="bird-solid-r">
+      <path fill="#e3e2a8" d="M3.704 0v.53H.529v.528H0V3.705h.53v.528h.528v.53h3.705v-.53h.529v-1.058h.529v-1.06h.53V.53h-.53V0H4.233z"/>
+      <path fill="#e3e2a8" d="M4.763 1.058h.529v.53h-.53z"/>
+      <path fill="#dfc896" d="M4.763 3.175v.53h-.53v.528H3.175v.53h1.588v-.53h.529v-.529h.529v-.53h-.53z"/>
+      <path fill="#f87b1b" d="M6.351 1.058v1.059h1.058v-.53h-.53v-.529z"/>
+      <path fill="#27232a" d="M4.763 1.058v1.059h.529V1.058z"/>
+      <path fill="#f4eece" d="M.529 .529V1.059H0v1.058h.53v-.53h.528v-.529h1.588v-.529H1.058z"/>
+    </symbol>
+
+    <symbol id="bird-l">
+      <use href="#bird-solid-l" transform="translate(0 9) scale(1 -1)" opacity="0.4"/>
+      <use href="#bird-solid-l" />
+    </symbol>
+
+    <symbol id="bird-r">
+      <use href="#bird-solid-r" transform="translate(0 9) scale(1 -1)" opacity="0.4"/>
+      <use href="#bird-solid-r" />
+    </symbol>
+  </defs>
+
   <rect width="63.5" height="8" x="0" y="0" fill="#a0dfe7"/>
   <rect width="63.5" height="26" x="0" y="8" fill="#63b7cf"/>
 
-  <g transform="matrix(1 0 0 -1 .53 308.112)">
+  <g id="clouds" transform="matrix(1 0 0 -1 .53 308.112)">
     <path fill="#91c9e0" d="M4.763 282.712v.53h-.53v.529h-.529v1.058H1.588v.53h-.53v.528H.53v1.059h-1.587v.529h-.53v.53h-.529v1.587h-1.587v.529h-.53v.529h-.528v.53h-.53v.528h-.529v.53h-.529v1.587h-.53v.53h-.528v2.116h.529v1.059h-.53v2.116h.53v.529h25.4v-.53h.529v-2.116h-.53V297h.53v-2.117h-.53v-.529h-.528v-1.587h-.53v-.53h-.529v-.529h-1.587v-.529h-.53v-2.646h-.529v-.529h-.529v-.529h-1.587v-1.058h-.53v-.53h-.529v-.529h-.529V284.3h-.529v-.53h-.529v-.528H6.879v-.53zm37.57 0v.53h-.529v.529h-2.117v.529h-.529v.53h-.529v.528H38.1v.53h-.53v.529h-.528v.529h-2.117v.529h-.53v.53h-.528v2.116h-.53v2.116h.53v.53h-.53v.529h-2.116v.529h-.53v.53h-.529v2.116h.53V297h.529v.53h.529v1.057h.53v.53h.528v.529h.53v.529h25.4v-2.117h-.53v-.529h-.529v-1.587h-.529v-.53h-.53v-.529h-2.116v-.529h-.529v-.529h-.53v-.53h-.528v-.528h-.53v-1.059h.53v-2.116h-.53v-.53h-.529v-1.587h-.529v-.53H50.8v-.528h-2.117v-1.059h-.529v-.529h-.529v-.529h-2.117v-.53h-.529v-.528h-.529v-.53z">
-      <animateTransform attributeName="transform" attributeType="XML" type="translate" calcMode="discrete" dur="2s" keySplines="0.25 0.1 0.25 1;0.25 0.1 0.25 1" keyTimes="0;0.5;1" values="0 0; 0.2 0; 0 0" repeatCount="indefinite" />
+      <animateTransform attributeName="transform" attributeType="XML" type="translate" calcMode="discrete" dur="2s" keySplines="0.25 0.1 0.25 1;0.25 0.1 0.25 1" keyTimes="0;0.5;1" values="0.4 0; 0.2 0; 0.4 0" repeatCount="indefinite" />
     </path>
     <path fill="#91c9e0" d="M62.97 282.712v.53h.53v.529h.53v1.058h2.116v.53h.529v.528h.53v1.059h1.587v.529h.529v.53h.529v1.587h1.587v.529h.53v.529h.529v.53h.529v.528h.53v.53h.528v1.587h.53v.53h.529v2.116h-.53v1.059h.53v2.116h-.53v.529h-25.4v-.53h-.529v-2.116h.53V297h-.53v-2.117h.53v-.529h.529v-1.587h.529v-.53h.529v-.529h1.587v-.529h.53v-2.646h.529v-.529h.529v-.529h1.587v-1.058h.53v-.53h.529v-.529h.529V284.3h.53v-.53h.528v-.528h2.647v-.53zm-37.57 0v.53h.53v.529h2.116v.529h.529v.53h.53v.528h.528v.53h.53v.529h.529v.529h2.116v.529h.53v.53h.529v2.116h.529v2.116h-.53v.53h.53v.529h2.116v.529h.53v.53h.529v2.116h-.53V297h-.529v.53h-.529v1.057h-.529v.53h-.529v.529h-.53v.529h-25.4v-2.117h.53v-.529h.53v-1.587h.528v-.53h.53v-.529h2.117v-.529h.528v-.529h.53v-.53h.529v-.528h.529v-1.059h-.53v-2.116h.53v-.53h.529v-1.587h.53v-.53h.528v-.528h2.117v-1.059h.53v-.529h.528v-.529h2.117v-.53h.53v-.528h.528v-.53z">
-      <animateTransform attributeName="transform" attributeType="XML" type="translate" calcMode="discrete" dur="2s" keySplines="0.25 0.1 0.25 1;0.25 0.1 0.25 1" keyTimes="0;0.5;1" values="0 0; -0.2 0; 0 0" repeatCount="indefinite" />
+      <animateTransform attributeName="transform" attributeType="XML" type="translate" calcMode="discrete" dur="2s" keySplines="0.25 0.1 0.25 1;0.25 0.1 0.25 1" keyTimes="0;0.5;1" values="0.2 0; 0.4 0; 0.2 0" repeatCount="indefinite" />
     </path>
   </g>
+
+  <use href="#bird-r" x="45" y="4" />
+  <use href="#bird-r" x="25" y="5" />
+  <use href="#bird-l" x="6" y="12" />
+  <use href="#bird-l" x="25" y="23" />
+  <use href="#bird-l" x="48" y="20" />
   
-  <path fill="#e3e2a8" d="M7.408 12.17v.53H6.88v2.117h.53v1.058h.528v.53h.53v.528h2.646v-.529h.529v-.529H12.7v-1.058h.53v-.53h-.53v-.529h.53v-.529h-.53V12.7H9.524v-.53H7.938z"/>
-  <path fill="#e3e2a8" d="M7.937 13.23h.53v.528h-.53z"/>
-  <path fill="#dfc896" d="M12.7 13.758v.53h-.53v.529h-.528v.529h-.53v.529h-.529v.53h-.529v.528h2.117v-.529h.529v-.529h.53v-2.117z"/>
-  <path fill="#f87b1b" d="M6.35 13.23v.528h-.53v.53h1.06v-1.059z"/>
-  <path fill="#27232a" d="M7.937 13.23v1.058h.53v-1.059z"/>
-  <path fill="#f4eece" d="M7.408 14.817v1.058h.53v-1.058z"/>
-  <path fill="#e3e2a8" d="M48.683 3.175v.53h-3.175v.528h-.529V6.88h.53v.528h.528v.53h3.705v-.53h.529V6.88h.529V5.82h.53V3.705h-.53v-.529h-1.588z"/>
-  <path fill="#e3e2a8" d="M49.742 4.233h.529v.53h-.53z"/>
-  <path fill="#dfc896" d="M49.742 6.35v.53h-.53v.528h-1.058v.53h1.588v-.53h.529V6.88h.529V6.35h-.53z"/>
-  <path fill="#f87b1b" d="M51.33 4.233v1.059h1.058v-.53h-.53v-.529z"/>
-  <path fill="#27232a" d="M49.742 4.233v1.059h.529V4.233z"/>
-  <path fill="#f4eece" d="M45.508 3.704v.53h-.529v1.058h.53v-.53h.528v-.529h1.588v-.529h-1.588z"/>
-  <path fill="#e3e2a8" d="M49.742 19.05v.53h-.53v2.116h.53v1.059h.529v.528h.529v.53h2.646v-.53h.529v-.529h1.059v-1.059h.528v-.528h-.529v-.53h.53v-.529h-.53v-.529h-3.175v-.529h-1.587z"/>
-  <path fill="#e3e2a8" d="M50.27 20.108h.53v.53h-.53z"/>
-  <path fill="#dfc896" d="M55.033 20.638v.529h-.529v.529h-.53v.529h-.528v.53h-.53v.528h-.529v.53h2.117v-.53h.53v-.529h.528v-2.117z"/>
-  <path fill="#f87b1b" d="M48.683 20.108v.53h-.529v.529h1.058v-1.059z"/>
-  <path fill="#27232a" d="M50.27 20.108v1.059h.53v-1.059z"/>
-  <path fill="#f4eece" d="M49.742 21.696v1.059h.529v-1.06z"/>
-  <path fill="#e3e2a8" d="M27.517 3.704v.53H24.34v.529h-.529v2.645h.53v.53h.529v.529h3.704v-.53h.53v-.529h.528V6.35h.53V4.233h-.53v-.529h-1.587z"/>
-  <path fill="#e3e2a8" d="M28.575 4.763h.53v.529h-.53z"/>
-  <path fill="#dfc896" d="M28.575 6.88v.528h-.53v.53h-1.058v.529h1.588v-.53h.53v-.529h.528V6.88h-.529z"/>
-  <path fill="#f87b1b" d="M30.162 4.763V5.82h1.059v-.53h-.53v-.528z"/>
-  <path fill="#27232a" d="M28.575 4.763V5.82h.53V4.763z"/>
-  <path fill="#f4eece" d="M24.342 4.233v.53h-.53V5.82h.53v-.53h.529v-.528h1.587v-.53h-1.587z"/>
-  <path fill="#e3e2a8" d="M28.046 20.638v.529h-.53v2.116h.53v1.059h.529v.529h.53v.529h2.645v-.53h.53v-.528h1.058v-1.059h.529v-.529h-.53v-.529h.53v-.53h-.53v-.528h-3.175v-.53h-1.588z"/>
-  <path fill="#e3e2a8" d="M28.575 21.696h.53v.529h-.53z"/>
-  <path fill="#dfc896" d="M33.337 22.225v.53h-.529v.528h-.529v.53h-.53v.529h-.528v.529h-.53v.529h2.117v-.53h.53v-.528h.529v-2.117z"/>
-  <path fill="#f87b1b" d="M26.987 21.696v.529h-.529v.53h1.059v-1.06z"/>
-  <path fill="#27232a" d="M28.575 21.696v1.059h.53v-1.06z"/>
-  <path fill="#f4eece" d="M28.046 23.283v1.059h.529v-1.059z"/>
-  <g opacity=".446">
-    <path fill="#e3e2a8" d="M7.408 21.696v-.53H6.88V19.05h.53v-1.058h.528v-.53h.53v-.529h2.646v.53h.529v.529H12.7v1.058h.53v.53h-.53v.528h.53v.53h-.53v.529H9.524v.529H7.938z"/>
-    <path fill="#e3e2a8" d="M7.937 20.638h.53v-.53h-.53z"/>
-    <path fill="#dfc896" d="M12.7 20.108v-.529h-.53v-.529h-.528v-.53h-.53v-.528h-.529v-.53h-.529v-.529h2.117v.53h.529v.529h.53v2.116z"/>
-    <path fill="#f87b1b" d="M6.35 20.638v-.53h-.53v-.529h1.06v1.059z"/>
-    <path fill="#27232a" d="M7.937 20.638v-1.059h.53v1.059z"/>
-    <path fill="#f4eece" d="M7.408 19.05v-1.058h.53v1.058z"/>
-    <path fill="#e3e2a8" d="M48.683 12.7v-.53h-3.175v-.528h-.529V8.995h.53v-.528h.528v-.53h3.705v.53h.529v.529h.529v1.059h.53v2.116h-.53v.529h-1.588z"/>
-    <path fill="#e3e2a8" d="M49.742 11.642h.529v-.53h-.53z"/>
-    <path fill="#dfc896" d="M49.742 9.525v-.53h-.53v-.528h-1.058v-.53h1.588v.53h.529v.529h.529v.529h-.53z"/>
-    <path fill="#f87b1b" d="M51.33 11.642v-1.059h1.058v.53h-.53v.529z"/>
-    <path fill="#27232a" d="M49.742 11.642v-1.059h.529v1.059z"/>
-    <path fill="#f4eece" d="M45.508 12.17v-.528h-.529v-1.059h.53v.53h.528v.529h1.588v.529h-1.588z"/>
-    <path fill="#e3e2a8" d="M49.742 28.575v-.53h-.53V25.93h.53V24.87h.529v-.528h.529v-.53h2.646v.53h.529v.529h1.059v1.059h.528v.528h-.529v.53h.53v.529h-.53v.529h-3.175v.529h-1.587z"/>
-    <path fill="#e3e2a8" d="M50.27 27.517h.53v-.53h-.53z"/>
-    <path fill="#dfc896" d="M55.033 26.988v-.53h-.529v-.529h-.53V25.4h-.528v-.53h-.53v-.528h-.529v-.53h2.117v.53h.53v.529h.528v2.117z"/>
-    <path fill="#f87b1b" d="M48.683 27.517v-.53h-.529v-.529h1.058v1.059z"/>
-    <path fill="#27232a" d="M50.27 27.517v-1.059h.53v1.059z"/>
-    <path fill="#f4eece" d="M49.742 25.93v-1.06h.529v1.06z"/>
-    <path fill="#e3e2a8" d="M27.517 13.23v-.53H24.34v-.53h-.529V9.526h.53v-.53h.529v-.528h3.704v.529h.53v.529h.528v1.058h.53V12.7h-.53v.53h-1.587z"/>
-    <path fill="#e3e2a8" d="M28.575 12.17h.53v-.528h-.53z"/>
-    <path fill="#dfc896" d="M28.575 10.054v-.529h-.53v-.53h-1.058v-.528h1.588v.529h.53v.529h.528v.53h-.529z"/>
-    <path fill="#f87b1b" d="M30.162 12.17v-1.058h1.059v.53h-.53v.529z"/>
-    <path fill="#27232a" d="M28.575 12.17v-1.058h.53v1.059z"/>
-    <path fill="#f4eece" d="M24.342 12.7v-.53h-.53v-1.058h.53v.53h.529v.529h1.587v.529h-1.587z"/>
-    <path fill="#e3e2a8" d="M28.046 30.163v-.53h-.53v-2.116h.53v-1.059h.529v-.529h.53V25.4h2.645v.53h.53v.528h1.058v1.059h.529v.529h-.53v.529h.53v.53h-.53v.528h-3.175v.53h-1.588z"/>
-    <path fill="#e3e2a8" d="M28.575 29.104h.53v-.529h-.53z"/>
-    <path fill="#dfc896" d="M33.337 28.575v-.53h-.529v-.528h-.529v-.53h-.53v-.529h-.528v-.529h-.53V25.4h2.117v.53h.53v.528h.529v2.117z"/>
-    <path fill="#f87b1b" d="M26.987 29.104v-.529h-.529v-.53h1.059v1.06z"/>
-    <path fill="#27232a" d="M28.575 29.104v-1.059h.53v1.06z"/>
-    <path fill="#f4eece" d="M28.046 27.517v-1.059h.529v1.059z"/>
-  </g>
 </svg>
