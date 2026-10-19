@@ -53,7 +53,7 @@ Ascending restarts the Farm in exchange for **Farm points**, each worth a profit
 
 ## Links
 
-- Watch the [Promo](https://youtube.com/shorts/aLnkN12JVX0) for a quick overview.
+- Watch the **[Promo](https://youtube.com/shorts/aLnkN12JVX0)** for a quick overview.
 - Join the **[Discord Community](https://discord.gg/zFFupY8PFE)** for support and updates.
 
 ---
