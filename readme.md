@@ -1,4 +1,4 @@
-![Fikret Preview](./docs/preview.svg)
+![Fikret Preview](https://raw.githubusercontent.com/rama-io/fikret/master/docs/preview.svg)
 ![Badge](https://rama-io.github.io/img/badge_fikret.svg)
 
 # Fikret
@@ -9,7 +9,7 @@ Buy gardens, let them grow while you're away, hire the birds you rescue to run t
 
 | Lake | Farm | Supervisors | Forest | Space |
 | - | - | - | - | - |
-| ![Lake](./fastlane/metadata/android/en-US/images/phoneScreenshots/1.png) | ![Farm](./fastlane/metadata/android/en-US/images/phoneScreenshots/2.png) | ![Supervisors](./fastlane/metadata/android/en-US/images/phoneScreenshots/3.png) | ![Forest](./fastlane/metadata/android/en-US/images/phoneScreenshots/4.png) | ![Space](./fastlane/metadata/android/en-US/images/phoneScreenshots/5.png) |
+| ![Lake](https://raw.githubusercontent.com/rama-io/fikret/master/fastlane/metadata/android/en-US/images/phoneScreenshots/1.png) | ![Farm](https://raw.githubusercontent.com/rama-io/fikret/master/fastlane/metadata/android/en-US/images/phoneScreenshots/2.png) | ![Supervisors](https://raw.githubusercontent.com/rama-io/fikret/master/fastlane/metadata/android/en-US/images/phoneScreenshots/3.png) | ![Forest](https://raw.githubusercontent.com/rama-io/fikret/master/fastlane/metadata/android/en-US/images/phoneScreenshots/4.png) | ![Space](https://raw.githubusercontent.com/rama-io/fikret/master/fastlane/metadata/android/en-US/images/phoneScreenshots/5.png) |
 
 ---
 
