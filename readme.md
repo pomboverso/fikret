@@ -1,4 +1,5 @@
 ![Fikret Preview](./docs/preview.svg)
+![Badge](https://rama-io.github.io/img/badge_fikret.svg)
 
 # Fikret
 
