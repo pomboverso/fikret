@@ -15,6 +15,7 @@
             android:id="@+id/back"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:padding="@dimen/space_between_elements"
             >
 
             <ImageView
@@ -22,8 +23,6 @@
                 android:contentDescription="@null"
                 android:src="@drawable/px_times" />
         </FrameLayout>
-
-        <View style="@style/SeparatorListHorizontal" />
 
         <TextView
             android:id="@+id/title"
